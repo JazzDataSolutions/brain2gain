@@ -1,44 +1,36 @@
 # backend/app/models/sales.py
-from sqlalchemy import (
-    Column, Integer, ForeignKey, DateTime, Numeric,
-    CheckConstraint
-)
-from sqlalchemy.orm import relationship
-from .mixins import TimestampMixin
-from .enums import OrderStatus
-from app.core.database import Base
+from typing import List, Optional
+from datetime import datetime
+from decimal import Decimal                
+from enum import Enum
+from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import CheckConstraint, Column, Enum as SQLEnum, DateTime
+from .transaction import TransactionType
 
-class SalesOrder(Base, TimestampMixin):
-    __tablename__ = "sales_orders"
+class OrderStatus(str, Enum):
+    PENDING    = "PENDING"
+    COMPLETED  = "COMPLETED"
+    CANCELLED  = "CANCELLED"
 
-    so_id      = Column(Integer, primary_key=True, index=True)
-    customer_id= Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
-    order_date = Column(DateTime(timezone=True), server_default=func.now())
-    status     = Column(Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False)
+class SalesOrder(SQLModel, table=True):
+    so_id:        Optional[int]      = Field(default=None, primary_key=True)
+    customer_id:  int                = Field(foreign_key="customer.customer_id", nullable=False)
+    order_date:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
+    status:       OrderStatus        = Field(sa_column=Column(SQLEnum(OrderStatus)), default=OrderStatus.PENDING, nullable=False)
+    created_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
 
-    customer   = relationship("Customer", back_populates="orders", lazy="joined")
-    items      = relationship(
-                    "SalesItem",
-                    back_populates="order",
-                    cascade="all, delete-orphan",
-                    lazy="selectin"
-                 )
+    customer:     "Customer"         = Relationship(back_populates="orders")
+    items:        List["SalesItem"]  = Relationship(back_populates="order")
 
-    @property
-    def total_amount(self) -> Numeric:
-        return sum(item.qty * item.unit_price for item in self.items)
+class SalesItem(SQLModel, table=True):
+    so_id:        int                = Field(foreign_key="salesorder.so_id", primary_key=True)
+    product_id:   int                = Field(foreign_key="product.product_id", primary_key=True)
+    qty:          int                = Field(nullable=False, gt=0)
+    unit_price:   Decimal            = Field(nullable=False, ge=0)
+    created_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
 
-class SalesItem(Base, TimestampMixin):
-    __tablename__ = "sales_items"
-    __table_args__ = (
-        CheckConstraint("qty > 0", name="ck_salesitem_qty_positive"),
-    )
-
-    so_id      = Column(Integer, ForeignKey("sales_orders.so_id"), primary_key=True)
-    product_id = Column(Integer, ForeignKey("products.product_id"), primary_key=True)
-    qty        = Column(Integer, nullable=False)
-    unit_price = Column(Numeric(10,2), nullable=False)
-
-    order   = relationship("SalesOrder", back_populates="items", lazy="joined")
-    product = relationship("Product", back_populates="sales_items", lazy="joined")
+    order:        SalesOrder         = Relationship(back_populates="items")
+    product:      "Product"          = Relationship(back_populates="sales_items")
 

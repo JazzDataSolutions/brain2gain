@@ -1,30 +1,38 @@
-# backend/migrations/env.py (fragmento clave)
-import sys, os
+# backend/migrations/env.py
 from logging.config import fileConfig
+import os, sys
+
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
-# 1) Que veas tu paquete app
+# 1) Haz que Alembic vea tu paquete app
 sys.path.append(os.path.abspath(os.path.join(os.getcwd(), "app")))
 
-# 2) Importa SQLModel y tus modelos para registrar metadata
+# 2) Importa SQLModel y todos tus modelos para registrar metadata
 from sqlmodel import SQLModel
+# importa aquí cada módulo que defina modelos SQLModel
 import models.user
 import models.role
 import models.product
 import models.customer
 import models.sales
-import models.transaction   # ahora sin errores de NameError
+import models.transaction
 import models.stock
 
+# 3) Configura el logging (igual que antes)
+config = context.config
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+# 4) Apunta target_metadata a la metadata de SQLModel
 target_metadata = SQLModel.metadata
 
-# 3) Override de URL
+# 5) Override de URL vía var de entorno
 db_url = os.getenv("DATABASE_URL")
 if not db_url:
-    raise RuntimeError("DATABASE_URL no definida")
+    raise RuntimeError("Tienes que exportar DATABASE_URL")
+# si usas asyncpg, convierte a sync:
 sync_url = db_url.replace("+asyncpg", "")
-config = context.config
 config.set_main_option("sqlalchemy.url", sync_url)
 
 def run_migrations_offline():

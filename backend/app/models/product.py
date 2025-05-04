@@ -1,23 +1,25 @@
-# backend/app/models/product.py
-from sqlalchemy import Column, Integer, String, Numeric, CheckConstraint
-from sqlalchemy.orm import relationship
-from app.core.database import Base
-from .mixins import TimestampMixin
-from .enums import ProductStatus
+from typing import List, Optional
+from decimal import Decimal
+from datetime import datetime
+from enum import Enum
+from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlalchemy import CheckConstraint, Enum as SQLEnum
 
-class Product(Base, TimestampMixin):
-    __tablename__ = "products"
-    __table_args__ = (
-        CheckConstraint("unit_price >= 0", name="ck_product_unit_price_non_negative"),
-    )
+class ProductStatus(str, Enum):
+    ACTIVE        = "ACTIVE"
+    DISCONTINUED  = "DISCONTINUED"
 
-    product_id = Column(Integer, primary_key=True, index=True)
-    sku        = Column(String, unique=True, index=True, nullable=False)
-    name       = Column(String, nullable=False)
-    unit_price = Column(Numeric(10,2), nullable=False)
-    status     = Column(Enum(ProductStatus), nullable=False, default=ProductStatus.ACTIVE)
+class Product(SQLModel, table=True):
+    product_id:   Optional[int]     = Field(default=None, primary_key=True)
+    sku:          str               = Field(index=True, nullable=False, unique=True)
+    name:         str               = Field(nullable=False)
+    unit_price:   Decimal           = Field(sa_column=Column("unit_price", 
+                                        CheckConstraint("unit_price >= 0"), nullable=False))
+    status:       ProductStatus     = Field(sa_column=Column(SQLEnum(ProductStatus)), 
+                                            default=ProductStatus.ACTIVE, nullable=False)
+    created_at:   datetime          = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at:   datetime          = Field(default_factory=datetime.utcnow, nullable=False)
 
-    sales_items = relationship(
-        "SalesItem", back_populates="product", lazy="selectin"
-    )
+    stock:        Optional["Stock"] = Relationship(back_populates="product")
+    sales_items:  List["SalesItem"] = Relationship(back_populates="product")
 

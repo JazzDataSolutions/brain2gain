@@ -1,17 +1,17 @@
 # backend/app/models/customer.py
-from sqlalchemy import Column, Integer, String
-from sqlalchemy_utils import EmailType
-from app.core.database import Base
-from .mixins import TimestampMixin
+from typing import List, Optional
+from datetime import datetime
+from pydantic import EmailStr
+from sqlmodel import SQLModel, Field, Relationship
 
-class Customer(Base, TimestampMixin):
-    __tablename__ = "customers"
+class Customer(SQLModel, table=True):
+    customer_id:  Optional[int]     = Field(default=None, primary_key=True)
+    first_name:   str               = Field(nullable=False)
+    last_name:    str               = Field(nullable=False)
+    email:        EmailStr          = Field(index=True, unique=True, nullable=False)
+    phone:        Optional[str]     = None
+    created_at:   datetime          = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at:   datetime          = Field(default_factory=datetime.utcnow, nullable=False)
 
-    customer_id = Column(Integer, primary_key=True, index=True)
-    first_name  = Column(String, nullable=False)
-    last_name   = Column(String, nullable=False)
-    email       = Column(EmailType, unique=True, index=True, nullable=False)
-    phone       = Column(String, nullable=True)
-
-    orders = relationship("SalesOrder", back_populates="customer", lazy="selectin")
-
+    orders:       List["SalesOrder"] = Relationship(back_populates="customer")
+    transactions: list["Transaction"] = Relationship(back_populates="customer")
