@@ -1,0 +1,31 @@
+version: "3.9"
+
+networks:
+  core:
+    external: true           # reutiliza la red donde ya está postgres
+    name: stack_default
+
+services:
+  backend:
+    build: ./backend
+    env_file: .env
+    depends_on:
+      - postgres   # sólo para orden de arranque
+    networks: [core]
+    ports:
+      - "8000:8000"   # API + Dash
+
+  frontend:
+    build: ./frontend
+    networks: [core]
+    ports:
+      - "3000:80"     # http://IP:3000
+
+  # Alias que apunta al contenedor postgres ya existente
+  postgres:
+    image: postgres:17
+    restart: "no"
+    networks: [core]
+    # No se inicia; sólo sirve para 'depends_on'
+    entrypoint: ["true"]
+

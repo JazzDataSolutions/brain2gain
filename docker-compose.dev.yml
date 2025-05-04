@@ -1,0 +1,29 @@
+services:
+  backend:
+    build: ./backend
+    env_file: .env.dev
+    volumes:
+      - ./backend/app:/app/app        # hot-reload de código
+      - ./backend/entrypoint.sh:/app/entrypoint.sh
+      - ./backend/migrations:/app/migrations
+      - ./backend/pyproject.toml:/app/pyproject.toml
+      - ./backend/poetry.lock:/app/poetry.lock
+      - ./dashboard:/app/dashboard
+
+    ports:
+      - "8000:8000"
+    command: >
+      bash -c "alembic upgrade head &&
+               uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend/src:/app/src     # hot-reload React
+      - ./frontend/public:/app/public
+    ports:
+      - "3000:80"
+    command: ["nginx", "-g", "daemon off;"]  # usa tu build prod para pruebas
+
+# no definimos postgres ni networks; todo sale por bridge por defecto
+
