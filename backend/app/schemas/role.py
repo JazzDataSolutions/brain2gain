@@ -8,3 +8,5 @@ class RoleRead(BaseModel):
 
     model_config = {"from_attributes": True}
 
+    class Config:
+        orm_mode = True

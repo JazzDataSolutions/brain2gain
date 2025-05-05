@@ -6,6 +6,9 @@ class ProductBase(BaseModel):
     name: str
     unit_price: Decimal
 
+    class Config:
+        orm_mode = True
+
 class ProductCreate(ProductBase):
     pass
 

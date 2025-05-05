@@ -1,7 +1,9 @@
 # backend/app/models/customer.py
-from typing import List, Optional
-from datetime import datetime
-from pydantic import EmailStr
+from __future__ import annotations
+
+from typing import List, Optional 
+from datetime import datetime 
+from pydantic import EmailStr 
 from sqlmodel import SQLModel, Field, Relationship
 
 class Customer(SQLModel, table=True):

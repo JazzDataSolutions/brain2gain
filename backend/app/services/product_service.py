@@ -8,11 +8,11 @@ class ProductService:
         self.repo = repo
 
     async def create(self, data: ProductCreate) -> ProductRead:
-        entity = Product(**data.model_dump())
+        entity = Product(**data.dict())
         saved = await self.repo.add(entity)
         return ProductRead.model_validate(saved)
 
     async def list(self) -> List[ProductRead]:
         items = await self.repo.get_all()
-        return [ProductRead.model_validate(i) for i in items]
+        return ProductRead(**saved.dict())
 

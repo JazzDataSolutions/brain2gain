@@ -9,9 +9,9 @@ class TransactionService:
         self.repo = repo
 
     async def create(self, data: TransactionCreate) -> TransactionRead:
-        tx = Transaction(**data.model_dump())
+        tx = Transaction(**data.dict())
         saved = await self.repo.add(tx)
-        return TransactionRead.model_validate(saved)
+        return TransactionRead.from_orm(saved)1
 
     async def list(self) -> List[TransactionRead]:
         items = await self.repo.get_all()

@@ -1,11 +1,19 @@
 # backend/app/models/sales.py
-from typing import List, Optional
+from __future__ import annotations
+from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime
 from decimal import Decimal                
 from enum import Enum
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import CheckConstraint, Column, Enum as SQLEnum, DateTime
+
 from .transaction import TransactionType
+
+
+if TYPE_CHECKING:
+    from app.models.product     import Product
+    from app.models.transaction import Transaction
+
 
 class OrderStatus(str, Enum):
     PENDING    = "PENDING"
@@ -16,7 +24,9 @@ class SalesOrder(SQLModel, table=True):
     so_id:        Optional[int]      = Field(default=None, primary_key=True)
     customer_id:  int                = Field(foreign_key="customer.customer_id", nullable=False)
     order_date:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
-    status:       OrderStatus        = Field(sa_column=Column(SQLEnum(OrderStatus)), default=OrderStatus.PENDING, nullable=False)
+    status:       OrderStatus        = Field(sa_column=Column(SQLEnum(OrderStatus)), 
+                                                default=OrderStatus.PENDING, 
+                                                nullable=False)
     created_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
 
@@ -31,6 +41,6 @@ class SalesItem(SQLModel, table=True):
     created_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at:   datetime           = Field(default_factory=datetime.utcnow, nullable=False)
 
-    order:        SalesOrder         = Relationship(back_populates="items")
-    product:      "Product"          = Relationship(back_populates="sales_items")
+    order:  "SalesOrder"    = Relationship(back_populates="items")
+    product:    "Product"   = Relationship(back_populates="sales_items")
 

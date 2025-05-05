@@ -1,4 +1,5 @@
 # backend/app/models/mixins.py
+from __future__ import annotations
 from sqlalchemy import Column, DateTime, func
 
 class TimestampMixin:
