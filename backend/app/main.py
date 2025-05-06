@@ -4,6 +4,7 @@ from app.api.v1.products import router as products_router
 from app.api.dependencies import get_product_service
 from app.dashboard.app import dash_app
 from starlette.middleware.wsgi import WSGIMiddleware
+from app.middlewares import error_handler
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Brain2Gain ERP")
@@ -24,4 +25,5 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+error_handler.init(app)
 

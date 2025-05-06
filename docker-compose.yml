@@ -1,5 +1,3 @@
-version: "3.9"
-
 networks:
   core:
     external: true           # reutiliza la red donde ya está postgres

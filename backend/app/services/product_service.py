@@ -1,5 +1,5 @@
 from typing import List
-from app.models.product import Product
+from app.models import Product
 from app.repositories.base import IRepository
 from app.schemas.product import ProductCreate, ProductRead
 

@@ -2,7 +2,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.product import Product
+from app.models import Product
 from app.repositories.base import IRepository
 
 class ProductRepository(IRepository[Product]):

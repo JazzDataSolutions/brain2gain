@@ -3,7 +3,7 @@ services:
     build: ./backend
     env_file: .env.dev
     volumes:
-      - ./backend/app:/app/app        # hot-reload de código
+      - ./backend/app:/app/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
       - ./backend/migrations:/app/migrations
       - ./backend/pyproject.toml:/app/pyproject.toml

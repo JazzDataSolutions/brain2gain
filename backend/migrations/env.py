@@ -12,13 +12,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # 2) Importa SQLModel y todos tus modelos **desde** app.models
 from sqlmodel import SQLModel
-import app.models.user
-import app.models.role
-import app.models.product
-import app.models.customer
-import app.models.sales
-import app.models.transaction
-import app.models.stock
+from app.models import *
 
 # 3) Ahora sí
 target_metadata = SQLModel.metadata
