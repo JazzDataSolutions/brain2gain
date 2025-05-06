@@ -62,36 +62,75 @@ graph TD
 ## 📊 Data‑Model (ER Diagram)
 
 ```mermaid
-erDiagram
-    PRODUCTS {
-        int id PK
-        varchar name
-        varchar sku
-        decimal price
-        int stock
+classDiagram
+    direction LR
+    class User {
+        +int user_id PK
+        username
+        email
+        hashed_password
+        is_active
     }
-    STOCK_MOVEMENTS {
-        int id PK
-        int product_id FK
-        varchar movement_type
-        int quantity
-        datetime timestamp
+    class Role {
+        +int role_id PK
+        name
     }
-    PURCHASE_ORDERS {
-        int id PK
-        int supplier_id FK
-        datetime date
-        decimal total
+    class UserRoleLink {
+        user_id FK
+        role_id FK
     }
-    SALES_ORDERS {
-        int id PK
-        int customer_id FK
-        datetime date
-        decimal total
+    User "1" -- "many" UserRoleLink
+    Role "1" -- "many" UserRoleLink
+    UserRoleLink .. User
+    UserRoleLink .. Role
+
+    class Product {
+        +int product_id PK
+        sku
+        name
+        unit_price
+        status
     }
-    STOCK_MOVEMENTS ||--|| PRODUCTS : belongs_to
-    PURCHASE_ORDERS ||--o{ STOCK_MOVEMENTS : generates
-    SALES_ORDERS ||--o{ STOCK_MOVEMENTS : consumes
+    class Stock {
+        +int stock_id PK
+        product_id FK
+        quantity
+    }
+    Product "1" -- "0..1" Stock
+    Stock .. Product
+
+    class Customer {
+        +int customer_id PK
+        first_name
+        last_name
+        email
+    }
+    class SalesOrder {
+        +int so_id PK
+        customer_id FK
+        order_date
+        status
+    }
+    class SalesItem {
+        +int so_id FK PK
+        +int product_id FK PK
+        qty
+        unit_price
+    }
+    Customer "1" -- "many" SalesOrder
+    SalesOrder "1" -- "many" SalesItem
+    SalesItem .. Product
+
+    class Transaction {
+        +int tx_id PK
+        tx_type
+        amount
+        customer_id FK
+        product_id FK
+    }
+    Customer "1" -- "0..*" Transaction
+    Product  "1" -- "0..*" Transaction
+
 ```
 
 > **Extend** with `transactions`, `accounts`, `returns`, `users` (RBAC) as the ERP grows.
