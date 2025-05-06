@@ -25,5 +25,6 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+app.include_router(products_router, prefix="/api/v1")
 error_handler.init(app)
 

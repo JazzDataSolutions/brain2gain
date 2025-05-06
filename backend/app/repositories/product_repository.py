@@ -1,21 +1,19 @@
-from typing import List
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+# backend/app/repositories/product_repository.py
 
+from typing import Optional
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 from app.models import Product
-from app.repositories.base import IRepository
 
-class ProductRepository(IRepository[Product]):
+class ProductRepository:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def add(self, obj: Product) -> Product:
-        self.session.add(obj)
-        await self.session.commit()
-        await self.session.refresh(obj)
-        return obj
+    async def get_by_sku(self, sku: str) -> Optional[Product]:
+        q = select(Product).where(Product.sku == sku)
+        result = await self.session.execute(q)      # ← await session.execute
+        return result.scalars().first()             # ← scalars() → ORM objects
 
-    async def get_all(self) -> List[Product]:
-        result = await self.session.execute(select(Product))
-        return result.scalars().all()
+    async def add(self, product: Product) -> None:
+        self.session.add(product)
 
