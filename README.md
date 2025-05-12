@@ -1,231 +1,134 @@
-# Brain2Gain ERP
+# Full Stack FastAPI - ERP AND Store
 
-> **Goal:** Provide an open‑source ERP tailored to a supplement business – inventory, purchasing, sales, finance dashboards – deployable with Docker, Traefik and Postgres.
+[![CI](https://github.com/<org>/<repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<org>/<repo>/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-unknown-lightgrey)](#)
 
----
+Brain2Gain es una tienda de suplementos que busca transformarse en una plataforma de comercio electrónico. Además de ofrecer una landing page que describa los productos y la misión de la marca, se planea que el sitio cuente con:
 
-## 🌐 Tech Stack
+    - E-commerce para venta de suplementos (con o sin registro).
+    - Panel de control (dashboard) de ventas para monitorear métricas y pedidos.
+    - Gestión de inventario y recursos, con distintos roles de usuario (admin, empleado, etc.).
+    - Registro de usuarios opcional para un seguimiento más personalizado, ofertas especiales y compra recurrente.
+    - Posibilidad de comprar como invitado, sin necesidad de iniciar sesión (guest checkout).
 
-| Layer               | Tech                                                      | Why                                   |
-| ------------------- | --------------------------------------------------------- | ------------------------------------- |
-| Backend             | **FastAPI + SQLModel**                                    | async, type‑safe, auto‑generated docs |
-| Database            | **PostgreSQL**                                            | strong relational model, JSONB        |
-| Migrations          | **Alembic**                                               | reliable versioned DDL                |
-| Auth                | **JWT (PyJWT) + OAuth2 Password**                         | standard & scalable                   |
-| Front‑end           | **React (Vite) + TypeScript + TanStack Query + Tailwind** | fast DX, composable UI                |
-| Reverse proxy / TLS | **Traefik v3**                                            | zero‑downtime, Let’s Encrypt          |
-| Dev Env             | **Docker Compose**, **pre‑commit**, **ruff**, **pytest**  | reproducible, opinionated linting     |
-| CI/CD               | **GitHub Actions → DockerHub → VPS**                      | ship on every push                    |
+    
+El proyecto se basa en la plantilla “Full Stack FastAPI + React” que incluye Docker Compose para entornos de desarrollo y producción, JWT para autenticación y configuración inicial para tests (Pytest y Playwright).
 
----
+## Technology Stack and Features
 
-## 📂 Repository Layout (top‑level)
+- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
+    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
+    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
+    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
+- 🚀 [React](https://react.dev) for the frontend.
+    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
+    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
+    - 🤖 An automatically generated frontend client.
+    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
+    - 🦇 Dark mode support.
+- 🐋 [Docker Compose](https://www.docker.com) for development and production.
+- 🔒 Secure password hashing by default.
+- 🔑 JWT (JSON Web Token) authentication.
+- 📫 Email based password recovery.
+- ✅ Tests with [Pytest](https://pytest.org).
+- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
+- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
+- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
 
-```
-jazzdatasolutions-b2g_website/
-├── backend/           # FastAPI service
-│   ├── app/           # domain packages (models, crud, api)
-│   ├── alembic/       # migrations
-│   └── ...
-├── frontend/          # React SPA
-│   ├── src/
-│   └── vite.config.ts
-├── ops/               # Terraform / Ansible infra (future)
-├── docker-compose*.yml
-└── docs/              # this README + ADRs + diagrams
-```
 
-> **Tip:** keep docs in `docs/` so diagrams render on GitHub without polluting code.
 
----
+## Quickstart
 
-## 🏗️ High‑Level Architecture
-
-```mermaid
-graph TD
-    subgraph Client
-        Browser
-    end
-    Browser -->|HTTPS| Traefik[Traefik Proxy]
-    Traefik -->|HTTP| Backend(FastAPI App)
-    Backend --> Postgres[(PostgreSQL @ VPS)]
-    Backend --> Redis[(Redis – optional cache)]
-    Backend --> Minio[(Object Storage – media)]
-    CI[GitHub Actions] --> DockerHub[(Registry)]
-    DockerHub --> VPS
-    CI --> VPS
-    Traefik -.-> Prometheus[(Metrics)]
-```
-
----
-
-## 📊 Data‑Model (ER Diagram)
-
-```mermaid
-classDiagram
-    direction LR
-    class User {
-        +int user_id PK
-        username
-        email
-        hashed_password
-        is_active
-    }
-    class Role {
-        +int role_id PK
-        name
-    }
-    class UserRoleLink {
-        user_id FK
-        role_id FK
-    }
-    User "1" -- "many" UserRoleLink
-    Role "1" -- "many" UserRoleLink
-    UserRoleLink .. User
-    UserRoleLink .. Role
-
-    class Product {
-        +int product_id PK
-        sku
-        name
-        unit_price
-        status
-    }
-    class Stock {
-        +int stock_id PK
-        product_id FK
-        quantity
-    }
-    Product "1" -- "0..1" Stock
-    Stock .. Product
-
-    class Customer {
-        +int customer_id PK
-        first_name
-        last_name
-        email
-    }
-    class SalesOrder {
-        +int so_id PK
-        customer_id FK
-        order_date
-        status
-    }
-    class SalesItem {
-        +int so_id FK PK
-        +int product_id FK PK
-        qty
-        unit_price
-    }
-    Customer "1" -- "many" SalesOrder
-    SalesOrder "1" -- "many" SalesItem
-    SalesItem .. Product
-
-    class Transaction {
-        +int tx_id PK
-        tx_type
-        amount
-        customer_id FK
-        product_id FK
-    }
-    Customer "1" -- "0..*" Transaction
-    Product  "1" -- "0..*" Transaction
-
-```
-
-> **Extend** with `transactions`, `accounts`, `returns`, `users` (RBAC) as the ERP grows.
-
----
-
-## 🔄  Sequence Diagram – "Create Sale"
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant FE as Front‑end
-    participant BE as Back‑end
-    participant DB as Postgres
-    U->>FE: Fill & submit order form
-    FE->>BE: POST /sales
-    BE->>DB: BEGIN TRANSACTION
-    BE->>DB: INSERT sales_orders + lines
-    BE->>DB: INSERT stock_movements (OUT)
-    DB-->>BE: COMMIT OK
-    BE-->>FE: 201 Created (order_id)
-    FE-->>U: Show confirmation
-```
-
----
-
-## ⚙️ Local Development
-
-1. **Copy envs**
-
+1. Create or copy the `.env` file at the project root and fill in the required variables (see `deployment.md` for details).
+2. Start the development environment:
    ```bash
-   cp .env.example backend/.env
-   cp .env.example frontend/.env
+   make dev
    ```
-2. **Start stack**
+3. Open your browser:
+   - Backend API docs: http://localhost:8000/docs
+   - Frontend: http://localhost:5173
 
-   ```bash
-   docker compose -f docker-compose.dev.yml up --build
-   ```
-3. Back‑end docs on [http://localhost:8000/docs](http://localhost:8000/docs).
-4. Front‑end on [http://localhost:5173](http://localhost:5173) (Vite hot‑reload).
+### Configure
 
-> **DB Migrations**: `docker compose exec backend alembic upgrade head`.
+You can then update configs in the `.env` files to customize your configurations.
 
----
+Before deploying it, make sure you change at least the values for:
 
-## 🚀 Deployment (VPS + Traefik)
+- `SECRET_KEY`
+- `FIRST_SUPERUSER_PASSWORD`
+- `POSTGRES_PASSWORD`
 
-1. Point A record to VPS.
-2. Clone repo & set environment secrets.
-3. `docker compose -f docker-compose.traefik.yml up -d` – Traefik issues certs via Let’s Encrypt.
-4. Backups: schedule `pg_dump` to S3/Backblaze nightly.
+You can (and should) pass these as environment variables from secrets.
 
----
+Read the [deployment.md](./deployment.md) docs for more details.
 
-## 🖌️ Front‑end Overview
+### Generate Secret Keys
 
-| Area      | Path                  | Key libs                  |
-| --------- | --------------------- | ------------------------- |
-| Routing   | `src/router.tsx`      | *react‑router‑dom* v6     |
-| API layer | `src/services/api.ts` | *axios*, *TanStack Query* |
-| State     | React Query cache     | avoids Redux boilerplate  |
-| UI        | Tailwind + shadcn/ui  | consistent design system  |
+Some environment variables in the `.env` file have a default value of `changethis`.
 
-Run `npm i && npm run dev` when hacking UI only.
+You have to change them with a secret key, to generate secret keys you can run the following command:
 
----
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
 
-## 🗺️ Roadmap
+Copy the content and use that as password / secret key. And run that again to generate another secure key.
 
-### Quick Wins (1–2 weeks)
 
-*
+### Input Variables
 
-### Strategic Enhancements (1–3 months)
+Copier will ask you for some data, you might want to have at hand before generating the project.
 
-*
+But don't worry, you can just update any of that in the `.env` files afterwards.
 
-### Moon‑shot (6 months+)
+The input variables, with their default values (some auto generated) are:
 
-* SaaS multi‑tenant mode.
-* Plug‑in marketplace (custom modules).
-* Mobile app via Capacitor.
+- `project_name`: (default: `"FastAPI Project"`) The name of the project, shown to API users (in .env).
+- `stack_name`: (default: `"fastapi-project"`) The name of the stack used for Docker Compose labels and project name (no spaces, no periods) (in .env).
+- `secret_key`: (default: `"changethis"`) The secret key for the project, used for security, stored in .env, you can generate one with the method above.
+- `first_superuser`: (default: `"admin@example.com"`) The email of the first superuser (in .env).
+- `first_superuser_password`: (default: `"changethis"`) The password of the first superuser (in .env).
+- `smtp_host`: (default: "") The SMTP server host to send emails, you can set it later in .env.
+- `smtp_user`: (default: "") The SMTP server user to send emails, you can set it later in .env.
+- `smtp_password`: (default: "") The SMTP server password to send emails, you can set it later in .env.
+- `emails_from_email`: (default: `"info@example.com"`) The email account to send emails from, you can set it later in .env.
+- `postgres_password`: (default: `"changethis"`) The password for the PostgreSQL database, stored in .env, you can generate one with the method above.
+- `sentry_dsn`: (default: "") The DSN for Sentry, if you are using it, you can set it later in .env.
 
----
+## Backend Development
 
-## 🤝 Contributing
+Backend docs: [backend/README.md](./backend/README.md).
 
-1. Fork / branch off `main`.
-2. `pre-commit install`.
-3. `pytest -q` before PR.
+## Frontend Development
 
----
+Frontend docs: [frontend/README.md](./frontend/README.md).
 
-## 📜 License
+## Deployment
 
-MIT © 2025 Brain2Gain
+Deployment docs: [deployment.md](./deployment.md).
 
+## Development
+
+General development docs: [development.md](./development.md).
+
+This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+
+## Release Notes
+
+Check the file [release-notes.md](./release-notes.md).
+
+## Documentation
+
+La documentación completa (arquitectura, plan de trabajo, endpoints, pruebas, despliegue) se genera con Sphinx.
+
+Para compilarla localmente:
+```bash
+cd docs
+pip install -r requirements.txt
+make html
+```
+Los archivos HTML resultantes se ubican en `docs/_build/html`.
+
+## License
+
+The Full Stack FastAPI Template is licensed under the terms of the MIT license.

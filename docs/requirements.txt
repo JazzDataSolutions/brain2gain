@@ -1,0 +1,6 @@
+# Requirements for building the Sphinx documentation
+sphinx>=4.0
+sphinx-rtd-theme
+myst-parser
+sphinxcontrib-mermaid
+sphinxcontrib-openapi
