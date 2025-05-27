@@ -36,11 +36,11 @@ class TransactionType(str, Enum):
 # Shared properties
 
 class UserRoleLink(SQLModel, table=True):
-    user_id: Optional[int] = Field(default=None, foreign_key="user.user_id", primary_key=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id", primary_key=True)
     role_id: Optional[int] = Field(default=None, foreign_key="role.role_id", primary_key=True)
 
 class UserBase(SQLModel):
-    email: EmailStr = Field(unique=True, index=True, max_length=255)
+    email: EmailStr = Field(unique=True, index=True)
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
@@ -50,19 +50,19 @@ class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
 
 class UserRegister(SQLModel):
-    email: EmailStr = Field(max_length=255)
+    email: EmailStr
     password: str = Field(min_length=8, max_length=40)
     full_name: str | None = Field(default=None, max_length=255)
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
+    email: EmailStr | None = Field(default=None)  # type: ignore
     password: str | None = Field(default=None, min_length=8, max_length=40)
 
 
 class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
-    email: EmailStr | None = Field(default=None, max_length=255)
+    email: EmailStr | None = Field(default=None)
 
 class UpdatePassword(SQLModel):
     current_password: str = Field(min_length=8, max_length=40)
@@ -72,7 +72,7 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+    items: list["Item"] = Relationship(back_populates="owner")
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     roles: List["Role"] = Relationship(back_populates="users", link_model=UserRoleLink)
@@ -113,9 +113,7 @@ class ItemUpdate(ItemBase):
 class Item(ItemBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
     owner: User | None = Relationship(back_populates="items")
 
 
@@ -209,6 +207,28 @@ class SalesItem(SQLModel, table=True):
     order:   "SalesOrder" = Relationship(back_populates="items")
     product: "Product"    = Relationship(back_populates="sales_items")
     
+
+# ─── SHOPPING CART ────────────────────────────────────────────────────────
+
+class Cart(SQLModel, table=True):
+    cart_id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: Optional[uuid.UUID] = Field(default=None, foreign_key="user.id")
+    session_id: Optional[str] = Field(default=None, index=True)  # For guest carts
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+    items: List["CartItem"] = Relationship(back_populates="cart")
+    user: Optional["User"] = Relationship()
+
+class CartItem(SQLModel, table=True):
+    cart_id: int = Field(foreign_key="cart.cart_id", primary_key=True)
+    product_id: int = Field(foreign_key="product.product_id", primary_key=True)
+    quantity: int = Field(ge=1, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+
+    cart: "Cart" = Relationship(back_populates="items")
+    product: "Product" = Relationship()
 
 # ─── TRANSACTIONS ─────────────────────────────────────────────────────────
 class Transaction(SQLModel, table=True):

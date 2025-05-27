@@ -20,6 +20,12 @@ class ProductBase(BaseModel):
 class ProductCreate(ProductBase):
     pass
 
+class ProductUpdate(BaseModel):
+    sku: Optional[str] = Field(None, min_length=1, max_length=64)
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    unit_price: Optional[Decimal] = Field(None, ge=0)
+    status: Optional[ProductStatus] = None
+
 class ProductRead(ProductBase):
     product_id: int
     created_at: datetime

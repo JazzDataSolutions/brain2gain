@@ -1,7 +1,18 @@
 services:
+  postgres:
+    image: postgres:17
+    environment:
+      - POSTGRES_DB=brain2gain_prod
+      - POSTGRES_USER=brain2gain_owner
+      - POSTGRES_PASSWORD=ClaveDura!2025
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   backend:
     build: ./backend
-    env_file: .env.dev
+    env_file: .env
     volumes:
       - ./backend/app:/app/app
       - ./backend/entrypoint.sh:/app/entrypoint.sh
@@ -9,11 +20,13 @@ services:
       - ./backend/pyproject.toml:/app/pyproject.toml
       - ./backend/poetry.lock:/app/poetry.lock
       - ./dashboard:/app/dashboard
-
+    depends_on:
+      - postgres
     ports:
       - "8000:8000"
     command: >
-      bash -c "alembic upgrade head &&
+      bash -c "sleep 10 &&
+               alembic upgrade head &&
                uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
@@ -22,8 +35,10 @@ services:
       - ./frontend/src:/app/src     # hot-reload React
       - ./frontend/public:/app/public
     ports:
-      - "3000:80"
-    command: ["nginx", "-g", "daemon off;"]  # usa tu build prod para pruebas
+      - "5173:80"
+    environment:
+      - VITE_API_URL=http://localhost:8000
 
-# no definimos postgres ni networks; todo sale por bridge por defecto
+volumes:
+  postgres_data:
 
