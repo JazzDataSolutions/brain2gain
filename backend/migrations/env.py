@@ -18,9 +18,8 @@ from app.models import *
 target_metadata = SQLModel.metadata
 
 # 4) Override de la URL vía ENV (igual que antes)
-db_url = os.getenv("DATABASE_URL")
-if not db_url:
-    raise RuntimeError("Tienes que exportar DATABASE_URL")
+from app.core.config import settings
+db_url = str(settings.SQLALCHEMY_DATABASE_URI)
 sync_url = db_url.replace("+asyncpg", "")
 config = context.config
 config.set_main_option("sqlalchemy.url", sync_url)

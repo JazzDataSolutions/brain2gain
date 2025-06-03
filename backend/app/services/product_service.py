@@ -1,8 +1,10 @@
+from decimal import Decimal
+from typing import List, Optional
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import List, Optional
 
 from app.models import Product
 from app.schemas.product import ProductCreate, ProductUpdate
@@ -21,6 +23,7 @@ class ProductService:
     async def create(self, payload: ProductCreate) -> Product:
         # Check for duplicate SKU
         existing_product = await self.repo.get_by_sku(payload.sku)
+
         if existing_product:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, 
@@ -30,6 +33,9 @@ class ProductService:
         # Create new product
         product_data = payload.model_dump()
         product = Product(**product_data)
+
+        if payload.unit_price < Decimal("10.00"):
+               raise ValueError("Precio mínimo no alcanzado")
         
         try:
             self.session.add(product)

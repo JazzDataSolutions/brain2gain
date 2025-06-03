@@ -1,9 +1,15 @@
-import sentry_sdk
+try:
+    import sentry_sdk
+except ImportError:  # pragma: no cover – optional dependency
+    sentry_sdk = None  # type: ignore
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
+import os
+from alembic.config import Config as AlembicConfig
+from alembic import command as alembic_command
 from app.core.config import settings
 
 
@@ -11,8 +17,19 @@ def custom_generate_unique_id(route: APIRoute) -> str:
     return f"{route.tags[0]}-{route.name}"
 
 
-if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
+if sentry_sdk and settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(dsn=str(settings.SENTRY_DSN), enable_tracing=True)
+
+def run_migrations() -> None:
+    project_root = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
+    )
+    ini_path = os.path.join(project_root, "alembic.ini")
+    cfg = AlembicConfig(ini_path)
+    cfg.set_main_option("script_location", "app/alembic")
+    alembic_command.upgrade(cfg, "head")
+
+run_migrations()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -26,12 +43,22 @@ if settings.all_cors_origins:
         CORSMiddleware,
         allow_origins=settings.all_cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET","POST","PUT","DELETE"],
+        allow_headers=["Authorization","Content-Type"],
+
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
  
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    return JSONResponse(status_code=400, content={"detail": str(exc)})
+
+
 # Centralized exception handlers
 from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse

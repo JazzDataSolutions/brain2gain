@@ -15,6 +15,7 @@ services:
     env_file: .env
     volumes:
       - ./backend/app:/app/app
+      - ./backend/alembic.ini:/app/alembic.ini
       - ./backend/entrypoint.sh:/app/entrypoint.sh
       - ./backend/migrations:/app/migrations
       - ./backend/pyproject.toml:/app/pyproject.toml
@@ -25,9 +26,12 @@ services:
     ports:
       - "8000:8000"
     command: >
-      bash -c "sleep 10 &&
-               alembic upgrade head &&
+      bash -c "cd /app &&
+               sleep 10 &&
+               alembic -c alembic.ini upgrade head &&
                uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      - PYTHONPATH=/app
 
   frontend:
     build: ./frontend

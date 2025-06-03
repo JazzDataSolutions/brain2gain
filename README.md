@@ -1,10 +1,14 @@
 # Brain2Gain - E-commerce de Suplementos 💪
 
-[![CI](https://github.com/<org>/<repo>/actions/workflows/ci.yml/badge.svg)](https://github.com/<org>/<repo>/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-unknown-lightgrey)](#)
+[![CI](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
 
 **Brain2Gain** es una plataforma moderna de comercio electrónico especializada en suplementos deportivos, diseñada para ofrecer una experiencia completa tanto para clientes como administradores.
 
+## Arquitectura
+
+![Diagrama de Entidad-Relación](docs/er_diagram.png)
+        
 ## 🎯 Objetivos del Proyecto
 
 ### Funcionalidades Core
