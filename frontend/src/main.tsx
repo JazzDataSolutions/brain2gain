@@ -7,6 +7,8 @@ import { StrictMode } from "react";
 import { OpenAPI } from "./client";
 import theme from "./theme";
 import ErrorBoundary from "./components/ErrorBoundary"; // Importamos el ErrorBoundary
+import { AuthProvider } from "./contexts/AuthContext";
+import "./styles/globals.css";
 import "./styles/landing.css";
 
 OpenAPI.BASE = import.meta.env.VITE_API_URL;
@@ -38,12 +40,20 @@ declare module "@tanstack/react-router" {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ChakraProvider theme={theme}>
-      <QueryClientProvider client={queryClient}>
-        <ErrorBoundary>
-          <RouterProvider router={router} />
-        </ErrorBoundary>
-      </QueryClientProvider>
-    </ChakraProvider>
+    <AuthProvider>
+      <ChakraProvider theme={theme}>
+        <QueryClientProvider client={queryClient}>
+          <ErrorBoundary 
+            showDetails={import.meta.env.DEV}
+            onError={(error, errorInfo) => {
+              // Custom error handling - could send to analytics service
+              console.warn('Application error caught by boundary:', error);
+            }}
+          >
+            <RouterProvider router={router} />
+          </ErrorBoundary>
+        </QueryClientProvider>
+      </ChakraProvider>
+    </AuthProvider>
   </StrictMode>,
 );

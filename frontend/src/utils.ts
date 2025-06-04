@@ -1,4 +1,5 @@
 import type { ApiError } from "./client"
+import { type ClassValue, clsx } from "clsx"
 
 export const emailPattern = {
   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -50,4 +51,8 @@ export const handleError = (err: ApiError, showToast: any) => {
     errorMessage = errDetail[0].msg
   }
   showToast("Error", errorMessage, "error")
+}
+
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs)
 }

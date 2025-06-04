@@ -1,65 +1,137 @@
-# backend/app/api/v1/products.py
+"""
+Products API endpoints.
+
+This module provides CRUD operations for products with proper authentication,
+authorization, and business validation.
+"""
 from typing import List
-from fastapi         import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.api.deps           import get_current_admin_user
-from app.models             import User
-from app.core.database      import get_db
-from app.schemas.product    import ProductCreate, ProductRead, ProductUpdate
+from app.api.deps import AdminUser, SessionDep
+from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.product_service import ProductService
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
-@router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
-async def create_product(
-    payload: ProductCreate,
-    session: AsyncSession = Depends(get_db),
-):
-    return await ProductService(session).create(payload)
 
 @router.get("/", response_model=List[ProductRead])
 async def list_products(
-    skip:  int           = Query(0, ge=0),
-    limit: int           = Query(50, ge=1, le=200),
-    session: AsyncSession = Depends(get_db),
-):
-    return await ProductService(session).list(skip=skip, limit=limit)
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=200, description="Maximum number of records to return"),
+    session: SessionDep = Depends(),
+) -> List[ProductRead]:
+    """
+    List products with pagination.
+    
+    This endpoint is public and doesn't require authentication.
+    Use it to display products in the catalog.
+    """
+    service = ProductService(session)
+    return await service.list(skip=skip, limit=limit)
+
+
+@router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    product_data: ProductCreate,
+    session: SessionDep = Depends(),
+    current_user: AdminUser = Depends(),
+) -> ProductRead:
+    """
+    Create a new product.
+    
+    Requires ADMIN or MANAGER role.
+    Validates business rules including SKU uniqueness and minimum price.
+    """
+    service = ProductService(session)
+    try:
+        return await service.create(product_data)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
 
 @router.get("/{product_id}", response_model=ProductRead)
 async def get_product(
     product_id: int,
-    session:    AsyncSession = Depends(get_db),
-    _:          User        = Depends(get_current_admin_user),
-):
-    product = await ProductService(session).get_by_id(product_id)
+    session: SessionDep = Depends(),
+    current_user: AdminUser = Depends(),
+) -> ProductRead:
+    """
+    Get a product by ID.
+    
+    Requires ADMIN or MANAGER role.
+    Returns 404 if product not found.
+    """
+    service = ProductService(session)
+    product = await service.get_by_id(product_id)
+    
     if not product:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found"
+        )
+    
     return product
+
 
 @router.put("/{product_id}", response_model=ProductRead)
 async def update_product(
     product_id: int,
-    payload:    ProductUpdate,
-    session:    AsyncSession = Depends(get_db),
-    _:          User        = Depends(get_current_admin_user),
-):
-    if payload.unit_price is not None and payload.unit_price < 0:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="unit_price must be non-negative")
-    updated = await ProductService(session).update(product_id, payload)
-    if not updated:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
-    return updated
+    product_data: ProductUpdate,
+    session: SessionDep = Depends(),
+    current_user: AdminUser = Depends(),
+) -> ProductRead:
+    """
+    Update a product.
+    
+    Requires ADMIN or MANAGER role.
+    Validates business rules before updating.
+    """
+    # Validate price is not negative
+    if product_data.unit_price is not None and product_data.unit_price < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Product price cannot be negative"
+        )
+    
+    service = ProductService(session)
+    try:
+        updated_product = await service.update(product_id, product_data)
+        if not updated_product:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Product with ID {product_id} not found"
+            )
+        return updated_product
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: int,
-    session:    AsyncSession = Depends(get_db),
-    _:          User        = Depends(get_current_admin_user),
-):
-    deleted = await ProductService(session).delete(product_id)
-    if not deleted:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    session: SessionDep = Depends(),
+    current_user: AdminUser = Depends(),
+) -> None:
+    """
+    Delete a product.
+    
+    Requires ADMIN or MANAGER role.
+    Returns 404 if product not found.
+    """
+    service = ProductService(session)
+    success = await service.delete(product_id)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found"
+        )
 
 

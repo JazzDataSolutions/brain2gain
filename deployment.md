@@ -1,4 +1,4 @@
-# FastAPI Project - Deployment
+# Brain2Gain - Deployment Documentation 🚀
   
 ```mermaid
 graph LR

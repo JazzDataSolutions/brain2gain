@@ -1,26 +1,92 @@
+# ============================================================================
+# Multi-stage Dockerfile for Brain2Gain Backend
+# Optimized for production with security and performance in mind
+# ============================================================================
+
+# =============
+# Builder Stage
+# =============
 FROM python:3.10-slim AS builder
+
+# Install system dependencies required for building Python packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for building
+RUN addgroup --system builder && \
+    adduser --system --ingroup builder builder
+
+# Set working directory
 WORKDIR /app
 
-# Install uv tool and sync dependencies
-RUN pip install --no-cache-dir uv
-COPY pyproject.toml uv.lock alembic.ini ./
-RUN uv sync --frozen --compile-bytecode
+# Install uv - modern Python package manager
+RUN pip install --no-cache-dir uv==0.4.18
 
-# Copy application source code
-COPY app app
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
 
+# Install dependencies in virtual environment
+RUN uv sync --frozen --compile-bytecode --no-dev
+
+# Copy source code
+COPY app ./app
+COPY alembic.ini ./
+
+# Change ownership to builder user
+RUN chown -R builder:builder /app
+USER builder
+
+# =============
+# Runtime Stage
+# =============
 FROM python:3.10-slim AS runtime
-ENV PYTHONUNBUFFERED=1
+
+# Metadata
+LABEL maintainer="Brain2Gain Team" \
+      version="1.0.0" \
+      description="Brain2Gain API Backend"
+
+# Environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH="/app" \
+    PATH="/app/.venv/bin:$PATH" \
+    PORT=8000
+
+# Install only runtime system dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /tmp/*
+
+# Create non-root user for runtime
+RUN addgroup --system --gid 1001 app && \
+    adduser --system --uid 1001 --ingroup app --home /app --no-create-home app
+
+# Set working directory
 WORKDIR /app
 
-# Copy built artifacts and dependencies from builder
-COPY --from=builder /app /app
-ENV PATH="/app/.venv/bin:$PATH"
+# Copy built application and dependencies from builder
+COPY --from=builder --chown=app:app /app /app
 
-# Use non-root user for security
-RUN addgroup --system app && \
-    adduser --system --ingroup app --home /app --no-create-home app && \
-    chown -R app /app
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/logs /app/tmp && \
+    chown -R app:app /app
+
+# Switch to non-root user
 USER app
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expose port
+EXPOSE ${PORT}
+
+# Run application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

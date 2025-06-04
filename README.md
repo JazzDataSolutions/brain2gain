@@ -1,7 +1,18 @@
 # Brain2Gain - E-commerce de Suplementos 💪
 
-[![CI](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
+[![CI/CD Pipeline](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml)
+[![Security Scan](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/security.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/security.yml)
+[![Backend Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg?flag=backend)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
+[![Frontend Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg?flag=frontend)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
+[![Node Version](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 **Brain2Gain** es una plataforma moderna de comercio electrónico especializada en suplementos deportivos, diseñada para ofrecer una experiencia completa tanto para clientes como administradores.
 
@@ -126,6 +137,33 @@ El proyecto utiliza una arquitectura moderna basada en la plantilla "Full Stack 
 - 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
 - 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
 - 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
+
+## 🔄 CI/CD Pipeline Status
+
+Our comprehensive CI/CD pipeline ensures code quality, security, and reliable deployments:
+
+### ✅ Automated Testing
+- **Backend Tests**: Unit tests, integration tests, and API tests with coverage reporting
+- **Frontend Tests**: Component tests, E2E tests with Playwright
+- **Security Scanning**: Vulnerability detection in dependencies and Docker images
+- **Code Quality**: Linting, formatting, and type checking
+
+### 🚀 Deployment Pipeline
+- **Staging**: Automatic deployment on `develop` branch
+- **Production**: Deployment on release tags with manual approval
+- **Rollback**: Quick rollback capability for production issues
+
+### 📊 Quality Metrics
+- **Test Coverage**: Maintained above 80% for critical components
+- **Code Quality**: SonarCloud integration for maintainability
+- **Security**: Daily security scans and dependency updates
+- **Performance**: Automated performance monitoring
+
+### 🛡️ Security & Compliance
+- **Dependabot**: Automated dependency updates
+- **SAST**: Static Application Security Testing
+- **Container Scanning**: Docker image vulnerability assessment
+- **License Compliance**: Automated license checking
 
 ## Quickstart
 

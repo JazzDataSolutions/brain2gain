@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
@@ -7,11 +7,11 @@ import {
   type Body_login_login_access_token as AccessToken,
   type ApiError,
   LoginService,
-  type UserPublic,
   type UserRegister,
   UsersService,
 } from "../client"
 import useCustomToast from "./useCustomToast"
+import { useAuth as useAuthContext } from "../contexts/AuthContext"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -22,11 +22,7 @@ const useAuth = () => {
   const navigate = useNavigate()
   const showToast = useCustomToast()
   const queryClient = useQueryClient()
-  const { data: user, isLoading } = useQuery<UserPublic | null, Error>({
-    queryKey: ["currentUser"],
-    queryFn: UsersService.readUserMe,
-    enabled: isLoggedIn(),
-  })
+  const { user, isLoading, login: contextLogin, logout: contextLogout } = useAuthContext()
 
   const signUpMutation = useMutation({
     mutationFn: (data: UserRegister) =>
@@ -58,7 +54,8 @@ const useAuth = () => {
     const response = await LoginService.loginAccessToken({
       formData: data,
     })
-    localStorage.setItem("access_token", response.access_token)
+    // Use the context login method for proper token management
+    await contextLogin(response.access_token)
   }
 
   const loginMutation = useMutation({
@@ -82,7 +79,7 @@ const useAuth = () => {
   })
 
   const logout = () => {
-    localStorage.removeItem("access_token")
+    contextLogout()
     navigate({ to: "/login" })
   }
 
