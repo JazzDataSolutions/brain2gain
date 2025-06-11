@@ -268,7 +268,7 @@ phases:
 pipelines de test"
         owner: "DevOps Engineer"
         tasks:
-          - status: "❌"
+          - status: "✅"
             id: 4.1
             desc: "Optimizar Dockerfile de backend: multi-stage, 
 usuario no-root, PATH a .venv/bin, tamaño final <400 MB."
@@ -280,7 +280,7 @@ usuario no-root, PATH a .venv/bin, tamaño final <400 MB."
 arranca sin errores."
             reason: "Imágenes ligeras aceleran despliegues y reducen
  costos."
-          - status: "❌"
+          - status: "✅"
             id: 4.2
             desc: "Crear docker-compose.ci.yml para pipeline CI: 
 servicios Postgres, backend y tests; ejecutar suite de Pytest."
@@ -292,7 +292,7 @@ servicios Postgres, backend y tests; ejecutar suite de Pytest."
 --abort-on-container-exit` sale con 0 si tests pasan."
             reason: "Pipeline CI autónomo valida integraciones antes
  de merge."
-          - status: "❌"
+          - status: "✅"
             id: 4.3
             desc: "Configurar GitHub Actions CI 
 (`.github/workflows/ci.yml`): checkout, setup Python, lint, tests y 
@@ -305,7 +305,7 @@ reporte de cobertura."
             expect: "Cada PR dispara CI que falla si hay lint errors
  o tests rotos, y publica badge en README."
             reason: "Automatizar calidad y visibilidad mediante CI."
-          - status: "❌"
+          - status: "✅"
             id: 4.4
             desc: "Actualizar badges de CI y cobertura en README.md;
  configurar branch protection en GitHub."
@@ -317,7 +317,7 @@ antes de merge
             expect: "README muestra badges activos; protegidas ramas
  con status checks."
             reason: "Visibilidad y calidad de merges."
-          - status: "❌"
+          - status: "✅"
             id: 4.5
             desc: "Planear despliegue en staging y producción; 
 documentar en deployment.md e integrar Sentry."

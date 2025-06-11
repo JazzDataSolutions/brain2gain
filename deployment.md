@@ -291,28 +291,185 @@ If you need to add extra environments you could use those as a starting point.
 
 ## URLs
 
-Replace `fastapi-project.example.com` with your domain.
+Replace `brain2gain.com` with your actual domain.
 
 ### Main Traefik Dashboard
 
-Traefik UI: `https://traefik.fastapi-project.example.com`
+Traefik UI: `https://traefik.brain2gain.com`
 
 ### Production
 
-Frontend: `https://dashboard.fastapi-project.example.com`
+Frontend: `https://brain2gain.com`
 
-Backend API docs: `https://api.fastapi-project.example.com/docs`
+Backend API docs: `https://api.brain2gain.com/docs`
 
-Backend API base URL: `https://api.fastapi-project.example.com`
+Backend API base URL: `https://api.brain2gain.com`
 
-Adminer: `https://adminer.fastapi-project.example.com`
+Adminer: `https://db.brain2gain.com`
 
 ### Staging
 
-Frontend: `https://dashboard.staging.fastapi-project.example.com`
+Frontend: `https://staging.brain2gain.com`
 
-Backend API docs: `https://api.staging.fastapi-project.example.com/docs`
+Backend API docs: `https://api.staging.brain2gain.com/docs`
 
-Backend API base URL: `https://api.staging.fastapi-project.example.com`
+Backend API base URL: `https://api.staging.brain2gain.com`
 
-Adminer: `https://adminer.staging.fastapi-project.example.com`
+Adminer: `https://db.staging.brain2gain.com`
+
+## 🔍 Sentry Integration
+
+Brain2Gain uses Sentry for error tracking and performance monitoring in staging and production environments.
+
+### Setting up Sentry
+
+1. **Create a Sentry account** at [sentry.io](https://sentry.io)
+
+2. **Create projects** for both backend and frontend:
+   - `brain2gain-backend`
+   - `brain2gain-frontend`
+
+3. **Configure DSN** in your environment variables:
+   ```bash
+   # Backend
+   export SENTRY_DSN="https://your-backend-dsn@sentry.io/project-id"
+   
+   # Frontend (in build args)
+   export VITE_SENTRY_DSN="https://your-frontend-dsn@sentry.io/project-id"
+   ```
+
+4. **Set up environments** in Sentry:
+   - `production`
+   - `staging`
+   - `development` (optional)
+
+### Sentry Features Enabled
+
+- **Error Tracking**: Automatic error capture with stack traces
+- **Performance Monitoring**: Transaction tracking and metrics
+- **Release Tracking**: Automatic release creation on deployment
+- **Source Maps**: Frontend source map upload for readable stack traces
+- **User Context**: Associate errors with authenticated users
+- **Custom Tags**: Environment, version, and deployment info
+
+### Backend Configuration
+
+The backend automatically initializes Sentry if `SENTRY_DSN` is set:
+
+```python
+# app/core/config.py
+if settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=0.1,  # 10% of transactions
+        profiles_sample_rate=0.1,  # 10% profiling
+        integrations=[
+            FastApiIntegration(transaction_style="endpoint"),
+            SqlalchemyIntegration(),
+        ],
+    )
+```
+
+### Frontend Configuration
+
+The frontend initializes Sentry in production builds:
+
+```typescript
+// src/main.tsx
+if (import.meta.env.VITE_SENTRY_DSN) {
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    integrations: [
+      new Sentry.BrowserTracing(),
+      new Sentry.Replay(),
+    ],
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
+```
+
+### Monitoring Dashboard
+
+Access your Sentry dashboards at:
+- Issues: `https://sentry.io/organizations/your-org/issues/`
+- Performance: `https://sentry.io/organizations/your-org/performance/`
+- Releases: `https://sentry.io/organizations/your-org/releases/`
+
+## 📊 Production Monitoring Checklist
+
+- [ ] Sentry DSN configured for both frontend and backend
+- [ ] Error alerts configured for critical issues
+- [ ] Performance baselines established
+- [ ] Database query monitoring enabled
+- [ ] API response time alerts set up
+- [ ] Resource utilization monitoring (CPU, Memory, Disk)
+- [ ] Uptime monitoring configured
+- [ ] Log aggregation set up
+- [ ] Backup verification automated
+
+## 🚀 Deployment Best Practices
+
+1. **Blue-Green Deployments**: Minimize downtime by switching between environments
+2. **Database Migrations**: Always backup before running migrations
+3. **Health Checks**: Ensure all services pass health checks before routing traffic
+4. **Rollback Plan**: Keep previous versions available for quick rollback
+5. **Monitoring**: Watch metrics closely after deployment
+6. **Communication**: Notify team and stakeholders of deployment schedules
+
+## 🔐 Security Considerations
+
+1. **Secrets Management**: 
+   - Never commit secrets to version control
+   - Use GitHub Secrets for CI/CD
+   - Rotate secrets regularly
+
+2. **Network Security**:
+   - Use CloudFlare for DDoS protection
+   - Configure strict CORS policies
+   - Enable rate limiting on APIs
+
+3. **Container Security**:
+   - Run containers as non-root users
+   - Keep base images updated
+   - Scan images for vulnerabilities
+
+4. **Database Security**:
+   - Use strong passwords
+   - Enable SSL connections
+   - Regular backups with encryption
+   - Restrict network access
+
+## 📦 Scaling Considerations
+
+### Horizontal Scaling
+
+Brain2Gain is designed to scale horizontally:
+
+1. **Backend**: Multiple API instances behind load balancer
+2. **Frontend**: CDN distribution for static assets
+3. **Database**: Read replicas for query distribution
+4. **Caching**: Redis for session and API caching
+
+### Performance Optimization
+
+1. **Database**:
+   - Indexed queries
+   - Connection pooling
+   - Query optimization
+   - Materialized views for reports
+
+2. **API**:
+   - Response caching
+   - Pagination on all list endpoints
+   - Async processing for heavy tasks
+   - Rate limiting
+
+3. **Frontend**:
+   - Code splitting
+   - Lazy loading
+   - Image optimization
+   - Service worker caching
