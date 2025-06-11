@@ -5,18 +5,21 @@ This module provides CRUD operations for products with proper authentication,
 authorization, and business validation.
 """
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import AdminUser, SessionDep
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.product_service import ProductService
+from app.middlewares.advanced_rate_limiting import limiter, apply_endpoint_limits
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
 @router.get("/", response_model=List[ProductRead])
+@apply_endpoint_limits("products")
 async def list_products(
+    request: Request,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of records to return"),
     session: SessionDep = Depends(),
@@ -54,7 +57,9 @@ async def create_product(
 
 
 @router.get("/{product_id}", response_model=ProductRead)
+@apply_endpoint_limits("products")
 async def get_product(
+    request: Request,
     product_id: int,
     session: SessionDep = Depends(),
 ) -> ProductRead:

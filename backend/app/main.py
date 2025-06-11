@@ -6,6 +6,7 @@ Main application setup with middleware, exception handling, and API routes.
 import os
 import logging
 from contextlib import asynccontextmanager
+from datetime import datetime
 
 try:
     import sentry_sdk
@@ -20,8 +21,9 @@ from alembic import command as alembic_command
 
 from app.api.main import api_router
 from app.core.config import settings
-from app.core.cache import init_redis, close_redis
+from app.core.cache import init_redis, close_redis, get_cache_health
 from app.middlewares.exception_handler import setup_exception_handlers
+from app.middlewares.advanced_rate_limiting import setup_rate_limiting
 
 # Setup logging
 logging.basicConfig(
@@ -110,6 +112,9 @@ app = FastAPI(
 # Setup exception handlers
 setup_exception_handlers(app)
 
+# Setup advanced rate limiting
+setup_rate_limiting(app)
+
 # Configure CORS
 cors_origins = ["http://localhost:5173"]  # Frontend development server
 if settings.ENVIRONMENT == "production":
@@ -152,13 +157,54 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
+    """
+    Comprehensive health check endpoint.
+    
+    Returns overall system health including cache status,
+    useful for load balancers and monitoring systems.
+    """
+    # Get cache health status
+    cache_health = await get_cache_health()
+    
+    # Determine overall health status
+    overall_status = "healthy"
+    if cache_health.get("health") == "critical":
+        overall_status = "degraded"  # Service works but cache is down
+    elif not cache_health.get("connected", False):
+        overall_status = "degraded"
+    
+    # Build comprehensive health response
+    health_response = {
+        "status": overall_status,
         "service": "Brain2Gain API",
         "version": "1.0.0",
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "components": {
+            "api": {
+                "status": "healthy",
+                "description": "FastAPI application is running"
+            },
+            "cache": {
+                "status": cache_health.get("status", "unknown"),
+                "health": cache_health.get("health", "unknown"),
+                "connected": cache_health.get("connected", False),
+                "hit_rate": cache_health.get("hit_rate", 0),
+                "type": cache_health.get("cache_type", "unknown")
+            }
+        },
+        "checks": {
+            "cache_connectivity": cache_health.get("connected", False),
+            "cache_performance": cache_health.get("hit_rate", 0) >= 60,
+            "api_responsive": True
+        }
     }
+    
+    # Add error details if cache is unhealthy
+    if cache_health.get("error"):
+        health_response["components"]["cache"]["error"] = cache_health["error"]
+    
+    return health_response
 
 
 @app.get("/")

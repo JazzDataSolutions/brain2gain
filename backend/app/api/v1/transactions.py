@@ -1,14 +1,17 @@
 # backend/app/api/v1/transactions.py
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from typing import List
 from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.transaction_service import TransactionService
 from app.api.dependencies import get_transaction_service
+from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
 
 router = APIRouter(prefix="/transactions")
 
 @router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
+@apply_endpoint_limits("orders")
 async def create_tx(
+    request: Request,
     payload: TransactionCreate,
     svc: TransactionService = Depends(get_transaction_service),
 ):

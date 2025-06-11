@@ -8,6 +8,7 @@ from app.schemas.cart import CartRead, AddToCartRequest, UpdateCartItemRequest
 from app.services.cart_service import CartService
 from app.core.database import get_db
 from app.api.deps import get_current_user
+from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 
@@ -27,6 +28,7 @@ def get_cart_identifier(
         return None, session_id
 
 @router.get("/", response_model=CartRead)
+@apply_endpoint_limits("cart")
 async def get_cart(
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db)
@@ -37,6 +39,7 @@ async def get_cart(
     return await service.get_cart(user_id, session_id)
 
 @router.post("/items", response_model=CartRead, status_code=status.HTTP_201_CREATED)
+@apply_endpoint_limits("cart")
 async def add_to_cart(
     request: AddToCartRequest,
     cart_ids: tuple = Depends(get_cart_identifier),
@@ -48,6 +51,7 @@ async def add_to_cart(
     return await service.add_to_cart(request, user_id, session_id)
 
 @router.put("/items/{product_id}", response_model=CartRead)
+@apply_endpoint_limits("cart")
 async def update_cart_item(
     product_id: int,
     request: UpdateCartItemRequest,

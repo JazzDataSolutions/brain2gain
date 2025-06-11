@@ -12,46 +12,48 @@
 
 ## 🎯 Visión del Proyecto
 
-### Para Clientes (B2C)
-- 🛒 **Tienda online optimizada** con catálogo de suplementos
-- ⚡ **Checkout ultrarrápido** - compra con o sin registro
-- 🔍 **Búsqueda inteligente** con filtros avanzados
-- 📱 **Experiencia móvil** responsive y PWA
-- 🎁 **Sistema de promociones** y descuentos
+**Brain2Gain** combina una **tienda online moderna** con un **sistema ERP completo**, ofreciendo tanto experiencia de compra optimizada para clientes como herramientas de gestión empresarial integradas.
 
-### Para el Negocio (B2B)
-- 📊 **Dashboard ejecutivo** con métricas en tiempo real
-- 📦 **Gestión de inventario** multi-almacén
-- 👥 **CRM integrado** para gestión de clientes
-- 💰 **Control financiero** y reportes automáticos
-- 🚀 **Escalabilidad** preparada para crecimiento
+### 🛒 Experiencia Cliente (B2C)
+- **Tienda optimizada**: Catálogo intuitivo con búsqueda avanzada
+- **Checkout express**: Compra rápida con/sin registro 
+- **Mobile-first**: PWA responsive para móviles
+- **Personalización**: Recomendaciones basadas en historial
+
+### 🏢 Gestión Empresarial (B2B)
+- **Dashboard ejecutivo**: Métricas en tiempo real
+- **Control inventario**: Multi-almacén con alertas automáticas
+- **CRM integrado**: Gestión completa de clientes y leads
+- **Finanzas**: Reportes automáticos y control de flujo
 
 ## 🏗️ Arquitectura Técnica
 
 ### Stack Tecnológico Actual
 ```yaml
 Backend:
-  Framework: FastAPI 0.104+
-  Database: PostgreSQL 15
+  Framework: FastAPI 0.114+
+  Database: PostgreSQL 17
   ORM: SQLModel + Alembic
   Authentication: JWT + OAuth2
-  Cache: Redis (planificado)
-  Queue: RabbitMQ (planificado)
+  Cache: Redis 5.0+ (implementado)
+  Rate Limiting: SlowAPI + avanzado
+  Package Manager: uv (ultra-fast)
 
 Frontend:
   Framework: React 18 + TypeScript
   Build: Vite 5
-  UI: Chakra UI + Custom Components
+  UI: Chakra UI + Tailwind CSS
   Routing: TanStack Router
   State: TanStack Query + Zustand
   Testing: Playwright + Vitest
+  Linting: Biome (sustituto de ESLint/Prettier)
 
 DevOps:
   Containerization: Docker + Docker Compose
   CI/CD: GitHub Actions
   Monitoring: Sentry (configurado)
-  Documentation: Sphinx
-  Code Quality: ESLint, Prettier, Black
+  Documentation: Sphinx + auto-generated
+  Code Quality: Ruff, MyPy, Biome
 ```
 
 ### Arquitectura Evolutiva
@@ -98,33 +100,44 @@ make backend          # Solo backend
 
 # Testing
 make test             # Ejecutar todas las pruebas
-make test-backend     # Pruebas del backend
-make test-frontend    # Pruebas del frontend
+make test-backend     # Pruebas del backend (pytest)
+make test-frontend    # Pruebas del frontend (vitest + playwright)
 
 # Calidad de código
-make lint             # Linting completo
+make lint             # Linting completo (ruff + biome)
 make format           # Formatear código
 
-# Producción
-make build            # Construir imágenes
-make deploy           # Deploy completo
+# Backend específico
+cd backend
+uv sync               # Instalar dependencias ultra-rápido
+fastapi run --reload  # Servidor desarrollo
+pytest                # Ejecutar tests
+alembic upgrade head  # Aplicar migraciones
+
+# Frontend específico  
+cd frontend
+npm run dev           # Servidor desarrollo
+npm run test:e2e      # Tests end-to-end
+npm run generate-client  # Generar cliente API
 ```
 
 ## 📋 Estado del Desarrollo
 
 ### ✅ Completado
 - **Infraestructura base**: FastAPI + React + PostgreSQL + Docker
-- **Autenticación**: Sistema JWT con roles (admin, user)
-- **Base de datos**: Modelos iniciales y migraciones
-- **Testing**: Configuración de Pytest y Playwright
-- **CI/CD**: Pipeline básico con GitHub Actions
-- **Documentación**: Estructura con Sphinx
+- **Autenticación**: Sistema JWT con roles y refresh tokens
+- **Base de datos**: Modelos optimizados con índices de rendimiento
+- **Cache**: Redis implementado con estrategias avanzadas
+- **Rate Limiting**: Middleware avanzado de limitación
+- **Testing**: Configuración completa Pytest y Playwright
+- **CI/CD**: Pipeline con análisis de código y seguridad
+- **Documentación**: Auto-generada y actualizada
 
-### 🔧 En Desarrollo
-- **API de productos**: Estandarización y corrección de endpoints
-- **Sistema de carrito**: Implementación completa
-- **Frontend landing**: Integración con API real
-- **Panel administrativo**: Dashboard básico
+### 🔧 En Desarrollo Activo
+- **API endpoints**: Se están corrigiendo y estandarizando rutas
+- **Sistema de carrito**: Implementación completa en progreso
+- **Frontend modular**: Separación tienda/admin en proceso
+- **Métricas**: Analytics básico y reportes
 
 ### 🎯 Próximas Funcionalidades
 - **Checkout completo**: Proceso de pago y confirmación
@@ -135,12 +148,12 @@ make deploy           # Deploy completo
 
 ## 📊 Mejoras Planificadas
 
-### Fase 1: Optimizaciones Inmediatas (1-2 semanas)
+### Fase 1: Optimizaciones Inmediatas ⚡ (EN PROGRESO)
 Ver detalles completos en [`IMMEDIATE_IMPROVEMENTS.md`](./IMMEDIATE_IMPROVEMENTS.md):
-- ⚡ **Cache con Redis** (-70% queries a BD)
-- 🎨 **Separación de interfaces** (Tienda vs Admin)
-- 📈 **Analytics básico** (métricas de conversión)
-- 🔒 **Rate limiting** y seguridad mejorada
+- ✅ **Cache con Redis** (-70% queries a BD) - IMPLEMENTADO
+- ✅ **Rate limiting avanzado** - IMPLEMENTADO  
+- 🔧 **Separación de interfaces** (Tienda vs Admin) - EN DESARROLLO
+- 🔧 **Analytics básico** (métricas de conversión) - EN DESARROLLO
 
 ### Fase 2: Separación de Dominios (Semanas 3-8)
 - 🏪 **Subdominio tienda**: `tienda.brain2gain.com`
@@ -195,10 +208,11 @@ brain2gain/
 - **Security**: Análisis estático y dependencias
 
 ### Estándares de Código
-- **Python**: Black, isort, flake8, mypy
-- **TypeScript**: ESLint, Prettier, TypeScript strict
+- **Python**: Ruff (linting + formatting), MyPy (tipos)
+- **TypeScript**: Biome (linting + formatting), TypeScript strict
 - **Git**: Conventional Commits + pre-commit hooks
 - **Docker**: Multi-stage builds optimizados
+- **Package Managers**: uv (Python), npm (JavaScript)
 
 ## 🚢 Despliegue
 
@@ -228,12 +242,12 @@ Ver detalles completos en [`deployment.md`](./deployment.md).
 
 ### Configuración del Entorno
 
-1. **Backend**
+1. **Backend** (usando uv para gestión ultra-rápida)
    ```bash
    cd backend
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements-dev.txt
+   uv sync  # Instala automáticamente venv + dependencias
+   source .venv/bin/activate
+   fastapi run --reload
    ```
 
 2. **Frontend**
@@ -268,8 +282,10 @@ Ver detalles completos en [`deployment.md`](./deployment.md).
 
 - **API**: Documentación automática en `/docs`
 - **Arquitectura**: [`ARCHITECTURE_PROPOSAL.md`](./ARCHITECTURE_PROPOSAL.md)
+- **Mejoras**: [`IMMEDIATE_IMPROVEMENTS.md`](./IMMEDIATE_IMPROVEMENTS.md)
+- **Desarrollo**: [`CLAUDE.md`](./CLAUDE.md) - Guía para IA asistentes
 - **Despliegue**: [`deployment.md`](./deployment.md)
-- **Desarrollo**: [`development.md`](./development.md)
+- **Testing**: [`TESTING_GUIDE.md`](./TESTING_GUIDE.md)
 - **Releases**: [`release-notes.md`](./release-notes.md)
 
 ### Generar Documentación

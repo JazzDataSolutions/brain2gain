@@ -21,6 +21,15 @@ redis_client: Optional[Redis] = None
 # Type variable for generic function typing
 F = TypeVar('F', bound=Callable[..., Any])
 
+# Cache metrics tracking
+cache_metrics = {
+    "hits": 0,
+    "misses": 0,
+    "errors": 0,
+    "total_requests": 0,
+    "cache_size": 0
+}
+
 
 async def init_redis() -> Redis:
     """Initialize Redis connection."""
@@ -121,12 +130,16 @@ def cache_key_wrapper(prefix: str, ttl: int = 300):
             cache_key = _generate_cache_key(prefix, args, kwargs)
             
             try:
+                cache_metrics["total_requests"] += 1
+                
                 # Try to get cached result
                 cached_value = await client.get(cache_key)
                 if cached_value:
+                    cache_metrics["hits"] += 1
                     logger.debug(f"Cache HIT for key: {cache_key}")
                     return json.loads(cached_value)
                 
+                cache_metrics["misses"] += 1
                 logger.debug(f"Cache MISS for key: {cache_key}")
                 
                 # Execute function and cache result
@@ -142,6 +155,7 @@ def cache_key_wrapper(prefix: str, ttl: int = 300):
                 return result
                 
             except Exception as e:
+                cache_metrics["errors"] += 1
                 logger.error(f"Cache error for key {cache_key}: {e}")
                 # If cache fails, execute function normally
                 return await func(*args, **kwargs)
@@ -221,30 +235,101 @@ async def invalidate_cache_key(key: str) -> bool:
 
 
 async def get_cache_stats() -> dict:
-    """Get basic cache statistics."""
+    """Get comprehensive cache statistics and performance metrics."""
     client = await get_redis_client()
     
+    # Calculate hit rate
+    total_requests = cache_metrics["total_requests"]
+    hits = cache_metrics["hits"]
+    hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
+    
     if isinstance(client, MockRedisClient):
+        cache_metrics["cache_size"] = len(client._data)
         return {
             "type": "mock",
+            "connected": True,
             "keys": len(client._data),
-            "connected": True
+            "hit_rate": round(hit_rate, 2),
+            "metrics": cache_metrics.copy(),
+            "performance": {
+                "efficiency": "excellent" if hit_rate > 80 else "good" if hit_rate > 60 else "needs_improvement",
+                "recommendation": _get_cache_recommendation(hit_rate)
+            }
         }
     
     try:
         info = await client.info()
+        db_info = info.get("db0", {})
+        redis_keys = db_info.get("keys", 0) if isinstance(db_info, dict) else 0
+        cache_metrics["cache_size"] = redis_keys
+        
+        # Redis-specific metrics
+        redis_hit_rate = 0
+        redis_hits = info.get("keyspace_hits", 0)
+        redis_misses = info.get("keyspace_misses", 0)
+        if (redis_hits + redis_misses) > 0:
+            redis_hit_rate = (redis_hits / (redis_hits + redis_misses)) * 100
+        
         return {
             "type": "redis",
-            "keys": info.get("db0", {}).get("keys", 0),
+            "connected": True,
+            "keys": redis_keys,
             "memory_used": info.get("used_memory_human", "N/A"),
+            "memory_peak": info.get("used_memory_peak_human", "N/A"),
             "connected_clients": info.get("connected_clients", 0),
             "total_commands": info.get("total_commands_processed", 0),
-            "keyspace_hits": info.get("keyspace_hits", 0),
-            "keyspace_misses": info.get("keyspace_misses", 0),
+            "uptime_seconds": info.get("uptime_in_seconds", 0),
+            "redis_hit_rate": round(redis_hit_rate, 2),
+            "application_hit_rate": round(hit_rate, 2),
+            "metrics": cache_metrics.copy(),
+            "performance": {
+                "efficiency": _get_cache_efficiency(hit_rate),
+                "redis_efficiency": _get_cache_efficiency(redis_hit_rate),
+                "recommendation": _get_cache_recommendation(hit_rate)
+            },
+            "redis_info": {
+                "version": info.get("redis_version", "unknown"),
+                "mode": info.get("redis_mode", "standalone"),
+                "role": info.get("role", "master")
+            }
         }
     except Exception as e:
         logger.error(f"Error getting cache stats: {e}")
-        return {"error": str(e), "connected": False}
+        return {
+            "type": "redis",
+            "connected": False,
+            "error": str(e),
+            "hit_rate": round(hit_rate, 2),
+            "metrics": cache_metrics.copy()
+        }
+
+
+def _get_cache_efficiency(hit_rate: float) -> str:
+    """Determine cache efficiency based on hit rate."""
+    if hit_rate >= 90:
+        return "excellent"
+    elif hit_rate >= 80:
+        return "very_good"
+    elif hit_rate >= 70:
+        return "good"
+    elif hit_rate >= 60:
+        return "fair"
+    else:
+        return "needs_improvement"
+
+
+def _get_cache_recommendation(hit_rate: float) -> str:
+    """Provide cache optimization recommendations."""
+    if hit_rate >= 90:
+        return "Cache performance is excellent. Consider monitoring for TTL optimization."
+    elif hit_rate >= 80:
+        return "Good cache performance. Monitor frequently accessed keys for TTL tuning."
+    elif hit_rate >= 70:
+        return "Decent performance. Consider increasing TTL for stable data."
+    elif hit_rate >= 60:
+        return "Fair performance. Review caching strategy and identify cold data."
+    else:
+        return "Poor performance. Review cache keys, TTL settings, and consider cache warming strategies."
 
 
 # Convenience functions for common cache operations
@@ -283,6 +368,74 @@ class CacheService:
         return await invalidate_cache_pattern(pattern)
 
 
+async def reset_cache_metrics() -> dict:
+    """Reset cache metrics counters. Useful for testing or fresh monitoring periods."""
+    global cache_metrics
+    old_metrics = cache_metrics.copy()
+    cache_metrics.update({
+        "hits": 0,
+        "misses": 0,
+        "errors": 0,
+        "total_requests": 0,
+        "cache_size": 0
+    })
+    logger.info("Cache metrics reset")
+    return {
+        "action": "reset_complete",
+        "previous_metrics": old_metrics,
+        "current_metrics": cache_metrics.copy()
+    }
+
+
+async def get_cache_health() -> dict:
+    """Get cache health status for monitoring and alerts."""
+    try:
+        client = await get_redis_client()
+        
+        # Test basic connectivity
+        if isinstance(client, MockRedisClient):
+            await client.ping()
+            status = "healthy_mock"
+        else:
+            await client.ping()
+            status = "healthy"
+        
+        stats = await get_cache_stats()
+        hit_rate = stats.get("application_hit_rate", 0)
+        
+        # Determine health status
+        if hit_rate >= 80:
+            health_status = "excellent"
+        elif hit_rate >= 60:
+            health_status = "good"
+        elif hit_rate >= 40:
+            health_status = "fair"
+        else:
+            health_status = "poor"
+        
+        return {
+            "status": status,
+            "health": health_status,
+            "connected": True,
+            "hit_rate": hit_rate,
+            "total_requests": cache_metrics["total_requests"],
+            "errors": cache_metrics["errors"],
+            "cache_type": stats.get("type", "unknown")
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "health": "critical",
+            "connected": False,
+            "error": str(e),
+            "hit_rate": 0,
+            "total_requests": cache_metrics["total_requests"],
+            "errors": cache_metrics.get("errors", 0) + 1
+        }
+
+
 # Export main components
 __all__ = [
     'init_redis',
@@ -292,5 +445,7 @@ __all__ = [
     'invalidate_cache_pattern',
     'invalidate_cache_key',
     'get_cache_stats',
+    'get_cache_health',
+    'reset_cache_metrics',
     'CacheService'
 ]
