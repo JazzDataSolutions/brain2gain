@@ -22,13 +22,13 @@ async def list_products(
     session: SessionDep = Depends(),
 ) -> List[ProductRead]:
     """
-    List products with pagination.
+    List active products with pagination.
     
     This endpoint is public and doesn't require authentication.
-    Use it to display products in the catalog.
+    Use it to display products in the catalog. Only shows ACTIVE products.
     """
     service = ProductService(session)
-    return await service.list(skip=skip, limit=limit)
+    return await service.get_active_products(skip=skip, limit=limit)
 
 
 @router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
@@ -57,13 +57,36 @@ async def create_product(
 async def get_product(
     product_id: int,
     session: SessionDep = Depends(),
-    current_user: AdminUser = Depends(),
 ) -> ProductRead:
     """
     Get a product by ID.
     
+    Public endpoint - returns only ACTIVE products.
+    Returns 404 if product not found or not active.
+    """
+    service = ProductService(session)
+    product = await service.get_by_id(product_id)
+    
+    if not product or product.status != "ACTIVE":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Product with ID {product_id} not found"
+        )
+    
+    return product
+
+
+@router.get("/admin/{product_id}", response_model=ProductRead)
+async def get_product_admin(
+    product_id: int,
+    session: SessionDep = Depends(),
+    current_user: AdminUser = Depends(),
+) -> ProductRead:
+    """
+    Get a product by ID (Admin).
+    
     Requires ADMIN or MANAGER role.
-    Returns 404 if product not found.
+    Returns product regardless of status.
     """
     service = ProductService(session)
     product = await service.get_by_id(product_id)

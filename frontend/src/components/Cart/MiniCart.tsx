@@ -18,16 +18,14 @@ import {
   Divider,
   useColorModeValue,
 } from '@chakra-ui/react'
-import { ShoppingCartIcon, DeleteIcon } from '@chakra-ui/icons'
+import { DeleteIcon } from '@chakra-ui/icons'
+import { FiShoppingCart } from 'react-icons/fi'
 import { Link } from '@tanstack/react-router'
 
 import { useCartStore } from '../../stores/cartStore'
 
 const MiniCart = () => {
-  const { items, item_count, total_amount, removeFromCart } = useCartStore()
-  
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+  const { items, removeItem, getTotalPrice, getTotalItems } = useCartStore()
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -43,10 +41,10 @@ const MiniCart = () => {
           variant="ghost"
           size="sm"
           position="relative"
-          leftIcon={<ShoppingCartIcon />}
+          leftIcon={<FiShoppingCart />}
         >
           Carrito
-          {item_count > 0 && (
+          {getTotalItems() > 0 && (
             <Badge
               position="absolute"
               top="-1"
@@ -60,7 +58,7 @@ const MiniCart = () => {
               alignItems="center"
               justifyContent="center"
             >
-              {item_count > 99 ? '99+' : item_count}
+              {getTotalItems() > 99 ? '99+' : getTotalItems()}
             </Badge>
           )}
         </Button>
@@ -71,7 +69,7 @@ const MiniCart = () => {
         <PopoverCloseButton />
         <PopoverHeader>
           <Text fontWeight="semibold">
-            Carrito de Compras {item_count > 0 && `(${item_count})`}
+            Carrito de Compras {getTotalItems() > 0 && `(${getTotalItems()})`}
           </Text>
         </PopoverHeader>
 
@@ -93,11 +91,11 @@ const MiniCart = () => {
           ) : (
             <VStack spacing={0} align="stretch" maxH="300px" overflowY="auto">
               {items.slice(0, 3).map((item, index) => (
-                <Box key={item.product_id}>
+                <Box key={item.id}>
                   <HStack p={3} spacing={3} align="start">
                     <Image
-                      src={`/imagenes/${item.product_sku.toLowerCase()}.jpg`}
-                      alt={item.product_name}
+                      src={item.image || '/imagenes/proteina_catalogo.jpg'}
+                      alt={item.name}
                       boxSize="50px"
                       objectFit="cover"
                       borderRadius="md"
@@ -106,14 +104,14 @@ const MiniCart = () => {
                     
                     <VStack align="stretch" flex={1} spacing={1}>
                       <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
-                        {item.product_name}
+                        {item.name}
                       </Text>
                       <HStack justify="space-between" align="center">
                         <Text fontSize="xs" color="gray.500">
-                          {item.quantity} x {formatPrice(item.unit_price)}
+                          {item.quantity} x {formatPrice(item.price)}
                         </Text>
                         <Text fontSize="sm" fontWeight="semibold" color="blue.600">
-                          {formatPrice(item.total_price)}
+                          {formatPrice(item.price * item.quantity)}
                         </Text>
                       </HStack>
                     </VStack>
@@ -124,7 +122,7 @@ const MiniCart = () => {
                       size="xs"
                       variant="ghost"
                       colorScheme="red"
-                      onClick={() => removeFromCart(item.product_id)}
+                      onClick={() => removeItem(item.id)}
                     />
                   </HStack>
                   {index < Math.min(items.length, 3) - 1 && <Divider />}
@@ -148,7 +146,7 @@ const MiniCart = () => {
               <HStack justify="space-between">
                 <Text fontWeight="semibold">Total:</Text>
                 <Text fontWeight="bold" color="blue.600">
-                  {formatPrice(total_amount)}
+                  {formatPrice(getTotalPrice())}
                 </Text>
               </HStack>
 

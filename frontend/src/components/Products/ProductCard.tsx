@@ -17,7 +17,8 @@ import {
 import { useState } from 'react'
 import { Link } from '@tanstack/react-router'
 
-import { Product, useCartStore } from '../../stores/cartStore'
+import { Product } from '../../services/ProductsService'
+import { useCartStore } from '../../stores/cartStore'
 
 interface ProductCardProps {
   product: Product
@@ -27,7 +28,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   
-  const addToCart = useCartStore((state) => state.addToCart)
+  const { addItem } = useCartStore()
   const toast = useToast()
 
   const cardBg = useColorModeValue('white', 'gray.800')
@@ -37,7 +38,13 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setIsAdding(true)
     
     try {
-      addToCart(product, quantity)
+      addItem({
+        id: product.id.toString(),
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        image: product.image
+      })
       
       toast({
         title: '¡Agregado al carrito!',
@@ -59,12 +66,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
     }
   }
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-    }).format(price)
-  }
 
   return (
     <Box
@@ -80,7 +81,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       {/* Product Image */}
       <Box position="relative">
         <Image
-          src={`/imagenes/${product.sku.toLowerCase()}.jpg`}
+          src={product.image || `/imagenes/${product.sku.toLowerCase()}.jpg`}
           alt={product.name}
           h="200px"
           w="100%"
@@ -136,7 +137,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           fontWeight="bold"
           color="blue.600"
         >
-          {formatPrice(product.unit_price)}
+          ${product.price.toFixed(2)}
         </Text>
 
         {/* Quantity Selector */}
@@ -167,7 +168,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
           <Button
             as={Link}
             to="/products/$productId"
-            params={{ productId: product.product_id.toString() }}
+            params={{ productId: product.id.toString() }}
             variant="outline"
             colorScheme="blue"
             size="sm"

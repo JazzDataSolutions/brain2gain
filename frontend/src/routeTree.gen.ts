@@ -8,22 +8,54 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
+import { createFileRoute } from '@tanstack/react-router'
+
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as SignupImport } from './routes/signup'
 import { Route as ResetPasswordImport } from './routes/reset-password'
 import { Route as RecoverPasswordImport } from './routes/recover-password'
+import { Route as ProductsImport } from './routes/products'
 import { Route as LoginImport } from './routes/login'
 import { Route as LandingImport } from './routes/landing'
 import { Route as DashboardImport } from './routes/dashboard'
+import { Route as CartImport } from './routes/cart'
 import { Route as LayoutImport } from './routes/_layout'
-import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as IndexImport } from './routes/index'
+import { Route as StoreIndexImport } from './routes/store/index'
+import { Route as AdminIndexImport } from './routes/admin/index'
+import { Route as StoreProductsImport } from './routes/store/products'
+import { Route as StoreCheckoutImport } from './routes/store/checkout'
+import { Route as StoreCartImport } from './routes/store/cart'
+import { Route as StoreLayoutImport } from './routes/store/_layout'
+import { Route as ProductsProductIdImport } from './routes/products/$productId'
+import { Route as AdminReportsImport } from './routes/admin/reports'
+import { Route as AdminOrdersImport } from './routes/admin/orders'
+import { Route as AdminInventoryImport } from './routes/admin/inventory'
+import { Route as AdminCustomersImport } from './routes/admin/customers'
+import { Route as AdminLayoutImport } from './routes/admin/_layout'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
-import { Route as LayoutAdminImport } from './routes/_layout/admin'
+
+// Create Virtual Routes
+
+const StoreImport = createFileRoute('/store')()
+const AdminImport = createFileRoute('/admin')()
 
 // Create/Update Routes
+
+const StoreRoute = StoreImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AdminRoute = AdminImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const SignupRoute = SignupImport.update({
   id: '/signup',
@@ -40,6 +72,12 @@ const ResetPasswordRoute = ResetPasswordImport.update({
 const RecoverPasswordRoute = RecoverPasswordImport.update({
   id: '/recover-password',
   path: '/recover-password',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ProductsRoute = ProductsImport.update({
+  id: '/products',
+  path: '/products',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -61,15 +99,91 @@ const DashboardRoute = DashboardImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const CartRoute = CartImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const LayoutRoute = LayoutImport.update({
   id: '/_layout',
   getParentRoute: () => rootRoute,
 } as any)
 
-const LayoutIndexRoute = LayoutIndexImport.update({
+const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => LayoutRoute,
+  getParentRoute: () => rootRoute,
+} as any)
+
+const StoreIndexRoute = StoreIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const AdminIndexRoute = AdminIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const StoreProductsRoute = StoreProductsImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const StoreCheckoutRoute = StoreCheckoutImport.update({
+  id: '/checkout',
+  path: '/checkout',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const StoreCartRoute = StoreCartImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const StoreLayoutRoute = StoreLayoutImport.update({
+  id: '/_layout',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const ProductsProductIdRoute = ProductsProductIdImport.update({
+  id: '/$productId',
+  path: '/$productId',
+  getParentRoute: () => ProductsRoute,
+} as any)
+
+const AdminReportsRoute = AdminReportsImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const AdminOrdersRoute = AdminOrdersImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const AdminInventoryRoute = AdminInventoryImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const AdminCustomersRoute = AdminCustomersImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AdminRoute,
+} as any)
+
+const AdminLayoutRoute = AdminLayoutImport.update({
+  id: '/_layout',
+  getParentRoute: () => AdminRoute,
 } as any)
 
 const LayoutSettingsRoute = LayoutSettingsImport.update({
@@ -84,21 +198,29 @@ const LayoutItemsRoute = LayoutItemsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
-const LayoutAdminRoute = LayoutAdminImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => LayoutRoute,
-} as any)
-
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexImport
+      parentRoute: typeof rootRoute
+    }
     '/_layout': {
       id: '/_layout'
       path: ''
       fullPath: ''
       preLoaderRoute: typeof LayoutImport
+      parentRoute: typeof rootRoute
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartImport
       parentRoute: typeof rootRoute
     }
     '/dashboard': {
@@ -122,6 +244,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/products': {
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsImport
+      parentRoute: typeof rootRoute
+    }
     '/recover-password': {
       id: '/recover-password'
       path: '/recover-password'
@@ -143,13 +272,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
-    '/_layout/admin': {
-      id: '/_layout/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof LayoutAdminImport
-      parentRoute: typeof LayoutImport
-    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
@@ -164,12 +286,103 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsImport
       parentRoute: typeof LayoutImport
     }
-    '/_layout/': {
-      id: '/_layout/'
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminImport
+      parentRoute: typeof rootRoute
+    }
+    '/admin/_layout': {
+      id: '/admin/_layout'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminLayoutImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/customers': {
+      id: '/admin/customers'
+      path: '/customers'
+      fullPath: '/admin/customers'
+      preLoaderRoute: typeof AdminCustomersImport
+      parentRoute: typeof AdminImport
+    }
+    '/admin/inventory': {
+      id: '/admin/inventory'
+      path: '/inventory'
+      fullPath: '/admin/inventory'
+      preLoaderRoute: typeof AdminInventoryImport
+      parentRoute: typeof AdminImport
+    }
+    '/admin/orders': {
+      id: '/admin/orders'
+      path: '/orders'
+      fullPath: '/admin/orders'
+      preLoaderRoute: typeof AdminOrdersImport
+      parentRoute: typeof AdminImport
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsImport
+      parentRoute: typeof AdminImport
+    }
+    '/products/$productId': {
+      id: '/products/$productId'
+      path: '/$productId'
+      fullPath: '/products/$productId'
+      preLoaderRoute: typeof ProductsProductIdImport
+      parentRoute: typeof ProductsImport
+    }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreImport
+      parentRoute: typeof rootRoute
+    }
+    '/store/_layout': {
+      id: '/store/_layout'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreLayoutImport
+      parentRoute: typeof StoreRoute
+    }
+    '/store/cart': {
+      id: '/store/cart'
+      path: '/cart'
+      fullPath: '/store/cart'
+      preLoaderRoute: typeof StoreCartImport
+      parentRoute: typeof StoreImport
+    }
+    '/store/checkout': {
+      id: '/store/checkout'
+      path: '/checkout'
+      fullPath: '/store/checkout'
+      preLoaderRoute: typeof StoreCheckoutImport
+      parentRoute: typeof StoreImport
+    }
+    '/store/products': {
+      id: '/store/products'
+      path: '/products'
+      fullPath: '/store/products'
+      preLoaderRoute: typeof StoreProductsImport
+      parentRoute: typeof StoreImport
+    }
+    '/admin/': {
+      id: '/admin/'
       path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof LayoutIndexImport
-      parentRoute: typeof LayoutImport
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexImport
+      parentRoute: typeof AdminImport
+    }
+    '/store/': {
+      id: '/store/'
+      path: '/'
+      fullPath: '/store/'
+      preLoaderRoute: typeof StoreIndexImport
+      parentRoute: typeof StoreImport
     }
   }
 }
@@ -177,124 +390,260 @@ declare module '@tanstack/react-router' {
 // Create and export the route tree
 
 interface LayoutRouteChildren {
-  LayoutAdminRoute: typeof LayoutAdminRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutAdminRoute: LayoutAdminRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutIndexRoute: LayoutIndexRoute,
 }
 
 const LayoutRouteWithChildren =
   LayoutRoute._addFileChildren(LayoutRouteChildren)
 
+interface ProductsRouteChildren {
+  ProductsProductIdRoute: typeof ProductsProductIdRoute
+}
+
+const ProductsRouteChildren: ProductsRouteChildren = {
+  ProductsProductIdRoute: ProductsProductIdRoute,
+}
+
+const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
+  ProductsRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminLayoutRoute: typeof AdminLayoutRoute
+  AdminCustomersRoute: typeof AdminCustomersRoute
+  AdminInventoryRoute: typeof AdminInventoryRoute
+  AdminOrdersRoute: typeof AdminOrdersRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminLayoutRoute: AdminLayoutRoute,
+  AdminCustomersRoute: AdminCustomersRoute,
+  AdminInventoryRoute: AdminInventoryRoute,
+  AdminOrdersRoute: AdminOrdersRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface StoreRouteChildren {
+  StoreLayoutRoute: typeof StoreLayoutRoute
+  StoreCartRoute: typeof StoreCartRoute
+  StoreCheckoutRoute: typeof StoreCheckoutRoute
+  StoreProductsRoute: typeof StoreProductsRoute
+  StoreIndexRoute: typeof StoreIndexRoute
+}
+
+const StoreRouteChildren: StoreRouteChildren = {
+  StoreLayoutRoute: StoreLayoutRoute,
+  StoreCartRoute: StoreCartRoute,
+  StoreCheckoutRoute: StoreCheckoutRoute,
+  StoreProductsRoute: StoreProductsRoute,
+  StoreIndexRoute: StoreIndexRoute,
+}
+
+const StoreRouteWithChildren = StoreRoute._addFileChildren(StoreRouteChildren)
+
 export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
   '': typeof LayoutRouteWithChildren
+  '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
+  '/products': typeof ProductsRouteWithChildren
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
+  '/admin': typeof AdminLayoutRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/store': typeof StoreLayoutRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/products': typeof StoreProductsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/store/': typeof StoreIndexRoute
 }
 
 export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '': typeof LayoutRouteWithChildren
+  '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
+  '/products': typeof ProductsRouteWithChildren
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/': typeof LayoutIndexRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/store': typeof StoreIndexRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/products': typeof StoreProductsRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
+  '/': typeof IndexRoute
   '/_layout': typeof LayoutRouteWithChildren
+  '/cart': typeof CartRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
   '/login': typeof LoginRoute
+  '/products': typeof ProductsRouteWithChildren
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/_layout/admin': typeof LayoutAdminRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/': typeof LayoutIndexRoute
+  '/admin': typeof AdminRouteWithChildren
+  '/admin/_layout': typeof AdminLayoutRoute
+  '/admin/customers': typeof AdminCustomersRoute
+  '/admin/inventory': typeof AdminInventoryRoute
+  '/admin/orders': typeof AdminOrdersRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/products/$productId': typeof ProductsProductIdRoute
+  '/store': typeof StoreRouteWithChildren
+  '/store/_layout': typeof StoreLayoutRoute
+  '/store/cart': typeof StoreCartRoute
+  '/store/checkout': typeof StoreCheckoutRoute
+  '/store/products': typeof StoreProductsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/store/': typeof StoreIndexRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | ''
+    | '/cart'
     | '/dashboard'
     | '/landing'
     | '/login'
+    | '/products'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
     | '/items'
     | '/settings'
-    | '/'
+    | '/admin'
+    | '/admin/customers'
+    | '/admin/inventory'
+    | '/admin/orders'
+    | '/admin/reports'
+    | '/products/$productId'
+    | '/store'
+    | '/store/cart'
+    | '/store/checkout'
+    | '/store/products'
+    | '/admin/'
+    | '/store/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
+    | ''
+    | '/cart'
     | '/dashboard'
     | '/landing'
     | '/login'
+    | '/products'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
     | '/items'
     | '/settings'
-    | '/'
+    | '/admin'
+    | '/admin/customers'
+    | '/admin/inventory'
+    | '/admin/orders'
+    | '/admin/reports'
+    | '/products/$productId'
+    | '/store'
+    | '/store/cart'
+    | '/store/checkout'
+    | '/store/products'
   id:
     | '__root__'
+    | '/'
     | '/_layout'
+    | '/cart'
     | '/dashboard'
     | '/landing'
     | '/login'
+    | '/products'
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/_layout/admin'
     | '/_layout/items'
     | '/_layout/settings'
-    | '/_layout/'
+    | '/admin'
+    | '/admin/_layout'
+    | '/admin/customers'
+    | '/admin/inventory'
+    | '/admin/orders'
+    | '/admin/reports'
+    | '/products/$productId'
+    | '/store'
+    | '/store/_layout'
+    | '/store/cart'
+    | '/store/checkout'
+    | '/store/products'
+    | '/admin/'
+    | '/store/'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
   LayoutRoute: typeof LayoutRouteWithChildren
+  CartRoute: typeof CartRoute
   DashboardRoute: typeof DashboardRoute
   LandingRoute: typeof LandingRoute
   LoginRoute: typeof LoginRoute
+  ProductsRoute: typeof ProductsRouteWithChildren
   RecoverPasswordRoute: typeof RecoverPasswordRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  AdminRoute: typeof AdminRouteWithChildren
+  StoreRoute: typeof StoreRouteWithChildren
 }
 
 const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
   LayoutRoute: LayoutRouteWithChildren,
+  CartRoute: CartRoute,
   DashboardRoute: DashboardRoute,
   LandingRoute: LandingRoute,
   LoginRoute: LoginRoute,
+  ProductsRoute: ProductsRouteWithChildren,
   RecoverPasswordRoute: RecoverPasswordRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  AdminRoute: AdminRouteWithChildren,
+  StoreRoute: StoreRouteWithChildren,
 }
 
 export const routeTree = rootRoute
@@ -307,23 +656,32 @@ export const routeTree = rootRoute
     "__root__": {
       "filePath": "__root.tsx",
       "children": [
+        "/",
         "/_layout",
+        "/cart",
         "/dashboard",
         "/landing",
         "/login",
+        "/products",
         "/recover-password",
         "/reset-password",
-        "/signup"
+        "/signup",
+        "/admin",
+        "/store"
       ]
+    },
+    "/": {
+      "filePath": "index.tsx"
     },
     "/_layout": {
       "filePath": "_layout.tsx",
       "children": [
-        "/_layout/admin",
         "/_layout/items",
-        "/_layout/settings",
-        "/_layout/"
+        "/_layout/settings"
       ]
+    },
+    "/cart": {
+      "filePath": "cart.tsx"
     },
     "/dashboard": {
       "filePath": "dashboard.tsx"
@@ -334,6 +692,12 @@ export const routeTree = rootRoute
     "/login": {
       "filePath": "login.tsx"
     },
+    "/products": {
+      "filePath": "products.tsx",
+      "children": [
+        "/products/$productId"
+      ]
+    },
     "/recover-password": {
       "filePath": "recover-password.tsx"
     },
@@ -343,10 +707,6 @@ export const routeTree = rootRoute
     "/signup": {
       "filePath": "signup.tsx"
     },
-    "/_layout/admin": {
-      "filePath": "_layout/admin.tsx",
-      "parent": "/_layout"
-    },
     "/_layout/items": {
       "filePath": "_layout/items.tsx",
       "parent": "/_layout"
@@ -355,9 +715,74 @@ export const routeTree = rootRoute
       "filePath": "_layout/settings.tsx",
       "parent": "/_layout"
     },
-    "/_layout/": {
-      "filePath": "_layout/index.tsx",
-      "parent": "/_layout"
+    "/admin": {
+      "filePath": "admin",
+      "children": [
+        "/admin/_layout",
+        "/admin/customers",
+        "/admin/inventory",
+        "/admin/orders",
+        "/admin/reports",
+        "/admin/"
+      ]
+    },
+    "/admin/_layout": {
+      "filePath": "admin/_layout.tsx",
+      "parent": "/admin"
+    },
+    "/admin/customers": {
+      "filePath": "admin/customers.tsx",
+      "parent": "/admin"
+    },
+    "/admin/inventory": {
+      "filePath": "admin/inventory.tsx",
+      "parent": "/admin"
+    },
+    "/admin/orders": {
+      "filePath": "admin/orders.tsx",
+      "parent": "/admin"
+    },
+    "/admin/reports": {
+      "filePath": "admin/reports.tsx",
+      "parent": "/admin"
+    },
+    "/products/$productId": {
+      "filePath": "products/$productId.tsx",
+      "parent": "/products"
+    },
+    "/store": {
+      "filePath": "store",
+      "children": [
+        "/store/_layout",
+        "/store/cart",
+        "/store/checkout",
+        "/store/products",
+        "/store/"
+      ]
+    },
+    "/store/_layout": {
+      "filePath": "store/_layout.tsx",
+      "parent": "/store"
+    },
+    "/store/cart": {
+      "filePath": "store/cart.tsx",
+      "parent": "/store"
+    },
+    "/store/checkout": {
+      "filePath": "store/checkout.tsx",
+      "parent": "/store"
+    },
+    "/store/products": {
+      "filePath": "store/products.tsx",
+      "parent": "/store"
+    },
+    "/admin/": {
+      "filePath": "admin/index.tsx",
+      "parent": "/admin"
+    },
+    "/store/": {
+      "filePath": "store/index.tsx",
+      "parent": "/store"
     }
   }
 }

@@ -24,7 +24,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { ProductsService } from '../../client'
+import { ProductsService, Product } from '../../services/ProductsService'
 import { useCartStore } from '../../stores/cartStore'
 
 const ProductCatalog = () => {
@@ -39,7 +39,7 @@ const ProductCatalog = () => {
   // Consultar productos
   const { data: products, isLoading } = useQuery({
     queryKey: ['products', 'catalog'],
-    queryFn: () => ProductsService.readProducts({ skip: 0, limit: 50 }),
+    queryFn: () => ProductsService.getProductsWithFallback({ skip: 0, limit: 50 }),
   })
 
   const categories = [
@@ -58,11 +58,11 @@ const ProductCatalog = () => {
     { value: 'newest', label: 'Más Recientes' },
   ]
 
-  const handleAddToCart = (product: any) => {
+  const handleAddToCart = (product: Product) => {
     addItem({
-      id: product.id,
+      id: product.id.toString(),
       name: product.name,
-      price: product.unit_price,
+      price: product.price,
       quantity: 1,
       image: product.image || '/imagenes/proteina_catalogo.jpg'
     })
@@ -79,7 +79,7 @@ const ProductCatalog = () => {
     </Card>
   )
 
-  const ProductCard = ({ product }: { product: any }) => (
+  const ProductCard = ({ product }: { product: Product }) => (
     <Card
       bg={cardBg}
       shadow="md"
@@ -127,7 +127,7 @@ const ProductCatalog = () => {
           
           <HStack justify="space-between" w="full">
             <Text fontSize="xl" fontWeight="bold" color="blue.500">
-              ${product.unit_price}
+              ${product.price}
             </Text>
             <Button
               colorScheme="blue"

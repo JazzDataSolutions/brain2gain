@@ -15,7 +15,7 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
-import { ProductsService } from '../../client'
+import { ProductsService } from '../../services/ProductsService'
 import ProductCard from '../Products/ProductCard'
 
 const StoreDashboard = () => {
@@ -25,7 +25,7 @@ const StoreDashboard = () => {
   // Consultar productos destacados
   const { data: featuredProducts, isLoading } = useQuery({
     queryKey: ['products', 'featured'],
-    queryFn: () => ProductsService.readProducts({ skip: 0, limit: 8 }),
+    queryFn: () => ProductsService.getProductsWithFallback({ skip: 0, limit: 8 }),
   })
 
   return (

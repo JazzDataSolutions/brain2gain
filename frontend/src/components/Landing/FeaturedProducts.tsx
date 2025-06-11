@@ -14,18 +14,20 @@ import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import ProductCard from '../Products/ProductCard'
-import { ProductsService } from '../../client'
+import { ProductsService, Product } from '../../services/ProductsService'
 
 const FeaturedProducts = () => {
   const { 
-    data: products = [], 
+    data: productsResponse, 
     isLoading, 
     error 
   } = useQuery({
     queryKey: ['featured-products'],
-    queryFn: () => ProductsService.listProducts({ limit: 6 }), // Limit to 6 for homepage
+    queryFn: () => ProductsService.getProductsWithFallback({ skip: 0, limit: 6 }), // Limit to 6 for homepage
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
+
+  const products = productsResponse?.data || []
 
   if (error) {
     return (
@@ -69,8 +71,8 @@ const FeaturedProducts = () => {
           {!isLoading && products.length > 0 && (
             <>
               <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-                {products.map((product) => (
-                  <ProductCard key={product.product_id} product={product} />
+                {products.map((product: Product) => (
+                  <ProductCard key={product.id} product={product} />
                 ))}
               </SimpleGrid>
 

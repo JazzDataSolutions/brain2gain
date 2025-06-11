@@ -23,7 +23,7 @@ import { HamburgerIcon } from '@chakra-ui/icons'
 import { Link as RouterLink } from '@tanstack/react-router'
 
 import MiniCart from '../Cart/MiniCart'
-import { useAuth } from '../../hooks/useAuth'
+import useAuth from '../../hooks/useAuth'
 
 const Navbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()

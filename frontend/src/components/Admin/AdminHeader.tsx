@@ -26,7 +26,7 @@ import {
   FiExternalLink,
 } from 'react-icons/fi'
 import { useNavigate } from '@tanstack/react-router'
-import { useAuth } from '../../hooks/useAuth'
+import useAuth from '../../hooks/useAuth'
 
 const AdminHeader = () => {
   const { user, logout } = useAuth()

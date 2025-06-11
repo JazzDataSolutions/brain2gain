@@ -19,18 +19,19 @@ import {
   Avatar,
   Text,
 } from '@chakra-ui/react'
-import { HamburgerIcon, CloseIcon, SearchIcon, ShoppingCartIcon } from '@chakra-ui/icons'
+import { HamburgerIcon, CloseIcon, SearchIcon } from '@chakra-ui/icons'
+import { FiShoppingCart } from 'react-icons/fi'
 import { Link as RouterLink, useNavigate } from '@tanstack/react-router'
-import { useAuth } from '../../hooks/useAuth'
+import useAuth from '../../hooks/useAuth'
 import { useCartStore } from '../../stores/cartStore'
 
 const StoreNavbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const { items } = useCartStore()
+  const { getTotalItems } = useCartStore()
   
-  const cartItemsCount = items.reduce((total, item) => total + item.quantity, 0)
+  const cartItemsCount = getTotalItems()
 
   const navLinks = [
     { name: 'Inicio', href: '/store' },
@@ -101,7 +102,7 @@ const StoreNavbar = () => {
           {/* Cart */}
           <Box position="relative" mr={4}>
             <IconButton
-              icon={<ShoppingCartIcon />}
+              icon={<FiShoppingCart />}
               variant="ghost"
               onClick={() => navigate({ to: '/store/cart' })}
               aria-label="Carrito de compras"
