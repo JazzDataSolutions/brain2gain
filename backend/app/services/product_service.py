@@ -12,6 +12,7 @@ from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
+from app.core.cache import cache_key_wrapper, invalidate_cache_pattern, invalidate_cache_key
 from app.models import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.repositories.product_repository import ProductRepository
@@ -26,6 +27,7 @@ class ProductService:
         self.session = session
         self.repo = ProductRepository(session)
 
+    @cache_key_wrapper("products:list", ttl=300)  # 5 minutes cache
     async def list(self, skip: int = 0, limit: int = 100) -> List[Product]:
         """
         List products with pagination.
@@ -76,6 +78,9 @@ class ProductService:
             await self.session.commit()
             await self.session.refresh(product)
             
+            # Invalidate related caches
+            await self._invalidate_product_caches()
+            
             logger.info(f"Created product with SKU: {product.sku}")
             return product
             
@@ -84,10 +89,12 @@ class ProductService:
             logger.error(f"Database integrity error creating product: {e}")
             raise ValueError("Product with this SKU already exists")
 
+    @cache_key_wrapper("products:detail", ttl=600)  # 10 minutes cache
     async def get_by_id(self, product_id: int) -> Optional[Product]:
         """Get product by ID."""
         return await self.repo.get_by_id(product_id)
 
+    @cache_key_wrapper("products:sku", ttl=600)  # 10 minutes cache
     async def get_by_sku(self, sku: str) -> Optional[Product]:
         """Get product by SKU."""
         return await self.repo.get_by_sku(sku)
@@ -129,6 +136,9 @@ class ProductService:
             await self.session.commit()
             await self.session.refresh(product)
             
+            # Invalidate related caches
+            await self._invalidate_product_caches(product_id)
+            
             logger.info(f"Updated product with ID: {product_id}")
             return product
             
@@ -157,6 +167,9 @@ class ProductService:
         try:
             await self.session.delete(product)
             await self.session.commit()
+            
+            # Invalidate related caches
+            await self._invalidate_product_caches(product_id)
             
             logger.info(f"Deleted product with ID: {product_id}")
             return True
@@ -193,6 +206,9 @@ class ProductService:
             self.session.add(product)
             await self.session.commit()
             await self.session.refresh(product)
+            
+            # Invalidate related caches
+            await self._invalidate_product_caches(product_id)
             
             logger.info(f"Updated stock for product {product_id} to {new_quantity}")
             return product
@@ -270,3 +286,59 @@ class ProductService:
         # - Cart items referencing this product
         # - Transaction history
         pass
+
+    async def _invalidate_product_caches(self, product_id: Optional[int] = None) -> None:
+        """
+        Invalidate product-related cache entries.
+        
+        Args:
+            product_id: Specific product ID to invalidate (if None, invalidates all)
+        """
+        try:
+            # Always invalidate list caches as they might contain any product
+            await invalidate_cache_pattern("products:list:*")
+            
+            if product_id:
+                # Invalidate specific product cache
+                await invalidate_cache_key(f"products:detail:{product_id}")
+                
+                # Try to get product to invalidate SKU cache
+                # (we need to do this before/after the actual DB operation)
+                product = await self.repo.get_by_id(product_id)
+                if product:
+                    await invalidate_cache_key(f"products:sku:{product.sku}")
+            else:
+                # Invalidate all product caches
+                await invalidate_cache_pattern("products:detail:*")
+                await invalidate_cache_pattern("products:sku:*")
+                
+            logger.debug(f"Cache invalidated for product_id: {product_id}")
+            
+        except Exception as e:
+            # Don't fail the operation if cache invalidation fails
+            logger.warning(f"Failed to invalidate product cache: {e}")
+
+    async def get_active_products(self, skip: int = 0, limit: int = 100) -> List[Product]:
+        """
+        Get active products only with caching.
+        
+        Args:
+            skip: Number of records to skip
+            limit: Maximum number of records to return
+            
+        Returns:
+            List of active products
+        """
+        return await self._get_active_products_cached(skip, limit)
+
+    @cache_key_wrapper("products:active", ttl=300)  # 5 minutes cache
+    async def _get_active_products_cached(self, skip: int = 0, limit: int = 100) -> List[Product]:
+        """Internal cached method for active products."""
+        statement = (
+            select(Product)
+            .where(Product.status == "ACTIVE")
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self.session.exec(statement)
+        return result.all()

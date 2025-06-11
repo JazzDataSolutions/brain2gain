@@ -20,6 +20,7 @@ from alembic import command as alembic_command
 
 from app.api.main import api_router
 from app.core.config import settings
+from app.core.cache import init_redis, close_redis
 from app.middlewares.exception_handler import setup_exception_handlers
 
 # Setup logging
@@ -58,13 +59,33 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     # Startup
     logger.info("Starting Brain2Gain API...")
+    
+    # Initialize database migrations
     run_migrations()
+    
+    # Initialize Redis cache
+    try:
+        await init_redis()
+        logger.info("Redis cache initialized successfully")
+    except Exception as e:
+        logger.warning(f"Redis initialization failed: {e}")
+        logger.info("Continuing without Redis cache (using mock)")
+    
     logger.info("Brain2Gain API started successfully")
     
     yield
     
     # Shutdown
     logger.info("Shutting down Brain2Gain API...")
+    
+    # Close Redis connection
+    try:
+        await close_redis()
+        logger.info("Redis connection closed")
+    except Exception as e:
+        logger.error(f"Error closing Redis connection: {e}")
+    
+    logger.info("Brain2Gain API shutdown complete")
 
 
 # Initialize Sentry for error tracking

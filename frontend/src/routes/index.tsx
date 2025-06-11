@@ -1,6 +1,10 @@
-import { createFileRoute } from '@tanstack/react-router'
-import LandingPage from '../components/Landing/LandingPage'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/')({
-  component: LandingPage,
+  beforeLoad: () => {
+    // Redirigir a la tienda por defecto
+    throw redirect({
+      to: '/store',
+    })
+  },
 })

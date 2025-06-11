@@ -9,6 +9,24 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brain2gain_owner -d brain2gain_prod"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass RedisPass2025
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   backend:
     build: ./backend
@@ -22,7 +40,10 @@ services:
       - ./backend/poetry.lock:/app/poetry.lock
       - ./dashboard:/app/dashboard
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     command: >
@@ -32,6 +53,9 @@ services:
                uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     environment:
       - PYTHONPATH=/app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=RedisPass2025
 
   frontend:
     build: ./frontend
@@ -45,4 +69,5 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
