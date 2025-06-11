@@ -1,241 +1,305 @@
-# Brain2Gain - E-commerce de Suplementos 💪
+# 🧠💪 Brain2Gain - Plataforma de Suplementos Deportivos
 
 [![CI/CD Pipeline](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/ci.yml)
-[![Security Scan](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/security.yml/badge.svg)](https://github.com/JazzDataSolutions/brain2gain/actions/workflows/security.yml)
-[![Backend Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg?flag=backend)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
-[![Frontend Coverage](https://codecov.io/gh/JazzDataSolutions/brain2gain/branch/main/graph/badge.svg?flag=frontend)](https://codecov.io/gh/JazzDataSolutions/brain2gain)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=JazzDataSolutions_brain2gain&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=JazzDataSolutions_brain2gain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
 [![Node Version](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
-**Brain2Gain** es una plataforma moderna de comercio electrónico especializada en suplementos deportivos, diseñada para ofrecer una experiencia completa tanto para clientes como administradores.
-
-## Arquitectura
+**Brain2Gain** es una plataforma moderna de e-commerce especializada en suplementos deportivos, diseñada para ofrecer una experiencia de compra excepcional y herramientas de gestión empresarial integradas.
 
 ![Diagrama de Entidad-Relación](docs/er_diagram.png)
-        
-## 🎯 Objetivos del Proyecto
 
-### Funcionalidades Core
-- 🛒 **E-commerce completo** - Catálogo, carrito, checkout con/sin registro
-- 📊 **Dashboard administrativo** - Gestión de ventas, métricas y pedidos
-- 📦 **Gestión de inventario** - Control de stock en tiempo real
-- 👥 **Sistema de usuarios** - Roles (admin, empleado), perfiles personalizados
-- 🎁 **Ofertas especiales** - Promociones y compras recurrentes
-- 🌐 **Compra como invitado** - Checkout sin necesidad de registro
+## 🎯 Visión del Proyecto
 
-### Características Técnicas
-- ⚡ **Alto rendimiento** con FastAPI y React moderno
-- 🔒 **Seguridad** con JWT y roles de usuario
-- 📱 **Responsive design** con Chakra UI
-- 🐋 **Containerización** completa con Docker
-- 🧪 **Testing** automatizado (Pytest + Playwright)
-- 📈 **Monitoreo** con Sentry
+### Para Clientes (B2C)
+- 🛒 **Tienda online optimizada** con catálogo de suplementos
+- ⚡ **Checkout ultrarrápido** - compra con o sin registro
+- 🔍 **Búsqueda inteligente** con filtros avanzados
+- 📱 **Experiencia móvil** responsive y PWA
+- 🎁 **Sistema de promociones** y descuentos
 
-El proyecto utiliza una arquitectura moderna basada en la plantilla "Full Stack FastAPI + React" con las mejores prácticas de desarrollo.
+### Para el Negocio (B2B)
+- 📊 **Dashboard ejecutivo** con métricas en tiempo real
+- 📦 **Gestión de inventario** multi-almacén
+- 👥 **CRM integrado** para gestión de clientes
+- 💰 **Control financiero** y reportes automáticos
+- 🚀 **Escalabilidad** preparada para crecimiento
 
-## 🚀 Plan de Desarrollo
+## 🏗️ Arquitectura Técnica
 
-### 📋 Estado Actual
-- ✅ **Infraestructura base** - FastAPI + React + PostgreSQL + Docker
-- ✅ **Autenticación** - JWT con roles de usuario
-- ✅ **Testing** - Configuración inicial de Pytest y Playwright
-- ⚠️ **API de productos** - Requiere corrección y estandarización
-- ❌ **Sistema de carrito** - Pendiente implementación
-- ❌ **Checkout** - Pendiente implementación
+### Stack Tecnológico Actual
+```yaml
+Backend:
+  Framework: FastAPI 0.104+
+  Database: PostgreSQL 15
+  ORM: SQLModel + Alembic
+  Authentication: JWT + OAuth2
+  Cache: Redis (planificado)
+  Queue: RabbitMQ (planificado)
 
-### 🎯 Fase 1: Core E-commerce (Semanas 1-3)
+Frontend:
+  Framework: React 18 + TypeScript
+  Build: Vite 5
+  UI: Chakra UI + Custom Components
+  Routing: TanStack Router
+  State: TanStack Query + Zustand
+  Testing: Playwright + Vitest
 
-#### Backend
-- [ ] **Arreglar API de productos**
-  - Resolver nombres en español vs inglés
-  - Estandarizar modelos Product vs Producto
-  - Incluir rutas en main router
-- [ ] **Sistema de carrito**
-  - Implementar `CartService` y `CartRepository`
-  - Endpoints para agregar/quitar/actualizar productos
-  - Persistencia de carrito para usuarios registrados
-- [ ] **Mejorar modelos**
-  - Validaciones de negocio para productos
-  - Relaciones optimizadas entre entidades
+DevOps:
+  Containerization: Docker + Docker Compose
+  CI/CD: GitHub Actions
+  Monitoring: Sentry (configurado)
+  Documentation: Sphinx
+  Code Quality: ESLint, Prettier, Black
+```
 
-#### Frontend
-- [ ] **Páginas de productos dinámicas**
-  - Catálogo con datos de API real
-  - Página de detalle de producto
-  - Filtros y búsqueda básica
-- [ ] **Sistema de carrito**
-  - Estado global con Zustand/Context
-  - Componentes de carrito (mini-cart, cart page)
-  - Persistencia en localStorage
+### Arquitectura Evolutiva
+El proyecto está diseñado para evolucionar de **monolito modular** hacia **microservicios** siguiendo el plan detallado en [`ARCHITECTURE_PROPOSAL.md`](./ARCHITECTURE_PROPOSAL.md).
 
-### 🎯 Fase 2: Procesamiento de Pedidos (Semanas 4-6)
+## 🚀 Inicio Rápido
 
-#### Backend
-- [ ] **Servicios de pedidos**
-  - `OrderService` para gestión de pedidos
-  - Estados de pedido (pending, confirmed, shipped, delivered)
-  - Validación de stock disponible
-- [ ] **Gestión de inventario**
-  - `InventoryService` para control de stock
-  - Actualizaciones automáticas en pedidos
-  - Alertas de stock bajo
+### Prerrequisitos
+- Docker y Docker Compose
+- Node.js 20+ (para desarrollo frontend)
+- Python 3.10+ (para desarrollo backend)
 
-#### Frontend
-- [ ] **Flujo de checkout**
-  - Proceso paso a paso (cart → info → payment → confirmation)
-  - Formularios de dirección y pago
-  - Página de confirmación de pedido
-- [ ] **Gestión de pedidos**
-  - Historial de pedidos para usuarios
-  - Estado de seguimiento
-  - Panel de administración básico
+### Instalación
 
-### 🎯 Fase 3: Funcionalidades Avanzadas (Semanas 7-10)
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/JazzDataSolutions/brain2gain.git
+   cd brain2gain
+   ```
 
-#### Backend
-- [ ] **Integración de pagos**
-  - API de procesamiento de pagos
-  - Webhook para confirmaciones
-  - Gestión de transacciones
+2. **Configurar variables de entorno**
+   ```bash
+   cp .env.example .env
+   # Editar .env con tus configuraciones
+   ```
 
-#### Frontend
-- [ ] **Panel de administración**
-  - Gestión de productos (CRUD)
-  - Dashboard de ventas y métricas
-  - Gestión de pedidos
-- [ ] **Mejoras UX**
-  - PWA capabilities
-  - Optimización de imágenes
-  - SEO para productos
-
-## Technology Stack and Features
-
-- ⚡ [**FastAPI**](https://fastapi.tiangolo.com) for the Python backend API.
-    - 🧰 [SQLModel](https://sqlmodel.tiangolo.com) for the Python SQL database interactions (ORM).
-    - 🔍 [Pydantic](https://docs.pydantic.dev), used by FastAPI, for the data validation and settings management.
-    - 💾 [PostgreSQL](https://www.postgresql.org) as the SQL database.
-- 🚀 [React](https://react.dev) for the frontend.
-    - 💃 Using TypeScript, hooks, Vite, and other parts of a modern frontend stack.
-    - 🎨 [Chakra UI](https://chakra-ui.com) for the frontend components.
-    - 🔀 [TanStack Router](https://tanstack.com/router) for type-safe routing.
-    - 🔄 [TanStack Query](https://tanstack.com/query) for server state management.
-    - 🤖 An automatically generated frontend client.
-    - 🧪 [Playwright](https://playwright.dev) for End-to-End testing.
-    - 🦇 Dark mode support.
-- 🐋 [Docker Compose](https://www.docker.com) for development and production.
-- 🔒 Secure password hashing by default.
-- 🔑 JWT (JSON Web Token) authentication.
-- 📫 Email based password recovery.
-- ✅ Tests with [Pytest](https://pytest.org).
-- 📞 [Traefik](https://traefik.io) as a reverse proxy / load balancer.
-- 🚢 Deployment instructions using Docker Compose, including how to set up a frontend Traefik proxy to handle automatic HTTPS certificates.
-- 🏭 CI (continuous integration) and CD (continuous deployment) based on GitHub Actions.
-
-## 🔄 CI/CD Pipeline Status
-
-Our comprehensive CI/CD pipeline ensures code quality, security, and reliable deployments:
-
-### ✅ Automated Testing
-- **Backend Tests**: Unit tests, integration tests, and API tests with coverage reporting
-- **Frontend Tests**: Component tests, E2E tests with Playwright
-- **Security Scanning**: Vulnerability detection in dependencies and Docker images
-- **Code Quality**: Linting, formatting, and type checking
-
-### 🚀 Deployment Pipeline
-- **Staging**: Automatic deployment on `develop` branch
-- **Production**: Deployment on release tags with manual approval
-- **Rollback**: Quick rollback capability for production issues
-
-### 📊 Quality Metrics
-- **Test Coverage**: Maintained above 80% for critical components
-- **Code Quality**: SonarCloud integration for maintainability
-- **Security**: Daily security scans and dependency updates
-- **Performance**: Automated performance monitoring
-
-### 🛡️ Security & Compliance
-- **Dependabot**: Automated dependency updates
-- **SAST**: Static Application Security Testing
-- **Container Scanning**: Docker image vulnerability assessment
-- **License Compliance**: Automated license checking
-
-## Quickstart
-
-1. Create or copy the `.env` file at the project root and fill in the required variables (see `deployment.md` for details).
-2. Start the development environment:
+3. **Levantar el entorno de desarrollo**
    ```bash
    make dev
    ```
-3. Open your browser:
-   - Backend API docs: http://localhost:8000/docs
-   - Frontend: http://localhost:5173
 
-### Configure
+4. **Acceder a las aplicaciones**
+   - 🌐 **Frontend**: http://localhost:5173
+   - 🔧 **API Docs**: http://localhost:8000/docs
+   - 📊 **Admin Panel**: http://localhost:5173/admin
 
-You can then update configs in the `.env` files to customize your configurations.
-
-Before deploying it, make sure you change at least the values for:
-
-- `SECRET_KEY`
-- `FIRST_SUPERUSER_PASSWORD`
-- `POSTGRES_PASSWORD`
-
-You can (and should) pass these as environment variables from secrets.
-
-Read the [deployment.md](./deployment.md) docs for more details.
-
-### Generate Secret Keys
-
-Some environment variables in the `.env` file have a default value of `changethis`.
-
-You have to change them with a secret key, to generate secret keys you can run the following command:
+### Comandos Disponibles
 
 ```bash
-python -c "import secrets; print(secrets.token_urlsafe(32))"
+# Desarrollo
+make dev              # Levantar entorno completo
+make frontend         # Solo frontend
+make backend          # Solo backend
+
+# Testing
+make test             # Ejecutar todas las pruebas
+make test-backend     # Pruebas del backend
+make test-frontend    # Pruebas del frontend
+
+# Calidad de código
+make lint             # Linting completo
+make format           # Formatear código
+
+# Producción
+make build            # Construir imágenes
+make deploy           # Deploy completo
 ```
 
-Copy the content and use that as password / secret key. And run that again to generate another secure key.
+## 📋 Estado del Desarrollo
 
-## Backend Development
+### ✅ Completado
+- **Infraestructura base**: FastAPI + React + PostgreSQL + Docker
+- **Autenticación**: Sistema JWT con roles (admin, user)
+- **Base de datos**: Modelos iniciales y migraciones
+- **Testing**: Configuración de Pytest y Playwright
+- **CI/CD**: Pipeline básico con GitHub Actions
+- **Documentación**: Estructura con Sphinx
 
-Backend docs: [backend/README.md](./backend/README.md).
+### 🔧 En Desarrollo
+- **API de productos**: Estandarización y corrección de endpoints
+- **Sistema de carrito**: Implementación completa
+- **Frontend landing**: Integración con API real
+- **Panel administrativo**: Dashboard básico
 
-## Frontend Development
+### 🎯 Próximas Funcionalidades
+- **Checkout completo**: Proceso de pago y confirmación
+- **Gestión de pedidos**: Estados y seguimiento
+- **Integración de pagos**: Pasarelas de pago locales
+- **Sistema de notificaciones**: Email y push notifications
+- **Reportes avanzados**: Analytics y métricas de negocio
 
-Frontend docs: [frontend/README.md](./frontend/README.md).
+## 📊 Mejoras Planificadas
 
-## Deployment
+### Fase 1: Optimizaciones Inmediatas (1-2 semanas)
+Ver detalles completos en [`IMMEDIATE_IMPROVEMENTS.md`](./IMMEDIATE_IMPROVEMENTS.md):
+- ⚡ **Cache con Redis** (-70% queries a BD)
+- 🎨 **Separación de interfaces** (Tienda vs Admin)
+- 📈 **Analytics básico** (métricas de conversión)
+- 🔒 **Rate limiting** y seguridad mejorada
 
-Deployment docs: [deployment.md](./deployment.md).
+### Fase 2: Separación de Dominios (Semanas 3-8)
+- 🏪 **Subdominio tienda**: `tienda.brain2gain.com`
+- 🏢 **Subdominio ERP**: `erp.brain2gain.com`
+- 🚪 **API Gateway**: Kong para gestión de tráfico
+- 📦 **Microservicios**: Auth, Products, Orders, Inventory
 
-## Development
+### Fase 3: Funcionalidades Avanzadas (Mes 3+)
+- 🤖 **IA para recomendaciones** de productos
+- 📱 **App móvil** React Native
+- 🌍 **Internacionalización** y multi-moneda
+- 🔄 **Integraciones** con marketplaces
 
-General development docs: [development.md](./development.md).
+## 📂 Estructura del Proyecto
 
-This includes using Docker Compose, custom local domains, `.env` configurations, etc.
+```
+brain2gain/
+├── backend/                    # API FastAPI
+│   ├── app/
+│   │   ├── api/               # Endpoints REST
+│   │   ├── core/              # Configuración y seguridad
+│   │   ├── models.py          # Modelos SQLModel
+│   │   ├── schemas/           # Pydantic schemas
+│   │   ├── services/          # Lógica de negocio
+│   │   ├── repositories/      # Acceso a datos
+│   │   └── tests/            # Pruebas automatizadas
+│   ├── alembic/              # Migraciones de BD
+│   └── Dockerfile
+│
+├── frontend/                   # React + TypeScript
+│   ├── src/
+│   │   ├── components/        # Componentes reutilizables
+│   │   ├── routes/           # Páginas y routing
+│   │   ├── stores/           # Estado global
+│   │   ├── client/           # Cliente API generado
+│   │   └── tests/            # Pruebas E2E
+│   └── Dockerfile
+│
+├── docs/                      # Documentación Sphinx
+├── scripts/                   # Scripts de automatización
+├── docker-compose.yml         # Orquestación contenedores
+├── Makefile                  # Comandos automatizados
+└── README.md                 # Este archivo
+```
 
-## Release Notes
+## 🧪 Testing y Calidad
 
-Check the file [release-notes.md](./release-notes.md).
+### Cobertura de Pruebas
+- **Backend**: Pytest con cobertura >85%
+- **Frontend**: Vitest + Playwright para E2E
+- **API**: Pruebas de integración automáticas
+- **Security**: Análisis estático y dependencias
 
-## Documentation
+### Estándares de Código
+- **Python**: Black, isort, flake8, mypy
+- **TypeScript**: ESLint, Prettier, TypeScript strict
+- **Git**: Conventional Commits + pre-commit hooks
+- **Docker**: Multi-stage builds optimizados
 
-La documentación completa (arquitectura, plan de trabajo, endpoints, pruebas, despliegue) se genera con Sphinx.
+## 🚢 Despliegue
 
-Para compilarla localmente:
+### Entornos
+- **Desarrollo**: Docker Compose local
+- **Staging**: Deploy automático en develop
+- **Producción**: Deploy manual con aprobación
+
+### Infraestructura Recomendada
+```yaml
+Mínimo (MVP):
+  - VPS: 4 vCPU, 8GB RAM, 100GB SSD
+  - Database: PostgreSQL gestionado
+  - CDN: CloudFlare para assets
+  - Monitoring: Sentry + logs básicos
+
+Producción (Scale):
+  - Kubernetes: 3 nodes mínimo
+  - Database: Cluster PostgreSQL + Redis
+  - Load Balancer: NGINX/Traefik
+  - Observability: Prometheus + Grafana
+```
+
+Ver detalles completos en [`deployment.md`](./deployment.md).
+
+## 👨‍💻 Desarrollo
+
+### Configuración del Entorno
+
+1. **Backend**
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements-dev.txt
+   ```
+
+2. **Frontend**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+### Contribución
+1. Fork del repositorio
+2. Crear rama feature: `git checkout -b feature/nueva-funcionalidad`
+3. Commit cambios: `git commit -m 'feat: agregar nueva funcionalidad'`
+4. Push a la rama: `git push origin feature/nueva-funcionalidad`
+5. Crear Pull Request
+
+## 📈 Métricas y KPIs
+
+### Objetivos Técnicos
+- **Performance**: Time to First Byte < 200ms
+- **Disponibilidad**: Uptime > 99.9%
+- **Errores**: Error rate < 0.1%
+- **Escalabilidad**: 1000+ pedidos/día
+
+### Objetivos de Negocio
+- **Conversión**: Rate > 3%
+- **AOV**: Ticket promedio +25%
+- **Retención**: Customer LTV +40%
+- **Operaciones**: Eficiencia +50%
+
+## 📚 Documentación
+
+- **API**: Documentación automática en `/docs`
+- **Arquitectura**: [`ARCHITECTURE_PROPOSAL.md`](./ARCHITECTURE_PROPOSAL.md)
+- **Despliegue**: [`deployment.md`](./deployment.md)
+- **Desarrollo**: [`development.md`](./development.md)
+- **Releases**: [`release-notes.md`](./release-notes.md)
+
+### Generar Documentación
 ```bash
 cd docs
 pip install -r requirements.txt
 make html
 ```
-Los archivos HTML resultantes se ubican en `docs/_build/html`.
 
-## License
+## 🔐 Seguridad
 
-The Full Stack FastAPI Template is licensed under the terms of the MIT license.
+- **Autenticación**: JWT con refresh tokens
+- **Autorización**: RBAC granular
+- **Encriptación**: Passwords con bcrypt
+- **Validación**: Sanitización de inputs
+- **CORS**: Configuración restrictiva
+- **Headers**: Security headers completos
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Ver [`LICENSE`](./LICENSE) para más detalles.
+
+## 🤝 Soporte
+
+- **Issues**: [GitHub Issues](https://github.com/JazzDataSolutions/brain2gain/issues)
+- **Discusiones**: [GitHub Discussions](https://github.com/JazzDataSolutions/brain2gain/discussions)
+- **Email**: soporte@brain2gain.com
+
+---
+
+**Desarrollado con ❤️ para la comunidad fitness**
+
+*"Transformamos la tecnología en resultados reales para tu negocio"*
