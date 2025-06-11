@@ -34,6 +34,7 @@ import { Route as AdminReportsImport } from './routes/admin/reports'
 import { Route as AdminOrdersImport } from './routes/admin/orders'
 import { Route as AdminInventoryImport } from './routes/admin/inventory'
 import { Route as AdminCustomersImport } from './routes/admin/customers'
+import { Route as AdminAnalyticsImport } from './routes/admin/analytics'
 import { Route as AdminLayoutImport } from './routes/admin/_layout'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
@@ -181,6 +182,12 @@ const AdminCustomersRoute = AdminCustomersImport.update({
   getParentRoute: () => AdminRoute,
 } as any)
 
+const AdminAnalyticsRoute = AdminAnalyticsImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRoute,
+} as any)
+
 const AdminLayoutRoute = AdminLayoutImport.update({
   id: '/_layout',
   getParentRoute: () => AdminRoute,
@@ -300,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLayoutImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsImport
+      parentRoute: typeof AdminImport
+    }
     '/admin/customers': {
       id: '/admin/customers'
       path: '/customers'
@@ -416,6 +430,7 @@ const ProductsRouteWithChildren = ProductsRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminLayoutRoute: typeof AdminLayoutRoute
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminInventoryRoute: typeof AdminInventoryRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
@@ -425,6 +440,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminLayoutRoute: AdminLayoutRoute,
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminInventoryRoute: AdminInventoryRoute,
   AdminOrdersRoute: AdminOrdersRoute,
@@ -466,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/admin': typeof AdminLayoutRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -493,6 +510,7 @@ export interface FileRoutesByTo {
   '/items': typeof LayoutItemsRoute
   '/settings': typeof LayoutSettingsRoute
   '/admin': typeof AdminIndexRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -520,6 +538,7 @@ export interface FileRoutesById {
   '/_layout/settings': typeof LayoutSettingsRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin/_layout': typeof AdminLayoutRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/inventory': typeof AdminInventoryRoute
   '/admin/orders': typeof AdminOrdersRoute
@@ -550,6 +569,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/settings'
     | '/admin'
+    | '/admin/analytics'
     | '/admin/customers'
     | '/admin/inventory'
     | '/admin/orders'
@@ -576,6 +596,7 @@ export interface FileRouteTypes {
     | '/items'
     | '/settings'
     | '/admin'
+    | '/admin/analytics'
     | '/admin/customers'
     | '/admin/inventory'
     | '/admin/orders'
@@ -601,6 +622,7 @@ export interface FileRouteTypes {
     | '/_layout/settings'
     | '/admin'
     | '/admin/_layout'
+    | '/admin/analytics'
     | '/admin/customers'
     | '/admin/inventory'
     | '/admin/orders'
@@ -719,6 +741,7 @@ export const routeTree = rootRoute
       "filePath": "admin",
       "children": [
         "/admin/_layout",
+        "/admin/analytics",
         "/admin/customers",
         "/admin/inventory",
         "/admin/orders",
@@ -728,6 +751,10 @@ export const routeTree = rootRoute
     },
     "/admin/_layout": {
       "filePath": "admin/_layout.tsx",
+      "parent": "/admin"
+    },
+    "/admin/analytics": {
+      "filePath": "admin/analytics.tsx",
       "parent": "/admin"
     },
     "/admin/customers": {

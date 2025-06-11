@@ -56,3 +56,69 @@ export const handleError = (err: ApiError, showToast: any) => {
 export function cn(...inputs: ClassValue[]) {
   return clsx(inputs)
 }
+
+/**
+ * Debounce function to limit the rate of function execution
+ * @param func - Function to debounce
+ * @param wait - Wait time in milliseconds
+ * @returns Debounced function
+ */
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null
+  
+  return (...args: Parameters<T>) => {
+    if (timeout) {
+      clearTimeout(timeout)
+    }
+    
+    timeout = setTimeout(() => {
+      func(...args)
+    }, wait)
+  }
+}
+
+/**
+ * Throttle function to limit the rate of function execution
+ * @param func - Function to throttle
+ * @param limit - Limit time in milliseconds
+ * @returns Throttled function
+ */
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean = false
+  
+  return (...args: Parameters<T>) => {
+    if (!inThrottle) {
+      func(...args)
+      inThrottle = true
+      setTimeout(() => inThrottle = false, limit)
+    }
+  }
+}
+
+/**
+ * Format currency for Colombian Peso
+ * @param amount - Amount to format
+ * @returns Formatted currency string
+ */
+export function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+/**
+ * Sleep utility for async operations
+ * @param ms - Milliseconds to sleep
+ * @returns Promise that resolves after the specified time
+ */
+export function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}

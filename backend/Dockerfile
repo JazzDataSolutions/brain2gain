@@ -31,6 +31,10 @@ COPY pyproject.toml uv.lock ./
 # Install dependencies in virtual environment
 RUN uv sync --frozen --compile-bytecode --no-dev
 
+# Build arguments for environment mode
+ARG APP_MODE=production
+ARG API_MODE=full
+
 # Copy source code
 COPY app ./app
 COPY alembic.ini ./
@@ -55,6 +59,12 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH="/app" \
     PATH="/app/.venv/bin:$PATH" \
     PORT=8000
+
+# Build arguments passed to runtime
+ARG APP_MODE=production
+ARG API_MODE=full
+ENV APP_MODE=${APP_MODE}
+ENV API_MODE=${API_MODE}
 
 # Install only runtime system dependencies
 RUN apt-get update && apt-get install -y \

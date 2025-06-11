@@ -32,6 +32,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Get application mode from environment
+APP_MODE = os.getenv("APP_MODE", "production")
+API_MODE = os.getenv("API_MODE", "full")
+
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     """Generate unique IDs for API routes."""
@@ -99,12 +103,22 @@ if sentry_sdk and settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     )
     logger.info("Sentry error tracking initialized")
 
-# Create FastAPI application
+# Create FastAPI application with mode-specific configuration
+app_title = settings.PROJECT_NAME
+app_description = "Brain2Gain E-commerce API for sports supplements"
+
+if API_MODE == "public" or API_MODE == "store":
+    app_title = "Brain2Gain Store API"
+    app_description = "Public API for Brain2Gain e-commerce store"
+elif API_MODE == "admin":
+    app_title = "Brain2Gain Admin API"
+    app_description = "Administrative API for Brain2Gain ERP system"
+
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="Brain2Gain E-commerce API for sports supplements",
+    title=app_title,
+    description=app_description,
     version="1.0.0",
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    openapi_url=f"{settings.API_V1_STR}/openapi.json" if API_MODE != "public" else None,
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,
 )
@@ -115,20 +129,51 @@ setup_exception_handlers(app)
 # Setup advanced rate limiting
 setup_rate_limiting(app)
 
-# Configure CORS
-cors_origins = ["http://localhost:5173"]  # Frontend development server
-if settings.ENVIRONMENT == "production":
-    cors_origins = [
-        "https://brain2gain.com",
-        "https://www.brain2gain.com",
-        "https://frontend.brain2gain.com"
-    ]
-elif settings.ENVIRONMENT == "development":
-    cors_origins.extend([
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173"
-    ])
+# Configure CORS based on API mode
+cors_origins = []
+
+if API_MODE == "public" or API_MODE == "store":
+    # Store/Public API CORS
+    cors_origins = ["http://localhost:3000"]  # Store frontend
+    if settings.ENVIRONMENT == "production":
+        cors_origins.extend([
+            "https://store.brain2gain.com",
+            "https://www.brain2gain.com",
+            "https://brain2gain.com"
+        ])
+    elif settings.ENVIRONMENT == "development":
+        cors_origins.extend([
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+        ])
+elif API_MODE == "admin":
+    # Admin API CORS
+    cors_origins = ["http://localhost:3001"]  # Admin frontend
+    if settings.ENVIRONMENT == "production":
+        cors_origins.extend([
+            "https://admin.brain2gain.com"
+        ])
+    elif settings.ENVIRONMENT == "development":
+        cors_origins.extend([
+            "http://localhost:3001",
+            "http://127.0.0.1:3001"
+        ])
+else:
+    # Full mode (backward compatibility)
+    cors_origins = ["http://localhost:5173"]
+    if settings.ENVIRONMENT == "production":
+        cors_origins.extend([
+            "https://brain2gain.com",
+            "https://www.brain2gain.com",
+            "https://frontend.brain2gain.com"
+        ])
+    elif settings.ENVIRONMENT == "development":
+        cors_origins.extend([
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:5173",
+            "http://127.0.0.1:5173"
+        ])
 
 app.add_middleware(
     CORSMiddleware,

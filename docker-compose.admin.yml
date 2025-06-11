@@ -1,0 +1,239 @@
+# ============================================================================
+# Docker Compose - Admin Mode (Solo ERP/Admin)
+# Configuración específica para el panel administrativo y ERP
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-brain2gain_admin}
+      - POSTGRES_USER=${POSTGRES_USER:-brain2gain_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_admin_data:/var/lib/postgresql/data
+    networks:
+      - admin-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brain2gain_admin} -d ${POSTGRES_DB:-brain2gain_admin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_admin_data:/data
+    networks:
+      - admin-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Adminer - Database Management
+  adminer:
+    image: adminer:4.8.1
+    restart: unless-stopped
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+      - ADMINER_DESIGN=pepa-linha-dark
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - admin-network
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.adminer.rule=Host(`${ADMINER_DOMAIN:-db.brain2gain.com}`)"
+      - "traefik.http.routers.adminer.entrypoints=websecure"
+      - "traefik.http.routers.adminer.tls.certresolver=le"
+      - "traefik.http.services.adminer.loadbalancer.server.port=8080"
+
+  # Backend API - Modo Admin
+  admin-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - APP_MODE=admin
+    restart: unless-stopped
+    environment:
+      # Configuración del modo admin
+      - API_MODE=admin
+      - ENABLE_ADMIN_ROUTES=true
+      - ENABLE_STORE_ROUTES=false
+      - REQUIRE_ADMIN_AUTH=true
+      
+      # Base de datos
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-brain2gain_admin}
+      - POSTGRES_USER=${POSTGRES_USER:-brain2gain_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      
+      # Redis
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      
+      # Configuración general
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - BACKEND_CORS_ORIGINS=${ADMIN_CORS_ORIGINS:-http://localhost:3001,https://admin.brain2gain.com}
+      
+      # Usuario inicial admin
+      - FIRST_SUPERUSER=${FIRST_SUPERUSER}
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
+      
+      # Email configuration
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
+      
+      # Rate limiting específico para admin
+      - RATE_LIMIT_ADMIN=300/minute
+      - RATE_LIMIT_REPORTS=50/minute
+      - RATE_LIMIT_BULK_OPERATIONS=20/minute
+      
+      # Configuraciones de seguridad adicionales
+      - ADMIN_SESSION_TIMEOUT=3600
+      - ENABLE_AUDIT_LOG=true
+      - REQUIRE_2FA=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - admin-network
+    ports:
+      - "${ADMIN_API_PORT:-8001}:8000"
+    volumes:
+      # Logs de auditoría
+      - admin_logs:/app/logs
+      # Backups
+      - admin_backups:/app/backups
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend - Solo Admin/ERP
+  admin-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_APP_MODE=admin
+        - VITE_API_URL=${ADMIN_API_URL:-http://localhost:8001}
+        - NODE_ENV=production
+    restart: unless-stopped
+    environment:
+      # Configuración específica del admin
+      - VITE_API_URL=${ADMIN_API_URL:-http://localhost:8001}
+      - VITE_ENABLE_ADMIN=true
+      - VITE_ENABLE_STORE=false
+      - VITE_APP_NAME=Brain2Gain Admin
+      - VITE_REQUIRE_AUTH=true
+      - VITE_SESSION_TIMEOUT=3600
+      - VITE_ENABLE_ANALYTICS=true
+      - VITE_ANALYTICS_ID=${ADMIN_ANALYTICS_ID}
+    depends_on:
+      - admin-api
+    networks:
+      - admin-network
+    ports:
+      - "${ADMIN_PORT:-3001}:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.admin.rule=Host(`${ADMIN_DOMAIN:-admin.brain2gain.com}`)"
+      - "traefik.http.routers.admin.entrypoints=websecure"
+      - "traefik.http.routers.admin.tls.certresolver=le"
+      - "traefik.http.services.admin.loadbalancer.server.port=80"
+      # Middleware de autenticación adicional
+      - "traefik.http.routers.admin.middlewares=auth-chain"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Background Tasks Processor
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        - APP_MODE=admin
+    restart: unless-stopped
+    environment:
+      # Misma configuración que admin-api
+      - API_MODE=admin
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-brain2gain_admin}
+      - POSTGRES_USER=${POSTGRES_USER:-brain2gain_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - admin-network
+    volumes:
+      - admin_logs:/app/logs
+      - admin_backups:/app/backups
+    command: ["python", "-m", "app.worker", "--queue", "admin_tasks"]
+
+  # Backup Service
+  backup:
+    image: postgres:17
+    restart: "no"
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-brain2gain_admin}
+      - POSTGRES_USER=${POSTGRES_USER:-brain2gain_admin}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - admin-network
+    volumes:
+      - admin_backups:/backups
+      - ./scripts/backup.sh:/backup.sh
+    command: ["bash", "/backup.sh"]
+    profiles:
+      - backup
+
+networks:
+  admin-network:
+    driver: bridge
+    name: brain2gain_admin_network
+
+volumes:
+  postgres_admin_data:
+    name: brain2gain_admin_postgres
+  redis_admin_data:
+    name: brain2gain_admin_redis
+  admin_logs:
+    name: brain2gain_admin_logs
+  admin_backups:
+    name: brain2gain_admin_backups

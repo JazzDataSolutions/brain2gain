@@ -37,8 +37,10 @@ COPY . .
 
 # Build arguments
 ARG VITE_API_URL
+ARG VITE_APP_MODE=full
 ARG NODE_ENV=production
 ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_APP_MODE=${VITE_APP_MODE}
 ENV NODE_ENV=${NODE_ENV}
 
 # Change ownership and switch to non-root user

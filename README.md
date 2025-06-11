@@ -35,7 +35,7 @@ Backend:
   Database: PostgreSQL 17
   ORM: SQLModel + Alembic
   Authentication: JWT + OAuth2
-  Cache: Redis 5.0+ (implementado)
+  Cache: Redis 7.2+ (implementado)
   Rate Limiting: SlowAPI + avanzado
   Package Manager: uv (ultra-fast)
 
@@ -48,10 +48,11 @@ Frontend:
   Testing: Playwright + Vitest
   Linting: Biome (sustituto de ESLint/Prettier)
 
-DevOps:
+Deployment:
   Containerization: Docker + Docker Compose
+  Environment Separation: Store/Admin modes
   CI/CD: GitHub Actions
-  Monitoring: Sentry (configurado)
+  Monitoring: Health checks + Sentry
   Documentation: Sphinx + auto-generated
   Code Quality: Ruff, MyPy, Biome
 ```
