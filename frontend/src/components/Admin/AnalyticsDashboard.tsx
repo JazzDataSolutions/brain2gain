@@ -22,55 +22,96 @@ import {
   AlertTitle,
   AlertDescription,
   Spinner,
-  useToast
+  useToast,
+  Button,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Progress,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Flex,
+  Tooltip
 } from '@chakra-ui/react'
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users, Package } from 'lucide-react'
+import { Icon } from '@chakra-ui/react'
+import { 
+  FiTrendingUp, 
+  FiTrendingDown, 
+  FiDollarSign, 
+  FiShoppingCart, 
+  FiUsers, 
+  FiPackage, 
+  FiRefreshCw, 
+  FiAlertTriangle,
+  FiTarget,
+  FiLayers,
+  FiFilter,
+  FiBarChart,
+  FiPieChart 
+} from 'react-icons/fi'
+import AnalyticsService, { 
+  type FinancialSummary, 
+  type RealtimeMetrics, 
+  type AlertSummary 
+} from '../../services/AnalyticsService'
 
-interface FinancialSummary {
-  revenue: {
-    today: number
-    month: number
-    year: number
-    growth_rate: number
-  }
-  orders: {
-    orders_today: number
-    orders_month: number
-    pending_orders: number
-    average_order_value: number
-  }
-  customers: {
-    total_customers: number
-    new_customers_month: number
-    customers_with_orders: number
-    active_customers_30d: number
-    customer_conversion_rate: number
-  }
-  inventory: {
-    total_products: number
-    low_stock_products: number
-    out_of_stock_products: number
-    total_inventory_value: number
-  }
-  conversion: {
-    cart_abandonment_rate: number
-  }
+
+interface RFMSegmentData {
+  segment: string;
+  count: number;
+  percentage: number;
+  avg_monetary: number;
+  color: string;
+  profile?: {
+    description: string;
+    characteristics: string[];
+    marketing_strategy: string[];
+  };
 }
 
-interface RealtimeMetrics {
-  current_revenue_today: number
-  orders_today: number
-  pending_orders: number
-  active_carts: number
-  low_stock_alerts: number
-  timestamp: string
+interface CohortData {
+  summary: {
+    total_cohorts: number;
+    avg_retention_by_period: Record<number, number>;
+    total_customers_analyzed: number;
+  };
+  insights: string[];
+}
+
+interface ConversionFunnelData {
+  funnel_steps: Record<string, {
+    count: number;
+    percentage: number;
+    description: string;
+  }>;
+  conversions: Record<string, {
+    conversion_rate: number;
+    drop_off_rate: number;
+  }>;
+  insights: string[];
 }
 
 const AnalyticsDashboard: React.FC = () => {
   const [financialData, setFinancialData] = useState<FinancialSummary | null>(null)
   const [realtimeData, setRealtimeData] = useState<RealtimeMetrics | null>(null)
+  const [alertsData, setAlertsData] = useState<AlertSummary | null>(null)
+  
+  // Phase 2 Advanced Analytics Data
+  const [rfmData, setRfmData] = useState<{ segments: Record<string, RFMSegmentData>; total_customers: number; insights: string[] } | null>(null)
+  const [cohortData, setCohortData] = useState<CohortData | null>(null)
+  const [funnelData, setFunnelData] = useState<ConversionFunnelData | null>(null)
+  
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState(0)
   const toast = useToast()
 
   // Format currency
@@ -91,23 +132,15 @@ const AnalyticsDashboard: React.FC = () => {
   // Fetch financial summary
   const fetchFinancialSummary = async () => {
     try {
-      const response = await fetch('/api/analytics/financial-summary', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch financial summary')
-      }
-      
-      const data = await response.json()
+      const data = await AnalyticsService.getFinancialSummaryWithFallback()
       setFinancialData(data)
+      setError(null) // Clear any previous errors
     } catch (err) {
-      setError('Failed to load financial data')
+      const errorMessage = 'Failed to load financial data'
+      setError(errorMessage)
       toast({
         title: 'Error',
-        description: 'Failed to load financial summary',
+        description: errorMessage,
         status: 'error',
         duration: 5000,
         isClosable: true
@@ -118,20 +151,104 @@ const AnalyticsDashboard: React.FC = () => {
   // Fetch realtime metrics
   const fetchRealtimeMetrics = async () => {
     try {
-      const response = await fetch('/api/analytics/realtime-metrics', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch realtime metrics')
-      }
-      
-      const data = await response.json()
+      const data = await AnalyticsService.getRealtimeMetricsWithFallback()
       setRealtimeData(data)
     } catch (err) {
       console.error('Failed to load realtime data:', err)
+    }
+  }
+
+  // Fetch alerts
+  const fetchAlerts = async () => {
+    try {
+      const data = await AnalyticsService.getAlertSummaryWithFallback()
+      setAlertsData(data)
+    } catch (err) {
+      console.error('Failed to load alerts:', err)
+    }
+  }
+
+  // Phase 2: Fetch RFM Segmentation Data
+  const fetchRFMData = async () => {
+    try {
+      const response = await fetch('/api/v1/analytics/segmentation/rfm', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setRfmData(data)
+      }
+    } catch (err) {
+      console.error('Failed to load RFM data:', err)
+    }
+  }
+
+  // Phase 2: Fetch Cohort Analysis Data
+  const fetchCohortData = async () => {
+    try {
+      const response = await fetch('/api/v1/analytics/cohorts/retention?months_back=6', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setCohortData(data)
+      }
+    } catch (err) {
+      console.error('Failed to load cohort data:', err)
+    }
+  }
+
+  // Phase 2: Fetch Conversion Funnel Data
+  const fetchFunnelData = async () => {
+    try {
+      const response = await fetch('/api/v1/analytics/funnel/conversion?days=30', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setFunnelData(data)
+      }
+    } catch (err) {
+      console.error('Failed to load funnel data:', err)
+    }
+  }
+
+  // Refresh all data
+  const refreshAllData = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        fetchFinancialSummary(),
+        fetchRealtimeMetrics(),
+        fetchAlerts(),
+        fetchRFMData(),
+        fetchCohortData(),
+        fetchFunnelData()
+      ])
+      
+      toast({
+        title: 'Success',
+        description: 'Dashboard data refreshed successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true
+      })
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh some data',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true
+      })
+    } finally {
+      setRefreshing(false)
     }
   }
 
@@ -141,7 +258,11 @@ const AnalyticsDashboard: React.FC = () => {
       setLoading(true)
       await Promise.all([
         fetchFinancialSummary(),
-        fetchRealtimeMetrics()
+        fetchRealtimeMetrics(),
+        fetchAlerts(),
+        fetchRFMData(),
+        fetchCohortData(),
+        fetchFunnelData()
       ])
       setLoading(false)
     }
@@ -151,7 +272,10 @@ const AnalyticsDashboard: React.FC = () => {
 
   // Refresh realtime data every 30 seconds
   useEffect(() => {
-    const interval = setInterval(fetchRealtimeMetrics, 30000)
+    const interval = setInterval(() => {
+      fetchRealtimeMetrics()
+      fetchAlerts() // Also refresh alerts periodically
+    }, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -179,19 +303,88 @@ const AnalyticsDashboard: React.FC = () => {
       <VStack spacing={6} align="stretch">
         {/* Header */}
         <Box>
-          <Heading size="lg" mb={2}>Analytics Dashboard</Heading>
-          <Text color="gray.600">
-            Real-time business metrics and insights
-            {realtimeData && (
-              <Text as="span" fontSize="sm" ml={2} color="gray.500">
-                Last updated: {new Date(realtimeData.timestamp).toLocaleTimeString()}
-              </Text>
-            )}
-          </Text>
+          <HStack justify="space-between" align="center" mb={4}>
+            <Box>
+              <Heading size="lg" mb={2}>Analytics Dashboard</Heading>
+              <HStack spacing={4} align="center">
+                <Text color="gray.600">
+                  Real-time business metrics and advanced analytics
+                </Text>
+                {alertsData && alertsData.total_alerts > 0 && (
+                  <Badge 
+                    colorScheme={alertsData.critical_alerts > 0 ? "red" : "orange"} 
+                    variant="solid"
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                  >
+                    <Icon as={FiAlertTriangle} boxSize={3} />
+                    {alertsData.total_alerts} Alert{alertsData.total_alerts > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </HStack>
+            </Box>
+            
+            <VStack align="end" spacing={1}>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                variant="outline"
+                leftIcon={<Icon as={FiRefreshCw} boxSize={3.5} />}
+                onClick={refreshAllData}
+                isLoading={refreshing}
+                loadingText="Refreshing"
+              >
+                Refresh
+              </Button>
+              {realtimeData && (
+                <Text fontSize="xs" color="gray.500">
+                  Last updated: {new Date(realtimeData.timestamp).toLocaleTimeString()}
+                </Text>
+              )}
+            </VStack>
+          </HStack>
         </Box>
 
-        {/* Alerts */}
-        {financialData?.inventory.low_stock_products > 0 && (
+        {/* Dynamic Alerts from API */}
+        {alertsData && alertsData.alerts.length > 0 && (
+          <VStack spacing={3} align="stretch">
+            {alertsData.alerts.slice(0, 3).map((alert) => (
+              <Alert 
+                key={alert.id}
+                status={
+                  alert.severity === 'critical' ? 'error' : 
+                  alert.severity === 'warning' ? 'warning' : 'info'
+                }
+              >
+                <AlertIcon />
+                <Box flex="1">
+                  <AlertTitle fontSize="sm">{alert.title}</AlertTitle>
+                  <AlertDescription fontSize="sm">
+                    {alert.description}
+                  </AlertDescription>
+                </Box>
+                <Badge 
+                  colorScheme={
+                    alert.severity === 'critical' ? 'red' : 
+                    alert.severity === 'warning' ? 'orange' : 'blue'
+                  }
+                  size="sm"
+                >
+                  {alert.severity.toUpperCase()}
+                </Badge>
+              </Alert>
+            ))}
+            {alertsData.alerts.length > 3 && (
+              <Text fontSize="sm" color="gray.500" textAlign="center">
+                + {alertsData.alerts.length - 3} more alerts
+              </Text>
+            )}
+          </VStack>
+        )}
+
+        {/* Fallback inventory alerts */}
+        {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory.low_stock_products > 0 && (
           <Alert status="warning">
             <AlertIcon />
             <AlertTitle>Inventory Alert!</AlertTitle>
@@ -201,7 +394,7 @@ const AnalyticsDashboard: React.FC = () => {
           </Alert>
         )}
 
-        {financialData?.inventory.out_of_stock_products > 0 && (
+        {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory.out_of_stock_products > 0 && (
           <Alert status="error">
             <AlertIcon />
             <AlertTitle>Stock Alert!</AlertTitle>
@@ -220,7 +413,7 @@ const AnalyticsDashboard: React.FC = () => {
                 <Stat>
                   <StatLabel>
                     <HStack>
-                      <DollarSign size={16} />
+                      <Icon as={FiDollarSign} boxSize={4} />
                       <Text>Today's Revenue</Text>
                     </HStack>
                   </StatLabel>
@@ -237,7 +430,7 @@ const AnalyticsDashboard: React.FC = () => {
                 <Stat>
                   <StatLabel>
                     <HStack>
-                      <DollarSign size={16} />
+                      <Icon as={FiDollarSign} boxSize={4} />
                       <Text>Monthly Revenue</Text>
                     </HStack>
                   </StatLabel>
@@ -257,12 +450,12 @@ const AnalyticsDashboard: React.FC = () => {
                 <Stat>
                   <StatLabel>
                     <HStack>
-                      <DollarSign size={16} />
-                      <Text>Yearly Revenue</Text>
+                      <Icon as={FiTrendingUp} boxSize={4} />
+                      <Text>MRR</Text>
                     </HStack>
                   </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.year || 0)}</StatNumber>
-                  <StatHelpText>Year to date</StatHelpText>
+                  <StatNumber>{formatCurrency(financialData?.revenue.mrr || 0)}</StatNumber>
+                  <StatHelpText>Monthly Recurring Revenue</StatHelpText>
                 </Stat>
               </CardBody>
             </Card>
@@ -272,13 +465,193 @@ const AnalyticsDashboard: React.FC = () => {
                 <Stat>
                   <StatLabel>
                     <HStack>
-                      <ShoppingCart size={16} />
+                      <Icon as={FiTrendingUp} boxSize={4} />
+                      <Text>ARR</Text>
+                    </HStack>
+                  </StatLabel>
+                  <StatNumber>{formatCurrency(financialData?.revenue.arr || 0)}</StatNumber>
+                  <StatHelpText>Annual Recurring Revenue</StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <Stat>
+                  <StatLabel>
+                    <HStack>
+                      <Icon as={FiShoppingCart} boxSize={4} />
                       <Text>Average Order Value</Text>
                     </HStack>
                   </StatLabel>
                   <StatNumber>{formatCurrency(financialData?.orders.average_order_value || 0)}</StatNumber>
                   <StatHelpText>Per completed order</StatHelpText>
                 </Stat>
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardBody>
+                <Stat>
+                  <StatLabel>
+                    <HStack>
+                      <Icon as={FiUsers} boxSize={4} />
+                      <Text>Revenue Per Visitor</Text>
+                    </HStack>
+                  </StatLabel>
+                  <StatNumber>{formatCurrency(financialData?.revenue.revenue_per_visitor || 0)}</StatNumber>
+                  <StatHelpText>RPV (30 days)</StatHelpText>
+                </Stat>
+              </CardBody>
+            </Card>
+          </Grid>
+        </Box>
+
+        {/* KPI Summary Cards */}
+        <Box>
+          <Heading size="md" mb={4}>Key Performance Indicators</Heading>
+          <Grid templateColumns="repeat(auto-fit, minmax(280px, 1fr))" gap={4}>
+            {/* MRR Growth Card */}
+            <Card>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" fontWeight="medium">MRR Growth</Text>
+                    <Badge colorScheme="green" size="sm">
+                      +{formatPercentage(Math.abs(financialData?.revenue.growth_rate || 0))}
+                    </Badge>
+                  </HStack>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {formatCurrency(financialData?.revenue.mrr || 0)}
+                  </Text>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" mb={1}>
+                      Projected ARR: {formatCurrency(financialData?.revenue.arr || 0)}
+                    </Text>
+                    <Box w="full" h="2" bg="gray.200" borderRadius="full" overflow="hidden">
+                      <Box 
+                        h="full" 
+                        bg="green.400" 
+                        w={`${Math.min((financialData?.revenue.mrr || 0) / 50000 * 100, 100)}%`}
+                        borderRadius="full"
+                      />
+                    </Box>
+                  </Box>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Customer Health Card */}
+            <Card>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" fontWeight="medium">Customer Health</Text>
+                    <Badge 
+                      colorScheme={
+                        (financialData?.conversion.churn_rate || 0) < 10 ? "green" : 
+                        (financialData?.conversion.churn_rate || 0) < 15 ? "orange" : "red"
+                      } 
+                      size="sm"
+                    >
+                      {(financialData?.conversion.churn_rate || 0) < 10 ? "Healthy" : 
+                       (financialData?.conversion.churn_rate || 0) < 15 ? "Warning" : "Critical"}
+                    </Badge>
+                  </HStack>
+                  <HStack spacing={4}>
+                    <VStack align="start" spacing={1} flex={1}>
+                      <Text fontSize="xs" color="gray.500">Churn Rate</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="red.500">
+                        {formatPercentage(financialData?.conversion.churn_rate || 0)}
+                      </Text>
+                    </VStack>
+                    <VStack align="start" spacing={1} flex={1}>
+                      <Text fontSize="xs" color="gray.500">Repeat Rate</Text>
+                      <Text fontSize="lg" fontWeight="bold" color="green.500">
+                        {formatPercentage(financialData?.conversion.repeat_customer_rate || 0)}
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <Box>
+                    <Text fontSize="xs" color="gray.500" mb={1}>Retention Score</Text>
+                    <Box w="full" h="2" bg="gray.200" borderRadius="full" overflow="hidden">
+                      <Box 
+                        h="full" 
+                        bg={
+                          (financialData?.conversion.churn_rate || 0) < 10 ? "green.400" : 
+                          (financialData?.conversion.churn_rate || 0) < 15 ? "orange.400" : "red.400"
+                        }
+                        w={`${Math.max(100 - (financialData?.conversion.churn_rate || 0), 0)}%`}
+                        borderRadius="full"
+                      />
+                    </Box>
+                  </Box>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            {/* Conversion Funnel Card */}
+            <Card>
+              <CardBody>
+                <VStack align="stretch" spacing={3}>
+                  <HStack justify="space-between">
+                    <Text fontSize="sm" fontWeight="medium">Conversion Funnel</Text>
+                    <Badge 
+                      colorScheme={
+                        (financialData?.conversion.conversion_rate || 0) > 5 ? "green" : 
+                        (financialData?.conversion.conversion_rate || 0) > 2 ? "orange" : "red"
+                      } 
+                      size="sm"
+                    >
+                      {formatPercentage(financialData?.conversion.conversion_rate || 0)}
+                    </Badge>
+                  </HStack>
+                  
+                  <VStack align="stretch" spacing={2}>
+                    {/* Funnel Steps */}
+                    <Box>
+                      <HStack justify="space-between" mb={1}>
+                        <Text fontSize="xs">Visitors</Text>
+                        <Text fontSize="xs">100%</Text>
+                      </HStack>
+                      <Box w="full" h="2" bg="blue.100" borderRadius="full" />
+                    </Box>
+                    
+                    <Box>
+                      <HStack justify="space-between" mb={1}>
+                        <Text fontSize="xs">Add to Cart</Text>
+                        <Text fontSize="xs">
+                          {formatPercentage(100 - (financialData?.conversion.cart_abandonment_rate || 0))}
+                        </Text>
+                      </HStack>
+                      <Box w="full" h="2" bg="gray.200" borderRadius="full" overflow="hidden">
+                        <Box 
+                          h="full" 
+                          bg="blue.300" 
+                          w={`${100 - (financialData?.conversion.cart_abandonment_rate || 0)}%`}
+                          borderRadius="full"
+                        />
+                      </Box>
+                    </Box>
+                    
+                    <Box>
+                      <HStack justify="space-between" mb={1}>
+                        <Text fontSize="xs">Purchase</Text>
+                        <Text fontSize="xs">
+                          {formatPercentage(financialData?.conversion.conversion_rate || 0)}
+                        </Text>
+                      </HStack>
+                      <Box w="full" h="2" bg="gray.200" borderRadius="full" overflow="hidden">
+                        <Box 
+                          h="full" 
+                          bg="green.400" 
+                          w={`${Math.min(financialData?.conversion.conversion_rate || 0, 100)}%`}
+                          borderRadius="full"
+                        />
+                      </Box>
+                    </Box>
+                  </VStack>
+                </VStack>
               </CardBody>
             </Card>
           </Grid>
@@ -428,6 +801,31 @@ const AnalyticsDashboard: React.FC = () => {
                 <VStack align="stretch" spacing={3}>
                   <Box>
                     <HStack justify="space-between" mb={1}>
+                      <Text fontSize="sm">Conversion Rate</Text>
+                      <Text fontSize="sm" fontWeight="bold">
+                        {formatPercentage(financialData?.conversion.conversion_rate || 0)}
+                      </Text>
+                    </HStack>
+                    <Box 
+                      w="full" 
+                      h="8px" 
+                      bg="gray.200" 
+                      borderRadius="md" 
+                      overflow="hidden"
+                    >
+                      <Box 
+                        h="full" 
+                        bg={
+                          financialData?.conversion.conversion_rate > 5 ? "green.400" :
+                          financialData?.conversion.conversion_rate > 2 ? "orange.400" : "red.400"
+                        }
+                        w={`${Math.min(financialData?.conversion.conversion_rate || 0, 100)}%`}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
                       <Text fontSize="sm">Cart Abandonment Rate</Text>
                       <Text fontSize="sm" fontWeight="bold">
                         {formatPercentage(financialData?.conversion.cart_abandonment_rate || 0)}
@@ -453,9 +851,9 @@ const AnalyticsDashboard: React.FC = () => {
 
                   <Box>
                     <HStack justify="space-between" mb={1}>
-                      <Text fontSize="sm">Completion Rate</Text>
+                      <Text fontSize="sm">Repeat Customer Rate</Text>
                       <Text fontSize="sm" fontWeight="bold">
-                        {formatPercentage(100 - (financialData?.conversion.cart_abandonment_rate || 0))}
+                        {formatPercentage(financialData?.conversion.repeat_customer_rate || 0)}
                       </Text>
                     </HStack>
                     <Box 
@@ -467,8 +865,39 @@ const AnalyticsDashboard: React.FC = () => {
                     >
                       <Box 
                         h="full" 
-                        bg="green.400"
-                        w={`${100 - (financialData?.conversion.cart_abandonment_rate || 0)}%`}
+                        bg={
+                          financialData?.conversion.repeat_customer_rate > 30 ? "green.400" :
+                          financialData?.conversion.repeat_customer_rate > 15 ? "orange.400" : "red.400"
+                        }
+                        w={`${Math.min(financialData?.conversion.repeat_customer_rate || 0, 100)}%`}
+                      />
+                    </Box>
+                  </Box>
+
+                  <Box>
+                    <HStack justify="space-between" mb={1}>
+                      <Text fontSize="sm">Churn Rate</Text>
+                      <Text fontSize="sm" fontWeight="bold" color={
+                        financialData?.conversion.churn_rate > 15 ? "red.500" :
+                        financialData?.conversion.churn_rate > 10 ? "orange.500" : "green.500"
+                      }>
+                        {formatPercentage(financialData?.conversion.churn_rate || 0)}
+                      </Text>
+                    </HStack>
+                    <Box 
+                      w="full" 
+                      h="8px" 
+                      bg="gray.200" 
+                      borderRadius="md" 
+                      overflow="hidden"
+                    >
+                      <Box 
+                        h="full" 
+                        bg={
+                          financialData?.conversion.churn_rate > 15 ? "red.400" :
+                          financialData?.conversion.churn_rate > 10 ? "orange.400" : "green.400"
+                        }
+                        w={`${Math.min(financialData?.conversion.churn_rate || 0, 100)}%`}
                       />
                     </Box>
                   </Box>

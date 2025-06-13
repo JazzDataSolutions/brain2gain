@@ -2,6 +2,7 @@ import { Outlet, createRootRoute } from "@tanstack/react-router"
 import React, { Suspense } from "react"
 
 import NotFound from "../components/Common/NotFound"
+import { NotificationToastManager } from "../components/Notifications/NotificationToast"
 
 const loadDevtools = () =>
   Promise.all([
@@ -25,6 +26,7 @@ export const Route = createRootRoute({
   component: () => (
     <>
       <Outlet />
+      <NotificationToastManager />
       <Suspense>
         <TanStackDevtools />
       </Suspense>

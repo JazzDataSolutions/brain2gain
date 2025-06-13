@@ -1,0 +1,341 @@
+# Kong Declarative Configuration for Brain2Gain
+# Phase 1: API Gateway Setup
+_format_version: "3.0"
+
+services:
+  # === AUTH SERVICE ===
+  - name: auth-service
+    url: http://auth-service:8000
+    tags:
+      - auth
+      - microservice
+    
+  # === PRODUCT SERVICE ===
+  - name: product-service
+    url: http://product-service:8000
+    tags:
+      - products
+      - catalog
+      - microservice
+    
+  # === ORDER SERVICE ===
+  - name: order-service
+    url: http://order-service:8000
+    tags:
+      - orders
+      - microservice
+    
+  # === INVENTORY SERVICE ===
+  - name: inventory-service
+    url: http://inventory-service:8000
+    tags:
+      - inventory
+      - stock
+      - microservice
+
+routes:
+  # === AUTH ROUTES ===
+  - name: auth-login
+    service: auth-service
+    paths:
+      - /api/v1/auth/login
+      - /api/v1/auth/logout
+      - /api/v1/auth/refresh
+    methods:
+      - POST
+    tags:
+      - auth
+      - public
+
+  - name: auth-register
+    service: auth-service
+    paths:
+      - /api/v1/auth/register
+      - /api/v1/auth/verify
+    methods:
+      - POST
+    tags:
+      - auth
+      - public
+
+  - name: auth-users
+    service: auth-service
+    paths:
+      - /api/v1/users
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    tags:
+      - auth
+      - protected
+
+  # === PRODUCT ROUTES (PUBLIC) ===
+  - name: products-catalog
+    service: product-service
+    paths:
+      - /api/v1/products
+    methods:
+      - GET
+    tags:
+      - products
+      - public
+
+  - name: product-detail
+    service: product-service
+    paths:
+      - /api/v1/products/~
+    methods:
+      - GET
+    tags:
+      - products
+      - public
+
+  - name: products-search
+    service: product-service
+    paths:
+      - /api/v1/products/search
+    methods:
+      - GET
+    tags:
+      - products
+      - public
+
+  # === PRODUCT ROUTES (ADMIN) ===
+  - name: products-admin
+    service: product-service
+    paths:
+      - /api/v1/admin/products
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    tags:
+      - products
+      - admin
+
+  # === ORDER ROUTES (PUBLIC) ===
+  - name: orders-create
+    service: order-service
+    paths:
+      - /api/v1/orders
+    methods:
+      - POST
+    tags:
+      - orders
+      - public
+
+  - name: orders-user
+    service: order-service
+    paths:
+      - /api/v1/orders/user/~
+    methods:
+      - GET
+    tags:
+      - orders
+      - protected
+
+  # === ORDER ROUTES (ADMIN) ===
+  - name: orders-admin
+    service: order-service
+    paths:
+      - /api/v1/admin/orders
+    methods:
+      - GET
+      - PUT
+      - DELETE
+    tags:
+      - orders
+      - admin
+
+  # === INVENTORY ROUTES (ADMIN) ===
+  - name: inventory-admin
+    service: inventory-service
+    paths:
+      - /api/v1/admin/inventory
+    methods:
+      - GET
+      - PUT
+      - POST
+    tags:
+      - inventory
+      - admin
+
+  # === WEBSOCKET ROUTES ===
+  - name: websocket-notifications
+    service: auth-service  # WebSocket handled by main service for now
+    paths:
+      - /api/v1/ws/notifications
+    protocols:
+      - ws
+      - wss
+    tags:
+      - websocket
+      - notifications
+
+consumers:
+  # === STORE FRONTEND ===
+  - username: store-frontend
+    custom_id: tienda.brain2gain.com
+    tags:
+      - frontend
+      - store
+
+  # === ERP FRONTEND ===
+  - username: erp-frontend
+    custom_id: erp.brain2gain.com
+    tags:
+      - frontend
+      - erp
+
+  # === MOBILE APP ===
+  - username: mobile-app
+    custom_id: mobile.brain2gain.com
+    tags:
+      - mobile
+      - app
+
+plugins:
+  # === CORS for Store Frontend ===
+  - name: cors
+    route: products-catalog
+    config:
+      origins:
+        - "https://tienda.brain2gain.com"
+        - "http://localhost:3000"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+
+  # === Rate Limiting for Public API ===
+  - name: rate-limiting
+    route: products-catalog
+    config:
+      minute: 100
+      hour: 1000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 4
+
+  # === Rate Limiting for Admin API ===
+  - name: rate-limiting
+    route: products-admin
+    config:
+      minute: 500
+      hour: 5000
+      policy: redis
+      redis_host: redis
+      redis_port: 6379
+      redis_database: 4
+
+  # === JWT Authentication for Protected Routes ===
+  - name: jwt
+    route: auth-users
+    config:
+      key_claim_name: iss
+      secret_is_base64: false
+      claims_to_verify:
+        - exp
+        - iat
+      
+  - name: jwt
+    route: orders-user
+    config:
+      key_claim_name: iss
+      secret_is_base64: false
+      claims_to_verify:
+        - exp
+        - iat
+
+  # === Key Auth for Admin Routes ===
+  - name: key-auth
+    route: products-admin
+    config:
+      key_names:
+        - apikey
+        - x-api-key
+      key_in_body: false
+      key_in_header: true
+      key_in_query: false
+
+  - name: key-auth
+    route: orders-admin
+    config:
+      key_names:
+        - apikey
+        - x-api-key
+      key_in_body: false
+      key_in_header: true
+      key_in_query: false
+
+  - name: key-auth
+    route: inventory-admin
+    config:
+      key_names:
+        - apikey
+        - x-api-key
+      key_in_body: false
+      key_in_header: true
+      key_in_query: false
+
+  # === Request/Response Logging ===
+  - name: file-log
+    config:
+      path: /var/log/kong/access.log
+      custom_fields_by_lua:
+        request_id: "return kong.ctx.shared.request_id"
+        user_id: "return kong.ctx.shared.authenticated_credential and kong.ctx.shared.authenticated_credential.consumer_id"
+
+  # === Prometheus Metrics ===
+  - name: prometheus
+    config:
+      per_consumer: true
+
+  # === Request Size Limiting ===
+  - name: request-size-limiting
+    config:
+      allowed_payload_size: 10  # 10MB
+
+  # === Response Transformer for API Versioning ===
+  - name: response-transformer
+    config:
+      add:
+        headers:
+          - "X-API-Version:v1"
+          - "X-Powered-By:Brain2Gain"
+
+jwt_secrets:
+  - consumer: store-frontend
+    algorithm: HS256
+    key: store-frontend-key
+    secret: ${JWT_SECRET_STORE}
+
+  - consumer: erp-frontend
+    algorithm: HS256
+    key: erp-frontend-key
+    secret: ${JWT_SECRET_ERP}
+
+keyauth_credentials:
+  - consumer: erp-frontend
+    key: ${ERP_API_KEY}
+
+  - consumer: mobile-app
+    key: ${MOBILE_API_KEY}

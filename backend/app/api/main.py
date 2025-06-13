@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter
 
-from app.api.routes import items, login, private, users, utils, cart, analytics
+from app.api.routes import items, login, private, users, utils, cart, analytics, websocket, events
 from app.api.v1 import products
 from app.core.config import settings
 
@@ -27,7 +27,11 @@ if API_MODE in ["admin", "full"] and ENABLE_ADMIN_ROUTES:
     api_router.include_router(items.router)     # Admin item management
     api_router.include_router(login.router)     # Admin authentication
     api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])  # Analytics
+    api_router.include_router(events.router, prefix="/events", tags=["events"])  # Event Sourcing
     
     # Debug routes only for local admin
     if settings.ENVIRONMENT == "local":
         api_router.include_router(private.router)
+
+# WebSocket routes (available in all modes)
+api_router.include_router(websocket.router, prefix="/ws", tags=["websocket"])

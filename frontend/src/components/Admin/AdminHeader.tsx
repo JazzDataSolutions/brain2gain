@@ -27,6 +27,7 @@ import {
 } from 'react-icons/fi'
 import { useNavigate } from '@tanstack/react-router'
 import useAuth from '../../hooks/useAuth'
+import { NotificationBell } from '../Notifications/NotificationBell'
 
 const AdminHeader = () => {
   const { user, logout } = useAuth()
@@ -85,75 +86,7 @@ const AdminHeader = () => {
         </Button>
 
         {/* Notifications */}
-        <Box position="relative">
-          <Menu>
-            <MenuButton
-              as={IconButton}
-              icon={<FiBell />}
-              variant="ghost"
-              size="sm"
-              aria-label="Notificaciones"
-            />
-            <Badge
-              position="absolute"
-              top="0"
-              right="0"
-              colorScheme="red"
-              borderRadius="full"
-              minW="18px"
-              h="18px"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="10px"
-            >
-              3
-            </Badge>
-            <MenuList>
-              <Box px={4} py={2} borderBottom="1px" borderBottomColor={borderColor}>
-                <Text fontWeight="semibold" fontSize="sm">
-                  Notificaciones
-                </Text>
-              </Box>
-              <MenuItem>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Nuevo pedido recibido
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Pedido #1023 - $156.99
-                  </Text>
-                </Box>
-              </MenuItem>
-              <MenuItem>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Stock bajo detectado
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Whey Protein - Solo 5 unidades
-                  </Text>
-                </Box>
-              </MenuItem>
-              <MenuItem>
-                <Box>
-                  <Text fontSize="sm" fontWeight="medium">
-                    Nuevo cliente registrado
-                  </Text>
-                  <Text fontSize="xs" color="gray.500">
-                    Juan Pérez se registró
-                  </Text>
-                </Box>
-              </MenuItem>
-              <MenuDivider />
-              <MenuItem>
-                <Text fontSize="sm" color="blue.500" fontWeight="medium">
-                  Ver todas las notificaciones
-                </Text>
-              </MenuItem>
-            </MenuList>
-          </Menu>
-        </Box>
+        <NotificationBell />
 
         {/* User Menu */}
         <Menu>

@@ -1,15 +1,19 @@
-# backend/app/services/customer_segmentation_service.py
+"""
+Customer Segmentation Service - Advanced Analytics Phase 2
+Implements RFM (Recency, Frequency, Monetary) analysis and customer segmentation.
+"""
 
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Dict, List, Optional, Tuple
 from sqlmodel import Session, select, func, and_
+from sqlalchemy import text
 from dataclasses import dataclass
 import pandas as pd
 import numpy as np
 from enum import Enum
 
-from ..models import Customer, SalesOrder, SalesItem, Transaction, TransactionType, OrderStatus
+from app.models import Customer, SalesOrder, SalesItem, Transaction, TransactionType, OrderStatus
 
 
 class RFMSegment(str, Enum):

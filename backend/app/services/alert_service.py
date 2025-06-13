@@ -23,6 +23,10 @@ class AlertType(str, Enum):
     HIGH_PENDING_ORDERS = "high_pending_orders"
     CONVERSION_DROP = "conversion_drop"
     SYSTEM_PERFORMANCE = "system_performance"
+    HIGH_CHURN_RISK = "high_churn_risk"
+    LOW_CLV = "low_clv"
+    MRR_DECLINE = "mrr_decline"
+    AOV_DROP = "aov_drop"
 
 
 class Alert:
@@ -69,7 +73,11 @@ class AlertService:
             "revenue_drop_percentage": 20,  # 20% drop triggers alert
             "high_pending_orders": 15,      # More than 15 pending orders
             "conversion_drop_percentage": 15,  # 15% drop in conversion
-            "analysis_period_days": 7       # Compare with last 7 days
+            "analysis_period_days": 7,       # Compare with last 7 days
+            "high_churn_threshold": 15.0,    # 15% churn rate triggers alert
+            "low_clv_threshold": 50.0,       # CLV below $50 triggers alert
+            "mrr_decline_percentage": 10.0,  # 10% MRR decline triggers alert
+            "aov_drop_percentage": 15.0      # 15% AOV drop triggers alert
         }
     
     def check_all_alerts(self) -> List[Alert]:
@@ -87,6 +95,12 @@ class AlertService:
         
         # Check conversion alerts
         alerts.extend(self.check_conversion_alerts())
+        
+        # Check customer health alerts
+        alerts.extend(self.check_customer_health_alerts())
+        
+        # Check KPI alerts
+        alerts.extend(self.check_kpi_alerts())
         
         return alerts
     
@@ -281,6 +295,115 @@ class AlertService:
         """Get alerts filtered by severity"""
         all_alerts = self.check_all_alerts()
         return [alert for alert in all_alerts if alert.severity == severity]
+    
+    def check_customer_health_alerts(self) -> List[Alert]:
+        """Check for customer health-related alerts"""
+        alerts = []
+        
+        try:
+            # Check churn rate
+            churn_rate = self.analytics_service.calculate_churn_rate()
+            if churn_rate > self.thresholds["high_churn_threshold"]:
+                alerts.append(Alert(
+                    alert_type=AlertType.HIGH_CHURN_RISK,
+                    severity=AlertSeverity.WARNING,
+                    title=f"High Churn Risk - {churn_rate:.1f}% Churn Rate",
+                    description=f"Customer churn rate has reached {churn_rate:.1f}%, exceeding the threshold of {self.thresholds['high_churn_threshold']}%. Consider implementing retention strategies.",
+                    data={
+                        "churn_rate": churn_rate,
+                        "threshold": self.thresholds["high_churn_threshold"],
+                        "retention_rate": round(100 - churn_rate, 2)
+                    }
+                ))
+            
+            # Check average CLV for recent customers
+            recent_customers = self.db.exec(
+                select(func.distinct(Transaction.customer_id)).where(
+                    Transaction.created_at >= datetime.utcnow() - timedelta(days=30)
+                )
+            ).all()
+            
+            if recent_customers:
+                low_clv_customers = []
+                for customer_id in recent_customers[:10]:  # Check first 10 recent customers
+                    clv = self.analytics_service.calculate_customer_lifetime_value(customer_id)
+                    if clv < self.thresholds["low_clv_threshold"]:
+                        low_clv_customers.append((customer_id, clv))
+                
+                if len(low_clv_customers) >= 5:  # If 5 or more have low CLV
+                    avg_low_clv = sum(clv for _, clv in low_clv_customers) / len(low_clv_customers)
+                    alerts.append(Alert(
+                        alert_type=AlertType.LOW_CLV,
+                        severity=AlertSeverity.INFO,
+                        title=f"Low CLV Alert - {len(low_clv_customers)} Recent Customers",
+                        description=f"Recent customers showing low CLV averaging ${avg_low_clv:.2f}. Consider improving onboarding and engagement strategies.",
+                        data={
+                            "low_clv_customers_count": len(low_clv_customers),
+                            "average_low_clv": float(avg_low_clv),
+                            "threshold": self.thresholds["low_clv_threshold"]
+                        }
+                    ))
+        except Exception as e:
+            print(f"Error checking customer health alerts: {e}")
+        
+        return alerts
+    
+    def check_kpi_alerts(self) -> List[Alert]:
+        """Check for KPI-related alerts"""
+        alerts = []
+        
+        try:
+            # Check MRR decline (compare current vs previous month)
+            current_mrr = self.analytics_service.calculate_mrr()
+            # For previous MRR, we'll approximate by looking at revenue 30-60 days ago
+            start_previous = datetime.utcnow() - timedelta(days=60)
+            end_previous = datetime.utcnow() - timedelta(days=30)
+            
+            previous_month_revenue = self.analytics_service.get_total_revenue(start_previous, end_previous)
+            
+            if previous_month_revenue > 0 and current_mrr > 0:
+                mrr_change = float((current_mrr - previous_month_revenue) / previous_month_revenue * 100)
+                
+                if mrr_change <= -self.thresholds["mrr_decline_percentage"]:
+                    alerts.append(Alert(
+                        alert_type=AlertType.MRR_DECLINE,
+                        severity=AlertSeverity.WARNING,
+                        title=f"MRR Decline Alert - {abs(mrr_change):.1f}% Decrease",
+                        description=f"Monthly Recurring Revenue has declined by {abs(mrr_change):.1f}%. Current MRR: ${current_mrr:,.2f}, Previous: ${previous_month_revenue:,.2f}",
+                        data={
+                            "current_mrr": float(current_mrr),
+                            "previous_mrr": float(previous_month_revenue),
+                            "change_percentage": mrr_change,
+                            "threshold": self.thresholds["mrr_decline_percentage"]
+                        }
+                    ))
+            
+            # Check AOV decline
+            current_aov = self.analytics_service.get_average_order_value()
+            previous_aov = self.analytics_service.get_average_order_value(
+                start_previous, end_previous
+            )
+            
+            if previous_aov > 0 and current_aov > 0:
+                aov_change = float((current_aov - previous_aov) / previous_aov * 100)
+                
+                if aov_change <= -self.thresholds["aov_drop_percentage"]:
+                    alerts.append(Alert(
+                        alert_type=AlertType.AOV_DROP,
+                        severity=AlertSeverity.WARNING,
+                        title=f"AOV Drop Alert - {abs(aov_change):.1f}% Decrease",
+                        description=f"Average Order Value has dropped by {abs(aov_change):.1f}%. Current AOV: ${current_aov:.2f}, Previous: ${previous_aov:.2f}",
+                        data={
+                            "current_aov": float(current_aov),
+                            "previous_aov": float(previous_aov),
+                            "change_percentage": aov_change,
+                            "threshold": self.thresholds["aov_drop_percentage"]
+                        }
+                    ))
+        except Exception as e:
+            print(f"Error checking KPI alerts: {e}")
+        
+        return alerts
     
     def update_thresholds(self, new_thresholds: Dict) -> Dict:
         """Update alert thresholds"""

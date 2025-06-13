@@ -270,3 +270,334 @@ def create_cart_with_items(session: Session, user_id: str = None, num_items: int
     
     session.commit()
     return cart, items
+
+
+# ─── ANALYTICS-SPECIFIC FACTORIES AND HELPERS ────────────────────────────────
+
+def create_analytics_test_data(session: Session, time_period_days: int = 30) -> dict:
+    """
+    Create a comprehensive dataset for analytics testing.
+    
+    Returns a dictionary with all created objects for easy access in tests.
+    """
+    from datetime import datetime, timedelta
+    
+    # Create customers
+    customers = []
+    for i in range(20):
+        customer = CustomerFactory()
+        session.add(customer)
+        customers.append(customer)
+    session.commit()
+    
+    # Create products with stock
+    products = []
+    for i in range(10):
+        product = ProductFactory()
+        session.add(product)
+        session.commit()
+        
+        stock = StockFactory(
+            product_id=product.product_id, 
+            quantity=fake.random_int(min=0, max=500)
+        )
+        session.add(stock)
+        products.append((product, stock))
+    session.commit()
+    
+    # Create orders and transactions across time period
+    orders = []
+    transactions = []
+    
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=time_period_days)
+    
+    for i in range(50):  # 50 orders across the period
+        # Random date within the period
+        order_date = fake.date_time_between(start_date=start_date, end_date=end_date)
+        
+        customer = fake.choice(customers)
+        order = SalesOrderFactory(
+            customer_id=customer.customer_id,
+            order_date=order_date,
+            status=fake.choice(["PENDING", "COMPLETED", "COMPLETED", "COMPLETED"])  # Bias toward completed
+        )
+        session.add(order)
+        session.commit()
+        
+        # Add items to order
+        num_items = fake.random_int(min=1, max=4)
+        total_amount = Decimal('0')
+        
+        for _ in range(num_items):
+            product, _ = fake.choice(products)
+            quantity = fake.random_int(min=1, max=3)
+            unit_price = product.unit_price
+            
+            item = SalesItemFactory(
+                order_id=order.order_id,
+                product_id=product.product_id,
+                quantity=quantity,
+                unit_price=unit_price
+            )
+            session.add(item)
+            total_amount += unit_price * quantity
+        
+        order.total_amount = total_amount
+        orders.append(order)
+        
+        # Create corresponding transaction if order is completed
+        if order.status == "COMPLETED":
+            transaction = TransactionFactory(
+                order_id=order.order_id,
+                customer_id=customer.customer_id,
+                transaction_type="SALE",
+                amount=total_amount,
+                transaction_date=order_date,
+                status="COMPLETED",
+                paid=True
+            )
+            session.add(transaction)
+            transactions.append(transaction)
+    
+    session.commit()
+    
+    # Create some carts (for abandonment rate calculation)
+    carts = []
+    for i in range(15):
+        user = UserFactory()
+        session.add(user)
+        session.commit()
+        
+        cart = CartFactory(user_id=user.user_id)
+        session.add(cart)
+        session.commit()
+        
+        # Add items to some carts
+        for _ in range(fake.random_int(min=1, max=3)):
+            product, _ = fake.choice(products)
+            cart_item = CartItemFactory(
+                cart_id=cart.cart_id,
+                product_id=product.product_id
+            )
+            session.add(cart_item)
+        
+        carts.append(cart)
+    
+    session.commit()
+    
+    return {
+        "customers": customers,
+        "products": [p[0] for p in products],
+        "stocks": [p[1] for p in products],
+        "orders": orders,
+        "transactions": transactions,
+        "carts": carts,
+        "period": {
+            "start_date": start_date,
+            "end_date": end_date,
+            "days": time_period_days
+        }
+    }
+
+
+def create_churn_scenario_data(session: Session) -> dict:
+    """
+    Create specific data scenario for testing churn rate calculations.
+    """
+    from datetime import datetime, timedelta
+    
+    customers = []
+    orders = []
+    transactions = []
+    
+    # Scenario: 10 customers, 5 are churned (haven't ordered in 60+ days)
+    current_date = datetime.utcnow()
+    
+    # Active customers (ordered recently)
+    for i in range(5):
+        customer = CustomerFactory()
+        session.add(customer)
+        session.commit()
+        customers.append(customer)
+        
+        # Recent order (within last 30 days)
+        recent_date = current_date - timedelta(days=fake.random_int(min=1, max=30))
+        order = SalesOrderFactory(
+            customer_id=customer.customer_id,
+            order_date=recent_date,
+            status="COMPLETED"
+        )
+        session.add(order)
+        orders.append(order)
+        
+        transaction = TransactionFactory(
+            order_id=order.order_id,
+            customer_id=customer.customer_id,
+            transaction_date=recent_date,
+            status="COMPLETED",
+            paid=True
+        )
+        session.add(transaction)
+        transactions.append(transaction)
+    
+    # Churned customers (last order 60+ days ago)
+    for i in range(5):
+        customer = CustomerFactory()
+        session.add(customer)
+        session.commit()
+        customers.append(customer)
+        
+        # Old order (60+ days ago)
+        old_date = current_date - timedelta(days=fake.random_int(min=60, max=180))
+        order = SalesOrderFactory(
+            customer_id=customer.customer_id,
+            order_date=old_date,
+            status="COMPLETED"
+        )
+        session.add(order)
+        orders.append(order)
+        
+        transaction = TransactionFactory(
+            order_id=order.order_id,
+            customer_id=customer.customer_id,
+            transaction_date=old_date,
+            status="COMPLETED",
+            paid=True
+        )
+        session.add(transaction)
+        transactions.append(transaction)
+    
+    session.commit()
+    
+    return {
+        "customers": customers,
+        "orders": orders,
+        "transactions": transactions,
+        "active_customers": 5,
+        "churned_customers": 5,
+        "expected_churn_rate": 50.0  # 5 out of 10 customers churned
+    }
+
+
+def create_mrr_scenario_data(session: Session) -> dict:
+    """
+    Create specific data scenario for testing MRR calculations.
+    """
+    from datetime import datetime, timedelta
+    
+    customers = []
+    orders = []
+    transactions = []
+    
+    current_date = datetime.utcnow()
+    thirty_days_ago = current_date - timedelta(days=30)
+    
+    # Create customers with multiple orders (recurring revenue pattern)
+    recurring_amounts = []
+    
+    for i in range(8):  # 8 customers with recurring patterns
+        customer = CustomerFactory()
+        session.add(customer)
+        session.commit()
+        customers.append(customer)
+        
+        # Each customer has 2-3 orders in the last 30 days
+        num_orders = fake.random_int(min=2, max=3)
+        customer_total = Decimal('0')
+        
+        for j in range(num_orders):
+            order_date = fake.date_time_between(start_date=thirty_days_ago, end_date=current_date)
+            amount = Decimal(str(fake.pydecimal(left_digits=2, right_digits=2, positive=True, min_value=50, max_value=200)))
+            
+            order = SalesOrderFactory(
+                customer_id=customer.customer_id,
+                order_date=order_date,
+                total_amount=amount,
+                status="COMPLETED"
+            )
+            session.add(order)
+            orders.append(order)
+            
+            transaction = TransactionFactory(
+                order_id=order.order_id,
+                customer_id=customer.customer_id,
+                transaction_date=order_date,
+                amount=amount,
+                status="COMPLETED",
+                paid=True
+            )
+            session.add(transaction)
+            transactions.append(transaction)
+            customer_total += amount
+        
+        recurring_amounts.append(customer_total)
+    
+    session.commit()
+    
+    expected_mrr = sum(recurring_amounts)
+    
+    return {
+        "customers": customers,
+        "orders": orders,
+        "transactions": transactions,
+        "expected_mrr": float(expected_mrr),
+        "expected_arr": float(expected_mrr * 12)
+    }
+
+
+def create_conversion_scenario_data(session: Session) -> dict:
+    """
+    Create specific data scenario for testing conversion rate calculations.
+    """
+    # Create visitors (represented by carts)
+    users = []
+    carts = []
+    orders = []
+    
+    # Scenario: 20 visitors, 4 convert (20% conversion rate)
+    
+    # 16 visitors who added to cart but didn't convert
+    for i in range(16):
+        user = UserFactory()
+        session.add(user)
+        session.commit()
+        users.append(user)
+        
+        cart = CartFactory(user_id=user.user_id)
+        session.add(cart)
+        carts.append(cart)
+    
+    # 4 visitors who converted
+    for i in range(4):
+        user = UserFactory()
+        session.add(user)
+        session.commit()
+        users.append(user)
+        
+        cart = CartFactory(user_id=user.user_id)
+        session.add(cart)
+        carts.append(cart)
+        
+        # Create corresponding order
+        customer = CustomerFactory(email=user.email)
+        session.add(customer)
+        session.commit()
+        
+        order = SalesOrderFactory(
+            customer_id=customer.customer_id,
+            status="COMPLETED"
+        )
+        session.add(order)
+        orders.append(order)
+    
+    session.commit()
+    
+    return {
+        "users": users,
+        "carts": carts,
+        "orders": orders,
+        "total_visitors": 20,
+        "converting_customers": 4,
+        "expected_conversion_rate": 20.0
+    }

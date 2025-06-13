@@ -1,14 +1,23 @@
 """
-Product Service Layer.
+Product Service - Microservice for catalog and pricing management
+Part of Phase 2: Core Microservices Architecture
 
-Handles business logic and validation for product operations.
+Handles:
+- Product catalog management
+- Pricing and discounts
+- Stock status (read-only, writes go to Inventory Service)
+- Search and filtering
+- Category management
 """
 import logging
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import uuid
+import asyncio
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import select
+from sqlmodel import select, and_, or_
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.core.config import settings
@@ -16,6 +25,7 @@ from app.core.cache import cache_key_wrapper, invalidate_cache_pattern, invalida
 from app.models import Product
 from app.schemas.product import ProductCreate, ProductUpdate
 from app.repositories.product_repository import ProductRepository
+from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +36,7 @@ class ProductService:
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = ProductRepository(session)
+        self.notification_service = NotificationService(session)
 
     @cache_key_wrapper("products:list", ttl=300)  # 5 minutes cache
     async def list(self, skip: int = 0, limit: int = 100) -> List[Product]:
@@ -342,3 +353,286 @@ class ProductService:
         )
         result = await self.session.exec(statement)
         return result.all()
+
+    # New Microservice Methods for Phase 2 Architecture
+
+    async def search_products(
+        self, 
+        query: str, 
+        category: Optional[str] = None,
+        min_price: Optional[Decimal] = None,
+        max_price: Optional[Decimal] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> Dict[str, Any]:
+        """
+        Advanced product search with filtering capabilities.
+        
+        Args:
+            query: Search query for product name/description
+            category: Filter by category
+            min_price: Minimum price filter
+            max_price: Maximum price filter
+            skip: Pagination offset
+            limit: Maximum results
+            
+        Returns:
+            Dict with products, total count, and filters applied
+        """
+        conditions = [Product.status == "ACTIVE"]
+        
+        # Text search
+        if query:
+            text_condition = or_(
+                Product.name.ilike(f"%{query}%"),
+                Product.description.ilike(f"%{query}%"),
+                Product.sku.ilike(f"%{query}%")
+            )
+            conditions.append(text_condition)
+        
+        # Category filter
+        if category:
+            conditions.append(Product.category.ilike(f"%{category}%"))
+        
+        # Price range filter
+        if min_price is not None:
+            conditions.append(Product.unit_price >= min_price)
+        if max_price is not None:
+            conditions.append(Product.unit_price <= max_price)
+        
+        # Build query
+        base_statement = select(Product).where(and_(*conditions))
+        
+        # Get total count
+        count_result = await self.session.exec(base_statement)
+        total_count = len(count_result.all())
+        
+        # Get paginated results
+        statement = base_statement.offset(skip).limit(limit)
+        result = await self.session.exec(statement)
+        products = result.all()
+        
+        return {
+            "products": products,
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "filters": {
+                "query": query,
+                "category": category,
+                "min_price": min_price,
+                "max_price": max_price
+            }
+        }
+
+    @cache_key_wrapper("products:categories", ttl=3600)  # 1 hour cache
+    async def get_categories(self) -> List[str]:
+        """Get list of available product categories."""
+        statement = select(Product.category).distinct().where(Product.status == "ACTIVE")
+        result = await self.session.exec(statement)
+        categories = [cat for cat in result.all() if cat]
+        return sorted(categories)
+
+    async def get_featured_products(self, limit: int = 10) -> List[Product]:
+        """Get featured products for homepage/marketing."""
+        # TODO: Add featured flag to Product model
+        # For now, return best selling or highest rated products
+        return await self._get_featured_products_cached(limit)
+
+    @cache_key_wrapper("products:featured", ttl=1800)  # 30 minutes cache
+    async def _get_featured_products_cached(self, limit: int = 10) -> List[Product]:
+        """Internal cached method for featured products."""
+        statement = (
+            select(Product)
+            .where(Product.status == "ACTIVE")
+            .order_by(Product.unit_price.desc())  # Temporary: order by price
+            .limit(limit)
+        )
+        result = await self.session.exec(statement)
+        return result.all()
+
+    async def get_product_recommendations(
+        self, 
+        product_id: int, 
+        limit: int = 5
+    ) -> List[Product]:
+        """
+        Get product recommendations based on category and price range.
+        
+        Args:
+            product_id: Base product for recommendations
+            limit: Number of recommendations
+            
+        Returns:
+            List of recommended products
+        """
+        base_product = await self.get_by_id(product_id)
+        if not base_product:
+            return []
+        
+        # Find similar products by category and price range
+        price_range = base_product.unit_price * Decimal('0.3')  # 30% price variance
+        min_price = base_product.unit_price - price_range
+        max_price = base_product.unit_price + price_range
+        
+        statement = (
+            select(Product)
+            .where(
+                and_(
+                    Product.status == "ACTIVE",
+                    Product.product_id != product_id,
+                    Product.category == base_product.category,
+                    Product.unit_price >= min_price,
+                    Product.unit_price <= max_price
+                )
+            )
+            .limit(limit)
+        )
+        
+        result = await self.session.exec(statement)
+        return result.all()
+
+    async def bulk_update_prices(
+        self, 
+        price_updates: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
+        """
+        Bulk update product prices.
+        
+        Args:
+            price_updates: List of {product_id, new_price} dictionaries
+            
+        Returns:
+            Results summary with successful and failed updates
+        """
+        successful_updates = []
+        failed_updates = []
+        
+        for update in price_updates:
+            try:
+                product_id = update.get('product_id')
+                new_price = Decimal(str(update.get('new_price')))
+                
+                if new_price < Decimal('0'):
+                    failed_updates.append({
+                        'product_id': product_id,
+                        'error': 'Price cannot be negative'
+                    })
+                    continue
+                
+                product = await self.get_by_id(product_id)
+                if not product:
+                    failed_updates.append({
+                        'product_id': product_id,
+                        'error': 'Product not found'
+                    })
+                    continue
+                
+                old_price = product.unit_price
+                product.unit_price = new_price
+                
+                self.session.add(product)
+                await self.session.commit()
+                
+                successful_updates.append({
+                    'product_id': product_id,
+                    'old_price': old_price,
+                    'new_price': new_price
+                })
+                
+            except Exception as e:
+                failed_updates.append({
+                    'product_id': update.get('product_id'),
+                    'error': str(e)
+                })
+                await self.session.rollback()
+        
+        # Invalidate price-related caches
+        await self._invalidate_product_caches()
+        
+        return {
+            'successful_updates': successful_updates,
+            'failed_updates': failed_updates,
+            'total_processed': len(price_updates),
+            'successful_count': len(successful_updates),
+            'failed_count': len(failed_updates)
+        }
+
+    async def get_low_stock_products(self, threshold: int = 10) -> List[Product]:
+        """
+        Get products with low stock (for inventory alerts).
+        Note: This reads stock but doesn't modify it (that's Inventory Service's job).
+        
+        Args:
+            threshold: Stock quantity threshold
+            
+        Returns:
+            List of products with stock below threshold
+        """
+        statement = (
+            select(Product)
+            .where(
+                and_(
+                    Product.status == "ACTIVE",
+                    Product.stock_quantity < threshold,
+                    Product.stock_quantity >= 0
+                )
+            )
+        )
+        result = await self.session.exec(statement)
+        return result.all()
+
+    async def get_price_history(self, product_id: int) -> Dict[str, Any]:
+        """
+        Get price history for a product.
+        TODO: Implement price history tracking table
+        
+        Args:
+            product_id: Product ID
+            
+        Returns:
+            Price history data (placeholder for now)
+        """
+        product = await self.get_by_id(product_id)
+        if not product:
+            return {"error": "Product not found"}
+        
+        # Placeholder - in real implementation, query price_history table
+        return {
+            "product_id": product_id,
+            "current_price": product.unit_price,
+            "history": [
+                {
+                    "price": product.unit_price,
+                    "date": datetime.now().isoformat(),
+                    "change_reason": "Current price"
+                }
+            ]
+        }
+
+    async def validate_product_availability(self, product_ids: List[int]) -> Dict[int, bool]:
+        """
+        Validate if products are available for purchase.
+        Used by Order Service to check availability before order creation.
+        
+        Args:
+            product_ids: List of product IDs to check
+            
+        Returns:
+            Dict mapping product_id -> availability status
+        """
+        statement = select(Product).where(
+            and_(
+                Product.product_id.in_(product_ids),
+                Product.status == "ACTIVE"
+            )
+        )
+        result = await self.session.exec(statement)
+        available_products = {p.product_id: p.stock_quantity > 0 for p in result.all()}
+        
+        # Include unavailable products as False
+        availability = {}
+        for product_id in product_ids:
+            availability[product_id] = available_products.get(product_id, False)
+        
+        return availability
