@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = ""
     REDIS_DB: int = 0
 
+    # Server configuration for microservices migration
+    BACKEND_PORT: int = 8001  # Legacy backend port (moved from 8000)
+    GATEWAY_PORT: int = 8000  # Kong gateway port (main entry point)
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
@@ -114,16 +118,24 @@ class Settings(BaseSettings):
     RATE_LIMIT_ANONYMOUS: int = 20  # Requests per minute for anonymous users
     RATE_LIMIT_AUTHENTICATED: int = 200  # Requests per minute for authenticated users
     RATE_LIMIT_PERIOD: int = 60  # Period in seconds
-    
+
     # Business configuration
     MIN_PRODUCT_PRICE: float = 10.00
     MAX_PRODUCT_PRICE: float = 99999.99
     MAX_SKU_LENGTH: int = 50
-    
+
+    # Payment Gateway Configuration
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    PAYPAL_CLIENT_ID: str = ""
+    PAYPAL_CLIENT_SECRET: str = ""
+    PAYPAL_MODE: Literal["sandbox", "live"] = "sandbox"
+
     # Security configuration
     BCRYPT_ROUNDS: int = 12
     SESSION_TIMEOUT_MINUTES: int = 30
-    
+
     @model_validator(mode="after")
     def validate_security_settings(self) -> Self:
         """Validate security-related settings."""
@@ -131,30 +143,30 @@ class Settings(BaseSettings):
             # Ensure strong security in production
             if len(self.SECRET_KEY) < 32:
                 raise ValueError("SECRET_KEY must be at least 32 characters in production")
-            
+
             if self.FIRST_SUPERUSER_PASSWORD and len(self.FIRST_SUPERUSER_PASSWORD) < 12:
                 raise ValueError("FIRST_SUPERUSER_PASSWORD must be at least 12 characters in production")
-            
+
             if not self.SENTRY_DSN:
                 warnings.warn("SENTRY_DSN not configured for production environment")
-        
+
         # Validate rate limiting settings
         if self.RATE_LIMIT_ANONYMOUS <= 0:
             raise ValueError("RATE_LIMIT_ANONYMOUS must be positive")
-        
+
         if self.RATE_LIMIT_AUTHENTICATED <= 0:
             raise ValueError("RATE_LIMIT_AUTHENTICATED must be positive")
-        
+
         if self.RATE_LIMIT_PERIOD <= 0:
             raise ValueError("RATE_LIMIT_PERIOD must be positive")
-        
+
         # Validate business settings
         if self.MIN_PRODUCT_PRICE <= 0:
             raise ValueError("MIN_PRODUCT_PRICE must be positive")
-        
+
         if self.MAX_PRODUCT_PRICE <= self.MIN_PRODUCT_PRICE:
             raise ValueError("MAX_PRODUCT_PRICE must be greater than MIN_PRODUCT_PRICE")
-        
+
         return self
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:

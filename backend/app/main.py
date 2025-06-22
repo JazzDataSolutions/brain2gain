@@ -3,8 +3,8 @@ Brain2Gain FastAPI Application.
 
 Main application setup with middleware, exception handling, and API routes.
 """
-import os
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -13,17 +13,17 @@ try:
 except ImportError:  # pragma: no cover – optional dependency
     sentry_sdk = None  # type: ignore
 
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-from alembic.config import Config as AlembicConfig
-from alembic import command as alembic_command
 
 from app.api.main import api_router
+from app.core.cache import close_redis, get_cache_health, init_redis
 from app.core.config import settings
-from app.core.cache import init_redis, close_redis, get_cache_health
-from app.middlewares.exception_handler import setup_exception_handlers
 from app.middlewares.advanced_rate_limiting import setup_rate_limiting
+from app.middlewares.exception_handler import setup_exception_handlers
 
 # Setup logging
 logging.basicConfig(
@@ -39,7 +39,8 @@ API_MODE = os.getenv("API_MODE", "full")
 
 def custom_generate_unique_id(route: APIRoute) -> str:
     """Generate unique IDs for API routes."""
-    return f"{route.tags[0]}-{route.name}"
+    tag = route.tags[0] if route.tags else "default"
+    return f"{tag}-{route.name}"
 
 
 def run_migrations() -> None:
@@ -65,10 +66,10 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan events."""
     # Startup
     logger.info("Starting Brain2Gain API...")
-    
+
     # Initialize database migrations
     run_migrations()
-    
+
     # Initialize Redis cache
     try:
         await init_redis()
@@ -76,28 +77,28 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Redis initialization failed: {e}")
         logger.info("Continuing without Redis cache (using mock)")
-    
+
     logger.info("Brain2Gain API started successfully")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Brain2Gain API...")
-    
+
     # Close Redis connection
     try:
         await close_redis()
         logger.info("Redis connection closed")
     except Exception as e:
         logger.error(f"Error closing Redis connection: {e}")
-    
+
     logger.info("Brain2Gain API shutdown complete")
 
 
 # Initialize Sentry for error tracking
 if sentry_sdk and settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(
-        dsn=str(settings.SENTRY_DSN), 
+        dsn=str(settings.SENTRY_DSN),
         enable_tracing=True,
         environment=settings.ENVIRONMENT
     )
@@ -181,8 +182,8 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=[
-        "Authorization", 
-        "Content-Type", 
+        "Authorization",
+        "Content-Type",
         "Accept",
         "Origin",
         "User-Agent",
@@ -210,14 +211,14 @@ async def health_check():
     """
     # Get cache health status
     cache_health = await get_cache_health()
-    
+
     # Determine overall health status
     overall_status = "healthy"
     if cache_health.get("health") == "critical":
         overall_status = "degraded"  # Service works but cache is down
     elif not cache_health.get("connected", False):
         overall_status = "degraded"
-    
+
     # Build comprehensive health response
     health_response = {
         "status": overall_status,
@@ -244,11 +245,11 @@ async def health_check():
             "api_responsive": True
         }
     }
-    
+
     # Add error details if cache is unhealthy
     if cache_health.get("error"):
         health_response["components"]["cache"]["error"] = cache_health["error"]
-    
+
     return health_response
 
 

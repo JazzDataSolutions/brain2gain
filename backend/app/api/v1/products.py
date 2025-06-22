@@ -4,26 +4,25 @@ Products API endpoints.
 This module provides CRUD operations for products with proper authentication,
 authorization, and business validation.
 """
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from sqlmodel.ext.asyncio.session import AsyncSession
 
 from app.api.deps import AdminUser, SessionDep
+from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.product_service import ProductService
-from app.middlewares.advanced_rate_limiting import limiter, apply_endpoint_limits
 
 router = APIRouter(prefix="/products", tags=["Products"])
 
 
-@router.get("/", response_model=List[ProductRead])
+@router.get("/", response_model=list[ProductRead])
 @apply_endpoint_limits("products")
 async def list_products(
     request: Request,
+    session: SessionDep,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(50, ge=1, le=200, description="Maximum number of records to return"),
-    session: SessionDep = Depends(),
-) -> List[ProductRead]:
+) -> list[ProductRead]:
     """
     List active products with pagination.
     
@@ -37,8 +36,8 @@ async def list_products(
 @router.post("/", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 async def create_product(
     product_data: ProductCreate,
-    session: SessionDep = Depends(),
-    current_user: AdminUser = Depends(),
+    session: SessionDep,
+    current_user: AdminUser,
 ) -> ProductRead:
     """
     Create a new product.
@@ -61,7 +60,7 @@ async def create_product(
 async def get_product(
     request: Request,
     product_id: int,
-    session: SessionDep = Depends(),
+    session: SessionDep,
 ) -> ProductRead:
     """
     Get a product by ID.
@@ -71,21 +70,21 @@ async def get_product(
     """
     service = ProductService(session)
     product = await service.get_by_id(product_id)
-    
+
     if not product or product.status != "ACTIVE":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product with ID {product_id} not found"
         )
-    
+
     return product
 
 
 @router.get("/admin/{product_id}", response_model=ProductRead)
 async def get_product_admin(
     product_id: int,
-    session: SessionDep = Depends(),
-    current_user: AdminUser = Depends(),
+    session: SessionDep,
+    current_user: AdminUser,
 ) -> ProductRead:
     """
     Get a product by ID (Admin).
@@ -95,13 +94,13 @@ async def get_product_admin(
     """
     service = ProductService(session)
     product = await service.get_by_id(product_id)
-    
+
     if not product:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product with ID {product_id} not found"
         )
-    
+
     return product
 
 
@@ -109,8 +108,8 @@ async def get_product_admin(
 async def update_product(
     product_id: int,
     product_data: ProductUpdate,
-    session: SessionDep = Depends(),
-    current_user: AdminUser = Depends(),
+    session: SessionDep,
+    current_user: AdminUser,
 ) -> ProductRead:
     """
     Update a product.
@@ -124,7 +123,7 @@ async def update_product(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Product price cannot be negative"
         )
-    
+
     service = ProductService(session)
     try:
         updated_product = await service.update(product_id, product_data)
@@ -144,8 +143,8 @@ async def update_product(
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(
     product_id: int,
-    session: SessionDep = Depends(),
-    current_user: AdminUser = Depends(),
+    session: SessionDep,
+    current_user: AdminUser,
 ) -> None:
     """
     Delete a product.
@@ -155,7 +154,7 @@ async def delete_product(
     """
     service = ProductService(session)
     success = await service.delete(product_id)
-    
+
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
