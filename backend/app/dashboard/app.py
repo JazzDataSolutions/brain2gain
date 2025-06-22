@@ -1,6 +1,9 @@
-import dash, pandas as pd, plotly.express as px
-from dash import html, dcc
+import dash
+import pandas as pd
+import plotly.express as px
+from dash import dcc, html
 from dash.dependencies import Input, Output
+
 from app.core.database import engine
 
 dash_app = dash.Dash(__name__, requests_pathname_prefix="/dash/")

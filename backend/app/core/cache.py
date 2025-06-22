@@ -5,8 +5,9 @@ Implements the cache strategy from IMMEDIATE_IMPROVEMENTS.md
 
 import json
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 import redis.asyncio as redis
 from redis.asyncio import Redis
@@ -16,7 +17,7 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 # Redis client instance
-redis_client: Optional[Redis] = None
+redis_client: Redis | None = None
 
 # Type variable for generic function typing
 F = TypeVar('F', bound=Callable[..., Any])
@@ -34,7 +35,7 @@ cache_metrics = {
 async def init_redis() -> Redis:
     """Initialize Redis connection."""
     global redis_client
-    
+
     if redis_client is None:
         try:
             redis_client = redis.from_url(
@@ -46,16 +47,16 @@ async def init_redis() -> Redis:
                 retry_on_timeout=True,
                 health_check_interval=30
             )
-            
+
             # Test connection
             await redis_client.ping()
             logger.info("Redis connection established successfully")
-            
+
         except Exception as e:
             logger.error(f"Failed to connect to Redis: {e}")
             # Create a mock client for development without Redis
             redis_client = MockRedisClient()
-            
+
     return redis_client
 
 
@@ -69,17 +70,17 @@ async def close_redis():
 
 class MockRedisClient:
     """Mock Redis client for development/testing without Redis."""
-    
+
     def __init__(self):
         self._data = {}
-    
-    async def get(self, key: str) -> Optional[str]:
+
+    async def get(self, key: str) -> str | None:
         return self._data.get(key)
-    
+
     async def setex(self, key: str, ttl: int, value: str) -> bool:
         self._data[key] = value
         return True
-    
+
     async def delete(self, *keys: str) -> int:
         deleted = 0
         for key in keys:
@@ -87,13 +88,13 @@ class MockRedisClient:
                 del self._data[key]
                 deleted += 1
         return deleted
-    
+
     async def ping(self) -> bool:
         return True
-    
+
     async def close(self):
         pass
-    
+
     def scan_iter(self, match: str):
         """Mock scan_iter for pattern matching."""
         for key in self._data.keys():
@@ -125,41 +126,41 @@ def cache_key_wrapper(prefix: str, ttl: int = 300):
         @wraps(func)
         async def wrapper(*args, **kwargs):
             client = await get_redis_client()
-            
+
             # Generate unique cache key based on function args
             cache_key = _generate_cache_key(prefix, args, kwargs)
-            
+
             try:
                 cache_metrics["total_requests"] += 1
-                
+
                 # Try to get cached result
                 cached_value = await client.get(cache_key)
                 if cached_value:
                     cache_metrics["hits"] += 1
                     logger.debug(f"Cache HIT for key: {cache_key}")
                     return json.loads(cached_value)
-                
+
                 cache_metrics["misses"] += 1
                 logger.debug(f"Cache MISS for key: {cache_key}")
-                
+
                 # Execute function and cache result
                 result = await func(*args, **kwargs)
-                
+
                 # Cache the result (handle serialization)
                 await client.setex(
-                    cache_key, 
-                    ttl, 
+                    cache_key,
+                    ttl,
                     json.dumps(result, default=str)
                 )
-                
+
                 return result
-                
+
             except Exception as e:
                 cache_metrics["errors"] += 1
                 logger.error(f"Cache error for key {cache_key}: {e}")
                 # If cache fails, execute function normally
                 return await func(*args, **kwargs)
-        
+
         return wrapper
     return decorator
 
@@ -168,20 +169,20 @@ def _generate_cache_key(prefix: str, args: tuple, kwargs: dict) -> str:
     """Generate unique cache key from function arguments."""
     # Convert args to strings
     args_str = ':'.join(str(arg) for arg in args if arg is not None)
-    
+
     # Convert kwargs to sorted key-value pairs
     kwargs_str = ':'.join(
-        f"{k}={v}" for k, v in sorted(kwargs.items()) 
+        f"{k}={v}" for k, v in sorted(kwargs.items())
         if v is not None
     )
-    
+
     # Combine all parts
     key_parts = [prefix]
     if args_str:
         key_parts.append(args_str)
     if kwargs_str:
         key_parts.append(kwargs_str)
-    
+
     return ':'.join(key_parts)
 
 
@@ -197,15 +198,15 @@ async def invalidate_cache_pattern(pattern: str) -> int:
     """
     client = await get_redis_client()
     deleted_count = 0
-    
+
     try:
         async for key in client.scan_iter(match=pattern):
             await client.delete(key)
             deleted_count += 1
-        
+
         logger.info(f"Invalidated {deleted_count} cache keys matching pattern: {pattern}")
         return deleted_count
-        
+
     except Exception as e:
         logger.error(f"Error invalidating cache pattern {pattern}: {e}")
         return 0
@@ -222,13 +223,13 @@ async def invalidate_cache_key(key: str) -> bool:
         True if key was deleted, False otherwise
     """
     client = await get_redis_client()
-    
+
     try:
         result = await client.delete(key)
         if result:
             logger.debug(f"Invalidated cache key: {key}")
         return bool(result)
-        
+
     except Exception as e:
         logger.error(f"Error invalidating cache key {key}: {e}")
         return False
@@ -237,12 +238,12 @@ async def invalidate_cache_key(key: str) -> bool:
 async def get_cache_stats() -> dict:
     """Get comprehensive cache statistics and performance metrics."""
     client = await get_redis_client()
-    
+
     # Calculate hit rate
     total_requests = cache_metrics["total_requests"]
     hits = cache_metrics["hits"]
     hit_rate = (hits / total_requests * 100) if total_requests > 0 else 0
-    
+
     if isinstance(client, MockRedisClient):
         cache_metrics["cache_size"] = len(client._data)
         return {
@@ -256,20 +257,20 @@ async def get_cache_stats() -> dict:
                 "recommendation": _get_cache_recommendation(hit_rate)
             }
         }
-    
+
     try:
         info = await client.info()
         db_info = info.get("db0", {})
         redis_keys = db_info.get("keys", 0) if isinstance(db_info, dict) else 0
         cache_metrics["cache_size"] = redis_keys
-        
+
         # Redis-specific metrics
         redis_hit_rate = 0
         redis_hits = info.get("keyspace_hits", 0)
         redis_misses = info.get("keyspace_misses", 0)
         if (redis_hits + redis_misses) > 0:
             redis_hit_rate = (redis_hits / (redis_hits + redis_misses)) * 100
-        
+
         return {
             "type": "redis",
             "connected": True,
@@ -335,9 +336,9 @@ def _get_cache_recommendation(hit_rate: float) -> str:
 # Convenience functions for common cache operations
 class CacheService:
     """Service class for cache operations."""
-    
+
     @staticmethod
-    async def get(key: str) -> Optional[Any]:
+    async def get(key: str) -> Any | None:
         """Get value from cache."""
         client = await get_redis_client()
         try:
@@ -346,7 +347,7 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache get error: {e}")
             return None
-    
+
     @staticmethod
     async def set(key: str, value: Any, ttl: int = 300) -> bool:
         """Set value in cache."""
@@ -356,12 +357,12 @@ class CacheService:
         except Exception as e:
             logger.error(f"Cache set error: {e}")
             return False
-    
+
     @staticmethod
     async def delete(key: str) -> bool:
         """Delete key from cache."""
         return await invalidate_cache_key(key)
-    
+
     @staticmethod
     async def delete_pattern(pattern: str) -> int:
         """Delete all keys matching pattern."""
@@ -391,7 +392,7 @@ async def get_cache_health() -> dict:
     """Get cache health status for monitoring and alerts."""
     try:
         client = await get_redis_client()
-        
+
         # Test basic connectivity
         if isinstance(client, MockRedisClient):
             await client.ping()
@@ -399,10 +400,10 @@ async def get_cache_health() -> dict:
         else:
             await client.ping()
             status = "healthy"
-        
+
         stats = await get_cache_stats()
         hit_rate = stats.get("application_hit_rate", 0)
-        
+
         # Determine health status
         if hit_rate >= 80:
             health_status = "excellent"
@@ -412,7 +413,7 @@ async def get_cache_health() -> dict:
             health_status = "fair"
         else:
             health_status = "poor"
-        
+
         return {
             "status": status,
             "health": health_status,
@@ -422,7 +423,7 @@ async def get_cache_health() -> dict:
             "errors": cache_metrics["errors"],
             "cache_type": stats.get("type", "unknown")
         }
-        
+
     except Exception as e:
         logger.error(f"Cache health check failed: {e}")
         return {

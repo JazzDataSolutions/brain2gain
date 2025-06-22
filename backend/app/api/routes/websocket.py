@@ -1,10 +1,9 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from typing import Optional
-import logging
-from app.core.websocket import manager
-from app.api.dependencies import get_current_user
-from app.models import User
 import json
+import logging
+
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+
+from app.core.websocket import manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -16,29 +15,29 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
     try:
         # Accept connection first
         await websocket.accept()
-        
+
         # Basic authentication via query params (in production, use proper JWT validation)
         # For now, we'll accept any user_id and assume role is "user"
         # TODO: Implement proper WebSocket authentication
         role = "user"  # Default role
-        
+
         # Connect to manager
         await manager.connect(websocket, user_id, role)
-        
+
         # Send welcome message
         await manager.send_personal_message(
             "Conectado a notificaciones en tiempo real",
             user_id,
             "connection"
         )
-        
+
         # Keep connection alive and handle incoming messages
         while True:
             try:
                 # Receive message from client
                 data = await websocket.receive_text()
                 message_data = json.loads(data)
-                
+
                 # Handle different message types
                 if message_data.get("type") == "ping":
                     await websocket.send_text(json.dumps({
@@ -56,7 +55,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                             user_id,
                             "role_update"
                         )
-                    
+
             except WebSocketDisconnect:
                 break
             except json.JSONDecodeError:
@@ -64,7 +63,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
             except Exception as e:
                 logger.error(f"Error handling WebSocket message: {e}")
                 break
-                
+
     except Exception as e:
         logger.error(f"WebSocket connection error for user {user_id}: {e}")
     finally:
@@ -84,7 +83,7 @@ async def get_notification_stats():
 
 
 @router.post("/notifications/test")
-async def test_notification(message: str, target_user: Optional[str] = None, role: Optional[str] = None):
+async def test_notification(message: str, target_user: str | None = None, role: str | None = None):
     """Test endpoint for sending notifications"""
     try:
         if target_user:

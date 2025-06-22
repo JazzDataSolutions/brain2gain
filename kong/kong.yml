@@ -1,173 +1,59 @@
-# Kong Declarative Configuration for Brain2Gain
-# Phase 1: API Gateway Setup
+# Kong Configuration for Brain2Gain Monolith
+# Simplified configuration for unified backend
 _format_version: "3.0"
+_transform: true
 
 services:
-  # === AUTH SERVICE ===
-  - name: auth-service
-    url: http://auth-service:8000
+  # === UNIFIED BACKEND ===
+  - name: brain2gain-backend
+    url: http://backend:8000
     tags:
-      - auth
-      - microservice
-    
-  # === PRODUCT SERVICE ===
-  - name: product-service
-    url: http://product-service:8000
-    tags:
-      - products
-      - catalog
-      - microservice
-    
-  # === ORDER SERVICE ===
-  - name: order-service
-    url: http://order-service:8000
-    tags:
-      - orders
-      - microservice
-    
-  # === INVENTORY SERVICE ===
-  - name: inventory-service
-    url: http://inventory-service:8000
-    tags:
-      - inventory
-      - stock
-      - microservice
+      - backend
+      - monolith
+      - brain2gain
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
 
 routes:
-  # === AUTH ROUTES ===
-  - name: auth-login
-    service: auth-service
+  # === API ROUTES ===
+  - name: api-routes
+    service: brain2gain-backend
     paths:
-      - /api/v1/auth/login
-      - /api/v1/auth/logout
-      - /api/v1/auth/refresh
-    methods:
-      - POST
-    tags:
-      - auth
-      - public
-
-  - name: auth-register
-    service: auth-service
-    paths:
-      - /api/v1/auth/register
-      - /api/v1/auth/verify
-    methods:
-      - POST
-    tags:
-      - auth
-      - public
-
-  - name: auth-users
-    service: auth-service
-    paths:
-      - /api/v1/users
+      - /api
+    strip_path: false
+    preserve_host: true
     methods:
       - GET
       - POST
       - PUT
       - DELETE
+      - PATCH
+      - OPTIONS
     tags:
-      - auth
-      - protected
+      - api
+      - backend
 
-  # === PRODUCT ROUTES (PUBLIC) ===
-  - name: products-catalog
-    service: product-service
+  # === DOCS ROUTES ===
+  - name: docs-routes
+    service: brain2gain-backend
     paths:
-      - /api/v1/products
+      - /docs
+      - /redoc
+      - /openapi.json
+    strip_path: false
+    preserve_host: true
     methods:
       - GET
     tags:
-      - products
+      - docs
       - public
-
-  - name: product-detail
-    service: product-service
-    paths:
-      - /api/v1/products/~
-    methods:
-      - GET
-    tags:
-      - products
-      - public
-
-  - name: products-search
-    service: product-service
-    paths:
-      - /api/v1/products/search
-    methods:
-      - GET
-    tags:
-      - products
-      - public
-
-  # === PRODUCT ROUTES (ADMIN) ===
-  - name: products-admin
-    service: product-service
-    paths:
-      - /api/v1/admin/products
-    methods:
-      - GET
-      - POST
-      - PUT
-      - DELETE
-    tags:
-      - products
-      - admin
-
-  # === ORDER ROUTES (PUBLIC) ===
-  - name: orders-create
-    service: order-service
-    paths:
-      - /api/v1/orders
-    methods:
-      - POST
-    tags:
-      - orders
-      - public
-
-  - name: orders-user
-    service: order-service
-    paths:
-      - /api/v1/orders/user/~
-    methods:
-      - GET
-    tags:
-      - orders
-      - protected
-
-  # === ORDER ROUTES (ADMIN) ===
-  - name: orders-admin
-    service: order-service
-    paths:
-      - /api/v1/admin/orders
-    methods:
-      - GET
-      - PUT
-      - DELETE
-    tags:
-      - orders
-      - admin
-
-  # === INVENTORY ROUTES (ADMIN) ===
-  - name: inventory-admin
-    service: inventory-service
-    paths:
-      - /api/v1/admin/inventory
-    methods:
-      - GET
-      - PUT
-      - POST
-    tags:
-      - inventory
-      - admin
 
   # === WEBSOCKET ROUTES ===
-  - name: websocket-notifications
-    service: auth-service  # WebSocket handled by main service for now
+  - name: websocket-routes
+    service: brain2gain-backend
     paths:
-      - /api/v1/ws/notifications
+      - /ws
     protocols:
       - ws
       - wss
@@ -175,41 +61,47 @@ routes:
       - websocket
       - notifications
 
+  # === ROOT ROUTE ===
+  - name: root-route
+    service: brain2gain-backend
+    paths:
+      - /
+    strip_path: false
+    preserve_host: true
+    methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    tags:
+      - root
+      - backend
+
 consumers:
-  # === STORE FRONTEND ===
-  - username: store-frontend
-    custom_id: tienda.brain2gain.com
+  # === FRONTEND CLIENTS ===
+  - username: frontend-client
+    custom_id: brain2gain.frontend
     tags:
       - frontend
-      - store
-
-  # === ERP FRONTEND ===
-  - username: erp-frontend
-    custom_id: erp.brain2gain.com
-    tags:
-      - frontend
-      - erp
-
-  # === MOBILE APP ===
-  - username: mobile-app
-    custom_id: mobile.brain2gain.com
-    tags:
-      - mobile
-      - app
+      - client
 
 plugins:
-  # === CORS for Store Frontend ===
+  # === CORS for Frontend ===
   - name: cors
-    route: products-catalog
     config:
       origins:
-        - "https://tienda.brain2gain.com"
+        - "http://localhost:5173"
         - "http://localhost:3000"
+        - "https://brain2gain.com"
+        - "https://www.brain2gain.com"
       methods:
         - GET
         - POST
         - PUT
         - DELETE
+        - PATCH
         - OPTIONS
       headers:
         - Accept
@@ -219,82 +111,39 @@ plugins:
         - Content-Type
         - Date
         - Authorization
+        - X-Requested-With
       exposed_headers:
         - X-Auth-Token
+        - X-Request-ID
       credentials: true
       max_age: 3600
 
-  # === Rate Limiting for Public API ===
+  # === Rate Limiting ===
   - name: rate-limiting
-    route: products-catalog
     config:
-      minute: 100
-      hour: 1000
+      minute: 2000
+      hour: 20000
       policy: redis
       redis_host: redis
       redis_port: 6379
-      redis_database: 4
+      redis_database: 0
+      fault_tolerant: true
+      hide_client_headers: false
 
-  # === Rate Limiting for Admin API ===
-  - name: rate-limiting
-    route: products-admin
+  # === Request Size Limiting ===
+  - name: request-size-limiting
     config:
-      minute: 500
-      hour: 5000
-      policy: redis
-      redis_host: redis
-      redis_port: 6379
-      redis_database: 4
+      allowed_payload_size: 10  # 10MB
 
-  # === JWT Authentication for Protected Routes ===
-  - name: jwt
-    route: auth-users
+  # === Response Headers ===
+  - name: response-transformer
     config:
-      key_claim_name: iss
-      secret_is_base64: false
-      claims_to_verify:
-        - exp
-        - iat
-      
-  - name: jwt
-    route: orders-user
-    config:
-      key_claim_name: iss
-      secret_is_base64: false
-      claims_to_verify:
-        - exp
-        - iat
-
-  # === Key Auth for Admin Routes ===
-  - name: key-auth
-    route: products-admin
-    config:
-      key_names:
-        - apikey
-        - x-api-key
-      key_in_body: false
-      key_in_header: true
-      key_in_query: false
-
-  - name: key-auth
-    route: orders-admin
-    config:
-      key_names:
-        - apikey
-        - x-api-key
-      key_in_body: false
-      key_in_header: true
-      key_in_query: false
-
-  - name: key-auth
-    route: inventory-admin
-    config:
-      key_names:
-        - apikey
-        - x-api-key
-      key_in_body: false
-      key_in_header: true
-      key_in_query: false
+      add:
+        headers:
+          - "X-API-Version:v1"
+          - "X-Powered-By:Brain2Gain"
+          - "X-Frame-Options:DENY"
+          - "X-Content-Type-Options:nosniff"
 
   # === Request/Response Logging ===
   - name: file-log
@@ -302,40 +151,12 @@ plugins:
       path: /var/log/kong/access.log
       custom_fields_by_lua:
         request_id: "return kong.ctx.shared.request_id"
-        user_id: "return kong.ctx.shared.authenticated_credential and kong.ctx.shared.authenticated_credential.consumer_id"
 
   # === Prometheus Metrics ===
   - name: prometheus
     config:
-      per_consumer: true
-
-  # === Request Size Limiting ===
-  - name: request-size-limiting
-    config:
-      allowed_payload_size: 10  # 10MB
-
-  # === Response Transformer for API Versioning ===
-  - name: response-transformer
-    config:
-      add:
-        headers:
-          - "X-API-Version:v1"
-          - "X-Powered-By:Brain2Gain"
-
-jwt_secrets:
-  - consumer: store-frontend
-    algorithm: HS256
-    key: store-frontend-key
-    secret: ${JWT_SECRET_STORE}
-
-  - consumer: erp-frontend
-    algorithm: HS256
-    key: erp-frontend-key
-    secret: ${JWT_SECRET_ERP}
-
-keyauth_credentials:
-  - consumer: erp-frontend
-    key: ${ERP_API_KEY}
-
-  - consumer: mobile-app
-    key: ${MOBILE_API_KEY}
+      per_consumer: false
+      bandwidth_metrics: true
+      latency_metrics: true
+      status_code_metrics: true
+      upstream_health_metrics: true

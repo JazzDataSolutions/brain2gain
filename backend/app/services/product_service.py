@@ -9,22 +9,25 @@ Handles:
 - Search and filtering
 - Category management
 """
+import builtins
 import logging
-from decimal import Decimal
-from typing import List, Optional, Dict, Any
 from datetime import datetime
-import uuid
-import asyncio
+from decimal import Decimal
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import select, and_, or_
+from sqlmodel import and_, or_, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from app.core.cache import (
+    cache_key_wrapper,
+    invalidate_cache_key,
+    invalidate_cache_pattern,
+)
 from app.core.config import settings
-from app.core.cache import cache_key_wrapper, invalidate_cache_pattern, invalidate_cache_key
 from app.models import Product
-from app.schemas.product import ProductCreate, ProductUpdate
 from app.repositories.product_repository import ProductRepository
+from app.schemas.product import ProductCreate, ProductUpdate
 from app.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
@@ -32,14 +35,14 @@ logger = logging.getLogger(__name__)
 
 class ProductService:
     """Service for product business logic and data operations."""
-    
+
     def __init__(self, session: AsyncSession):
         self.session = session
         self.repo = ProductRepository(session)
         self.notification_service = NotificationService(session)
 
     @cache_key_wrapper("products:list", ttl=300)  # 5 minutes cache
-    async def list(self, skip: int = 0, limit: int = 100) -> List[Product]:
+    async def list(self, skip: int = 0, limit: int = 100) -> list[Product]:
         """
         List products with pagination.
         
@@ -74,7 +77,7 @@ class ProductService:
         """
         # Business validations
         await self._validate_product_creation(payload)
-        
+
         # Check for duplicate SKU
         existing_product = await self.repo.get_by_sku(payload.sku)
         if existing_product:
@@ -83,34 +86,34 @@ class ProductService:
         # Create product instance
         product_data = payload.model_dump()
         product = Product(**product_data)
-        
+
         try:
             self.session.add(product)
             await self.session.commit()
             await self.session.refresh(product)
-            
+
             # Invalidate related caches
             await self._invalidate_product_caches()
-            
+
             logger.info(f"Created product with SKU: {product.sku}")
             return product
-            
+
         except IntegrityError as e:
             await self.session.rollback()
             logger.error(f"Database integrity error creating product: {e}")
             raise ValueError("Product with this SKU already exists")
 
     @cache_key_wrapper("products:detail", ttl=600)  # 10 minutes cache
-    async def get_by_id(self, product_id: int) -> Optional[Product]:
+    async def get_by_id(self, product_id: int) -> Product | None:
         """Get product by ID."""
         return await self.repo.get_by_id(product_id)
 
     @cache_key_wrapper("products:sku", ttl=600)  # 10 minutes cache
-    async def get_by_sku(self, sku: str) -> Optional[Product]:
+    async def get_by_sku(self, sku: str) -> Product | None:
         """Get product by SKU."""
         return await self.repo.get_by_sku(sku)
 
-    async def update(self, product_id: int, payload: ProductUpdate) -> Optional[Product]:
+    async def update(self, product_id: int, payload: ProductUpdate) -> Product | None:
         """
         Update a product with business validation.
         
@@ -146,13 +149,13 @@ class ProductService:
             self.session.add(product)
             await self.session.commit()
             await self.session.refresh(product)
-            
+
             # Invalidate related caches
             await self._invalidate_product_caches(product_id)
-            
+
             logger.info(f"Updated product with ID: {product_id}")
             return product
-            
+
         except IntegrityError as e:
             await self.session.rollback()
             logger.error(f"Database integrity error updating product: {e}")
@@ -178,19 +181,19 @@ class ProductService:
         try:
             await self.session.delete(product)
             await self.session.commit()
-            
+
             # Invalidate related caches
             await self._invalidate_product_caches(product_id)
-            
+
             logger.info(f"Deleted product with ID: {product_id}")
             return True
-            
+
         except Exception as e:
             await self.session.rollback()
             logger.error(f"Error deleting product {product_id}: {e}")
             raise ValueError("Cannot delete product due to existing dependencies")
 
-    async def update_stock(self, product_id: int, new_quantity: int) -> Optional[Product]:
+    async def update_stock(self, product_id: int, new_quantity: int) -> Product | None:
         """
         Update product stock quantity.
         
@@ -206,24 +209,24 @@ class ProductService:
         """
         if new_quantity < 0:
             raise ValueError("Stock quantity cannot be negative")
-            
+
         product = await self.repo.get_by_id(product_id)
         if not product:
             return None
-            
+
         product.stock_quantity = new_quantity
-        
+
         try:
             self.session.add(product)
             await self.session.commit()
             await self.session.refresh(product)
-            
+
             # Invalidate related caches
             await self._invalidate_product_caches(product_id)
-            
+
             logger.info(f"Updated stock for product {product_id} to {new_quantity}")
             return product
-            
+
         except Exception as e:
             await self.session.rollback()
             logger.error(f"Error updating stock for product {product_id}: {e}")
@@ -234,24 +237,24 @@ class ProductService:
         # Price validation
         min_price = Decimal(str(settings.MIN_PRODUCT_PRICE))
         max_price = Decimal(str(settings.MAX_PRODUCT_PRICE))
-        
+
         if payload.unit_price < min_price:
             raise ValueError(f"Product price must be at least ${min_price}")
-            
+
         if payload.unit_price > max_price:
             raise ValueError(f"Product price cannot exceed ${max_price}")
-        
+
         # SKU validation
         if not payload.sku or len(payload.sku.strip()) == 0:
             raise ValueError("Product SKU is required")
-            
+
         if len(payload.sku) > settings.MAX_SKU_LENGTH:
             raise ValueError(f"SKU cannot exceed {settings.MAX_SKU_LENGTH} characters")
-            
+
         # Stock validation
         if hasattr(payload, 'stock_quantity') and payload.stock_quantity < 0:
             raise ValueError("Stock quantity cannot be negative")
-            
+
         # Name validation
         if not payload.name or len(payload.name.strip()) == 0:
             raise ValueError("Product name is required")
@@ -262,26 +265,26 @@ class ProductService:
         if payload.unit_price is not None:
             min_price = Decimal(str(settings.MIN_PRODUCT_PRICE))
             max_price = Decimal(str(settings.MAX_PRODUCT_PRICE))
-            
+
             if payload.unit_price < min_price:
                 raise ValueError(f"Product price must be at least ${min_price}")
-                
+
             if payload.unit_price > max_price:
                 raise ValueError(f"Product price cannot exceed ${max_price}")
-        
+
         # SKU validation
         if payload.sku is not None:
             if not payload.sku or len(payload.sku.strip()) == 0:
                 raise ValueError("Product SKU cannot be empty")
-                
+
             if len(payload.sku) > settings.MAX_SKU_LENGTH:
                 raise ValueError(f"SKU cannot exceed {settings.MAX_SKU_LENGTH} characters")
-                
+
         # Stock validation
         if hasattr(payload, 'stock_quantity') and payload.stock_quantity is not None:
             if payload.stock_quantity < 0:
                 raise ValueError("Stock quantity cannot be negative")
-                
+
         # Name validation
         if payload.name is not None and (not payload.name or len(payload.name.strip()) == 0):
             raise ValueError("Product name cannot be empty")
@@ -291,14 +294,14 @@ class ProductService:
         # Check if product has pending orders (this would require Order model)
         # For now, we'll just log the deletion
         logger.info(f"Validating deletion of product: {product.sku}")
-        
+
         # Future: Add checks for:
         # - Active orders containing this product
         # - Cart items referencing this product
         # - Transaction history
         pass
 
-    async def _invalidate_product_caches(self, product_id: Optional[int] = None) -> None:
+    async def _invalidate_product_caches(self, product_id: int | None = None) -> None:
         """
         Invalidate product-related cache entries.
         
@@ -308,11 +311,11 @@ class ProductService:
         try:
             # Always invalidate list caches as they might contain any product
             await invalidate_cache_pattern("products:list:*")
-            
+
             if product_id:
                 # Invalidate specific product cache
                 await invalidate_cache_key(f"products:detail:{product_id}")
-                
+
                 # Try to get product to invalidate SKU cache
                 # (we need to do this before/after the actual DB operation)
                 product = await self.repo.get_by_id(product_id)
@@ -322,14 +325,14 @@ class ProductService:
                 # Invalidate all product caches
                 await invalidate_cache_pattern("products:detail:*")
                 await invalidate_cache_pattern("products:sku:*")
-                
+
             logger.debug(f"Cache invalidated for product_id: {product_id}")
-            
+
         except Exception as e:
             # Don't fail the operation if cache invalidation fails
             logger.warning(f"Failed to invalidate product cache: {e}")
 
-    async def get_active_products(self, skip: int = 0, limit: int = 100) -> List[Product]:
+    async def get_active_products(self, skip: int = 0, limit: int = 100) -> builtins.list[Product]:
         """
         Get active products only with caching.
         
@@ -343,7 +346,7 @@ class ProductService:
         return await self._get_active_products_cached(skip, limit)
 
     @cache_key_wrapper("products:active", ttl=300)  # 5 minutes cache
-    async def _get_active_products_cached(self, skip: int = 0, limit: int = 100) -> List[Product]:
+    async def _get_active_products_cached(self, skip: int = 0, limit: int = 100) -> builtins.list[Product]:
         """Internal cached method for active products."""
         statement = (
             select(Product)
@@ -357,14 +360,14 @@ class ProductService:
     # New Microservice Methods for Phase 2 Architecture
 
     async def search_products(
-        self, 
-        query: str, 
-        category: Optional[str] = None,
-        min_price: Optional[Decimal] = None,
-        max_price: Optional[Decimal] = None,
+        self,
+        query: str,
+        category: str | None = None,
+        min_price: Decimal | None = None,
+        max_price: Decimal | None = None,
         skip: int = 0,
         limit: int = 50
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Advanced product search with filtering capabilities.
         
@@ -380,7 +383,7 @@ class ProductService:
             Dict with products, total count, and filters applied
         """
         conditions = [Product.status == "ACTIVE"]
-        
+
         # Text search
         if query:
             text_condition = or_(
@@ -389,29 +392,29 @@ class ProductService:
                 Product.sku.ilike(f"%{query}%")
             )
             conditions.append(text_condition)
-        
+
         # Category filter
         if category:
             conditions.append(Product.category.ilike(f"%{category}%"))
-        
+
         # Price range filter
         if min_price is not None:
             conditions.append(Product.unit_price >= min_price)
         if max_price is not None:
             conditions.append(Product.unit_price <= max_price)
-        
+
         # Build query
         base_statement = select(Product).where(and_(*conditions))
-        
+
         # Get total count
         count_result = await self.session.exec(base_statement)
         total_count = len(count_result.all())
-        
+
         # Get paginated results
         statement = base_statement.offset(skip).limit(limit)
         result = await self.session.exec(statement)
         products = result.all()
-        
+
         return {
             "products": products,
             "total": total_count,
@@ -426,21 +429,21 @@ class ProductService:
         }
 
     @cache_key_wrapper("products:categories", ttl=3600)  # 1 hour cache
-    async def get_categories(self) -> List[str]:
+    async def get_categories(self) -> builtins.list[str]:
         """Get list of available product categories."""
         statement = select(Product.category).distinct().where(Product.status == "ACTIVE")
         result = await self.session.exec(statement)
         categories = [cat for cat in result.all() if cat]
         return sorted(categories)
 
-    async def get_featured_products(self, limit: int = 10) -> List[Product]:
+    async def get_featured_products(self, limit: int = 10) -> builtins.list[Product]:
         """Get featured products for homepage/marketing."""
         # TODO: Add featured flag to Product model
         # For now, return best selling or highest rated products
         return await self._get_featured_products_cached(limit)
 
     @cache_key_wrapper("products:featured", ttl=1800)  # 30 minutes cache
-    async def _get_featured_products_cached(self, limit: int = 10) -> List[Product]:
+    async def _get_featured_products_cached(self, limit: int = 10) -> builtins.list[Product]:
         """Internal cached method for featured products."""
         statement = (
             select(Product)
@@ -452,10 +455,10 @@ class ProductService:
         return result.all()
 
     async def get_product_recommendations(
-        self, 
-        product_id: int, 
+        self,
+        product_id: int,
         limit: int = 5
-    ) -> List[Product]:
+    ) -> builtins.list[Product]:
         """
         Get product recommendations based on category and price range.
         
@@ -469,12 +472,12 @@ class ProductService:
         base_product = await self.get_by_id(product_id)
         if not base_product:
             return []
-        
+
         # Find similar products by category and price range
         price_range = base_product.unit_price * Decimal('0.3')  # 30% price variance
         min_price = base_product.unit_price - price_range
         max_price = base_product.unit_price + price_range
-        
+
         statement = (
             select(Product)
             .where(
@@ -488,14 +491,14 @@ class ProductService:
             )
             .limit(limit)
         )
-        
+
         result = await self.session.exec(statement)
         return result.all()
 
     async def bulk_update_prices(
-        self, 
-        price_updates: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+        self,
+        price_updates: builtins.list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """
         Bulk update product prices.
         
@@ -507,19 +510,19 @@ class ProductService:
         """
         successful_updates = []
         failed_updates = []
-        
+
         for update in price_updates:
             try:
                 product_id = update.get('product_id')
                 new_price = Decimal(str(update.get('new_price')))
-                
+
                 if new_price < Decimal('0'):
                     failed_updates.append({
                         'product_id': product_id,
                         'error': 'Price cannot be negative'
                     })
                     continue
-                
+
                 product = await self.get_by_id(product_id)
                 if not product:
                     failed_updates.append({
@@ -527,29 +530,29 @@ class ProductService:
                         'error': 'Product not found'
                     })
                     continue
-                
+
                 old_price = product.unit_price
                 product.unit_price = new_price
-                
+
                 self.session.add(product)
                 await self.session.commit()
-                
+
                 successful_updates.append({
                     'product_id': product_id,
                     'old_price': old_price,
                     'new_price': new_price
                 })
-                
+
             except Exception as e:
                 failed_updates.append({
                     'product_id': update.get('product_id'),
                     'error': str(e)
                 })
                 await self.session.rollback()
-        
+
         # Invalidate price-related caches
         await self._invalidate_product_caches()
-        
+
         return {
             'successful_updates': successful_updates,
             'failed_updates': failed_updates,
@@ -558,7 +561,7 @@ class ProductService:
             'failed_count': len(failed_updates)
         }
 
-    async def get_low_stock_products(self, threshold: int = 10) -> List[Product]:
+    async def get_low_stock_products(self, threshold: int = 10) -> builtins.list[Product]:
         """
         Get products with low stock (for inventory alerts).
         Note: This reads stock but doesn't modify it (that's Inventory Service's job).
@@ -582,7 +585,7 @@ class ProductService:
         result = await self.session.exec(statement)
         return result.all()
 
-    async def get_price_history(self, product_id: int) -> Dict[str, Any]:
+    async def get_price_history(self, product_id: int) -> dict[str, Any]:
         """
         Get price history for a product.
         TODO: Implement price history tracking table
@@ -596,7 +599,7 @@ class ProductService:
         product = await self.get_by_id(product_id)
         if not product:
             return {"error": "Product not found"}
-        
+
         # Placeholder - in real implementation, query price_history table
         return {
             "product_id": product_id,
@@ -610,7 +613,7 @@ class ProductService:
             ]
         }
 
-    async def validate_product_availability(self, product_ids: List[int]) -> Dict[int, bool]:
+    async def validate_product_availability(self, product_ids: builtins.list[int]) -> dict[int, bool]:
         """
         Validate if products are available for purchase.
         Used by Order Service to check availability before order creation.
@@ -629,10 +632,10 @@ class ProductService:
         )
         result = await self.session.exec(statement)
         available_products = {p.product_id: p.stock_quantity > 0 for p in result.all()}
-        
+
         # Include unavailable products as False
         availability = {}
         for product_id in product_ids:
             availability[product_id] = available_products.get(product_id, False)
-        
+
         return availability

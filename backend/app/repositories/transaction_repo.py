@@ -1,8 +1,10 @@
 # backend/app/repositories/transaction_repo.py
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.transaction import Transaction
 from app.repositories.base import IRepository
+
 
 class TransactionRepository(IRepository[Transaction]):
     def __init__(self, session: AsyncSession):

@@ -6,24 +6,24 @@ Provides centralized error handling, logging, and consistent error responses.
 import logging
 import traceback
 import uuid
-from typing import Dict, Any
+from typing import Any
 
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 logger = logging.getLogger(__name__)
 
 
 class ExceptionHandlerMiddleware:
     """Centralized exception handling middleware."""
-    
+
     def __init__(self, app: FastAPI):
         self.app = app
         self._register_handlers()
-    
+
     def _register_handlers(self):
         """Register all exception handlers."""
         self.app.add_exception_handler(HTTPException, self._http_exception_handler)
@@ -33,11 +33,11 @@ class ExceptionHandlerMiddleware:
         self.app.add_exception_handler(IntegrityError, self._integrity_error_handler)
         self.app.add_exception_handler(SQLAlchemyError, self._database_error_handler)
         self.app.add_exception_handler(Exception, self._unhandled_exception_handler)
-    
+
     async def _http_exception_handler(self, request: Request, exc: HTTPException) -> JSONResponse:
         """Handle HTTP exceptions."""
         error_id = str(uuid.uuid4())
-        
+
         logger.warning(
             f"HTTP Exception {exc.status_code}: {exc.detail}",
             extra={
@@ -48,7 +48,7 @@ class ExceptionHandlerMiddleware:
                 "method": request.method,
             }
         )
-        
+
         return JSONResponse(
             status_code=exc.status_code,
             content={
@@ -57,11 +57,11 @@ class ExceptionHandlerMiddleware:
                 "type": "http_error"
             }
         )
-    
+
     async def _validation_exception_handler(self, request: Request, exc: RequestValidationError) -> JSONResponse:
         """Handle request validation errors."""
         error_id = str(uuid.uuid4())
-        
+
         # Format validation errors for better UX
         formatted_errors = []
         for error in exc.errors():
@@ -71,7 +71,7 @@ class ExceptionHandlerMiddleware:
                 "message": error["msg"],
                 "type": error["type"]
             })
-        
+
         logger.warning(
             f"Validation error on {request.method} {request.url}",
             extra={
@@ -81,7 +81,7 @@ class ExceptionHandlerMiddleware:
                 "method": request.method,
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
@@ -91,11 +91,11 @@ class ExceptionHandlerMiddleware:
                 "type": "validation_error"
             }
         )
-    
+
     async def _pydantic_validation_handler(self, request: Request, exc: ValidationError) -> JSONResponse:
         """Handle Pydantic validation errors."""
         error_id = str(uuid.uuid4())
-        
+
         logger.warning(
             f"Pydantic validation error: {str(exc)}",
             extra={
@@ -104,7 +104,7 @@ class ExceptionHandlerMiddleware:
                 "method": request.method,
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
@@ -114,11 +114,11 @@ class ExceptionHandlerMiddleware:
                 "type": "pydantic_validation_error"
             }
         )
-    
+
     async def _value_error_handler(self, request: Request, exc: ValueError) -> JSONResponse:
         """Handle business logic validation errors."""
         error_id = str(uuid.uuid4())
-        
+
         logger.warning(
             f"Business validation error: {str(exc)}",
             extra={
@@ -127,7 +127,7 @@ class ExceptionHandlerMiddleware:
                 "method": request.method,
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={
@@ -136,11 +136,11 @@ class ExceptionHandlerMiddleware:
                 "type": "business_validation_error"
             }
         )
-    
+
     async def _integrity_error_handler(self, request: Request, exc: IntegrityError) -> JSONResponse:
         """Handle database integrity constraint violations."""
         error_id = str(uuid.uuid4())
-        
+
         # Parse common integrity errors
         error_message = "Database constraint violation"
         if "UNIQUE constraint failed" in str(exc.orig):
@@ -149,7 +149,7 @@ class ExceptionHandlerMiddleware:
             error_message = "Referenced resource not found"
         elif "NOT NULL constraint failed" in str(exc.orig):
             error_message = "Required field is missing"
-        
+
         logger.error(
             f"Database integrity error: {str(exc)}",
             extra={
@@ -158,7 +158,7 @@ class ExceptionHandlerMiddleware:
                 "method": request.method,
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_409_CONFLICT,
             content={
@@ -167,11 +167,11 @@ class ExceptionHandlerMiddleware:
                 "type": "integrity_error"
             }
         )
-    
+
     async def _database_error_handler(self, request: Request, exc: SQLAlchemyError) -> JSONResponse:
         """Handle general database errors."""
         error_id = str(uuid.uuid4())
-        
+
         logger.error(
             f"Database error: {str(exc)}",
             extra={
@@ -181,7 +181,7 @@ class ExceptionHandlerMiddleware:
                 "traceback": traceback.format_exc(),
             }
         )
-        
+
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content={
@@ -190,11 +190,11 @@ class ExceptionHandlerMiddleware:
                 "type": "database_error"
             }
         )
-    
+
     async def _unhandled_exception_handler(self, request: Request, exc: Exception) -> JSONResponse:
         """Handle unexpected exceptions."""
         error_id = str(uuid.uuid4())
-        
+
         logger.error(
             f"Unhandled exception: {type(exc).__name__}: {str(exc)}",
             extra={
@@ -205,7 +205,7 @@ class ExceptionHandlerMiddleware:
                 "traceback": traceback.format_exc(),
             }
         )
-        
+
         # Don't expose internal error details in production
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

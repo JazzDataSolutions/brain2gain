@@ -10,6 +10,7 @@ from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
 from app.core import security
 from app.core.config import settings
 from app.core.security import get_password_hash
+from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
 from app.models import Message, NewPassword, Token, UserPublic
 from app.utils import (
     generate_password_reset_token,
@@ -17,7 +18,6 @@ from app.utils import (
     send_email,
     verify_password_reset_token,
 )
-from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
 
 router = APIRouter(tags=["login"])
 
@@ -26,7 +26,7 @@ router = APIRouter(tags=["login"])
 @apply_endpoint_limits("auth")
 def login_access_token(
     request: Request,
-    session: SessionDep, 
+    session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ) -> Token:
     """

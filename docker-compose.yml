@@ -1,189 +1,279 @@
-services:
+# ═══════════════════════════════════════════════════════════════════
+# Production Docker Compose Configuration
+# ═══════════════════════════════════════════════════════════════════
+# Optimized for production deployment with pre-built images and security
+# ═══════════════════════════════════════════════════════════════════
+# Usage: docker-compose up -d
+# Environment variables: Use .env.production
 
-  db:
-    image: postgres:17
-    restart: "no"
-    networks: [core]
-    # No se inicia; sólo sirve para 'depends_on'
-    entrypoint: ["true"]
+include:
+  - docker-compose.base.yml
+
+services:
+  # ═══════════════════════════════════════════════════════════════════
+  # DATABASE OVERRIDES FOR PRODUCTION
+  # ═══════════════════════════════════════════════════════════════════
+
+  postgres:
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB?Variable not set}
+      POSTGRES_USER: ${POSTGRES_USER?Variable not set}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?Variable not set}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+      - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+      - ./database/backups:/backups:rw
+    command: |
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+    networks:
+      - brain2gain-network
+    profiles: []  # Remove profile restriction
 
   redis:
-    image: redis:7.2-alpine
     restart: always
+    command: |
+      redis-server 
+      --appendonly yes 
+      --requirepass ${REDIS_PASSWORD?Variable not set}
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
     networks:
-      - default
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD?Variable not set}
-    healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - brain2gain-network
+    profiles: []  # Remove profile restriction
 
-  adminer:
-    image: adminer
-    restart: always
-    networks:
-      - traefik-public
-      - default
-    depends_on:
-      - db
-    environment:
-      - ADMINER_DESIGN=pepa-linha-dark
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-http.rule=Host(`adminer.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-http.entrypoints=http
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-http.middlewares=https-redirect
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.rule=Host(`adminer.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-adminer-https.tls.certresolver=le
-      - traefik.http.services.${STACK_NAME?Variable not set}-adminer.loadbalancer.server.port=8080
-
-  prestart:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
-    build:
-      context: ./backend
-    networks:
-      - traefik-public
-      - default
-    depends_on:
-      db:
-        condition: service_healthy
-        restart: true
-      redis:
-        condition: service_healthy
-    command: bash scripts/prestart.sh
-    env_file:
-      - .env
-    environment:
-      - DOMAIN=${DOMAIN}
-      - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
-      - SECRET_KEY=${SECRET_KEY?Variable not set}
-      - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
-      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - SENTRY_DSN=${SENTRY_DSN}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD?Variable not set}
+  # ═══════════════════════════════════════════════════════════════════
+  # APPLICATION SERVICES - PRODUCTION
+  # ═══════════════════════════════════════════════════════════════════
 
   backend:
-    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    image: '${DOCKER_IMAGE_BACKEND:-brain2gain/backend}:${TAG:-latest}'
+    container_name: brain2gain-backend-prod
     restart: always
-    networks:
-      - traefik-public
-      - default
     depends_on:
-      db:
+      postgres:
         condition: service_healthy
-        restart: true
       redis:
         condition: service_healthy
-      prestart:
-        condition: service_completed_successfully
+    ports:
+      - "8000:8000"
     env_file:
-      - .env
+      - .env.production
     environment:
-      - DOMAIN=${DOMAIN}
-      - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS}
+      # Core production settings
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - DOMAIN=${DOMAIN?Variable not set}
       - SECRET_KEY=${SECRET_KEY?Variable not set}
-      - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
-      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL}
-      - POSTGRES_SERVER=db
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - POSTGRES_DB=${POSTGRES_DB}
+      
+      # Database
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
       - POSTGRES_USER=${POSTGRES_USER?Variable not set}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
-      - SENTRY_DSN=${SENTRY_DSN}
+      
+      # Redis
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD?Variable not set}
-
+      
+      # Security
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS?Variable not set}
+      - FRONTEND_HOST=${FRONTEND_HOST?Variable not set}
+      
+      # Admin user
+      - FIRST_SUPERUSER=${FIRST_SUPERUSER?Variable not set}
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD?Variable not set}
+      
+      # Email service
+      - SMTP_HOST=${SMTP_HOST?Variable not set}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER?Variable not set}
+      - SMTP_PASSWORD=${SMTP_PASSWORD?Variable not set}
+      - EMAILS_FROM_EMAIL=${EMAILS_FROM_EMAIL?Variable not set}
+      - SMTP_TLS=${SMTP_TLS:-true}
+      
+      # Payment gateways (Phase 1 MVP)
+      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY?Variable not set}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY?Variable not set}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET?Variable not set}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID?Variable not set}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET?Variable not set}
+      - PAYPAL_MODE=${PAYPAL_MODE:-live}
+      
+      # Order and inventory settings
+      - STOCK_RESERVATION_TIMEOUT=${STOCK_RESERVATION_TIMEOUT:-900}  # 15 minutes
+      - MAX_CART_ITEMS=${MAX_CART_ITEMS:-50}
+      - SHIPPING_FREE_THRESHOLD=${SHIPPING_FREE_THRESHOLD:-1000}  # MXN
+      
+      # Monitoring and observability
+      - SENTRY_DSN=${SENTRY_DSN}
+      - PROMETHEUS_METRICS_ENABLED=${PROMETHEUS_METRICS_ENABLED:-true}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     build:
       context: ./backend
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
-
-      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8000
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=Host(`api.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.entrypoints=http
-
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=Host(`api.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls.certresolver=le
-
-      # Enable redirection for HTTP and HTTPS
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.middlewares=https-redirect
+      dockerfile: Dockerfile
+      target: production
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    networks:
+      - brain2gain-network
+    security_opt:
+      - no-new-privileges:true
 
   frontend:
-    image: '${DOCKER_IMAGE_FRONTEND?Variable not set}:${TAG-latest}'
+    image: '${DOCKER_IMAGE_FRONTEND:-brain2gain/frontend}:${TAG:-latest}'
+    container_name: brain2gain-frontend-prod
     restart: always
-    networks:
-      - traefik-public
-      - default
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      - VITE_API_URL=${BACKEND_URL?Variable not set}
+      - VITE_ENVIRONMENT=production
+      - VITE_SENTRY_DSN=${FRONTEND_SENTRY_DSN}
+      - VITE_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY?Variable not set}
+      - VITE_PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID?Variable not set}
+      - VITE_FEATURE_CHECKOUT=${VITE_FEATURE_CHECKOUT:-true}
+      - VITE_FEATURE_NOTIFICATIONS=${VITE_FEATURE_NOTIFICATIONS:-true}
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+      target: production
       args:
-        - VITE_API_URL=https://api.${DOMAIN?Variable not set}
+        - VITE_API_URL=${BACKEND_URL?Variable not set}
         - NODE_ENV=production
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-public
-      - traefik.constraint-label=traefik-public
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    networks:
+      - brain2gain-network
+    security_opt:
+      - no-new-privileges:true
 
-      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
+  # ═══════════════════════════════════════════════════════════════════
+  # REVERSE PROXY & SSL
+  # ═══════════════════════════════════════════════════════════════════
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.entrypoints=http
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: brain2gain-nginx-prod
+    restart: always
+    depends_on:
+      - frontend
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_logs:/var/log/nginx
+      - nginx_cache:/var/cache/nginx
+    environment:
+      - DOMAIN=${DOMAIN?Variable not set}
+      - BACKEND_HOST=backend:8000
+      - FRONTEND_HOST=frontend:80
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+    networks:
+      - brain2gain-network
+    security_opt:
+      - no-new-privileges:true
+    profiles:
+      - nginx
 
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=Host(`dashboard.${DOMAIN?Variable not set}`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=https
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls.certresolver=le
+  # ═══════════════════════════════════════════════════════════════════
+  # MONITORING STACK (Optional)
+  # ═══════════════════════════════════════════════════════════════════
 
-      # Enable redirection for HTTP and HTTPS
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.middlewares=https-redirect
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: brain2gain-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - brain2gain-network
+    profiles:
+      - monitoring
 
-
-networks:
-  traefik-public:
-    # Allow setting it to false for testing
-    external: true
-
-  core:
-    external: true           # reutiliza la red donde ya está postgres
-    name: stack_default
+  grafana:
+    image: grafana/grafana:latest
+    container_name: brain2gain-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD?Variable not set}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    networks:
+      - brain2gain-network
+    profiles:
+      - monitoring
 
 volumes:
-  redis_data:
+  postgres_prod_data:
+    driver: local
+    name: brain2gain_postgres_prod_data
+  nginx_logs:
+    driver: local
+    name: brain2gain_nginx_logs
+  nginx_cache:
+    driver: local
+    name: brain2gain_nginx_cache
+  prometheus_data:
+    driver: local
+    name: brain2gain_prometheus_data
+  grafana_data:
+    driver: local
+    name: brain2gain_grafana_data

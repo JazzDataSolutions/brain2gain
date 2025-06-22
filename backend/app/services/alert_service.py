@@ -1,12 +1,17 @@
 # backend/app/services/alert_service.py
 
 from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import Dict, List, Optional, Literal
-from sqlmodel import Session, select, func
 from enum import Enum
 
-from ..models import Stock, Product, SalesOrder, OrderStatus, Transaction, TransactionType
+from sqlmodel import Session, func, select
+
+from ..models import (
+    OrderStatus,
+    Product,
+    SalesOrder,
+    Stock,
+    Transaction,
+)
 from .analytics_service import AnalyticsService
 
 
@@ -36,8 +41,8 @@ class Alert:
         severity: AlertSeverity,
         title: str,
         description: str,
-        data: Optional[Dict] = None,
-        timestamp: Optional[datetime] = None
+        data: dict | None = None,
+        timestamp: datetime | None = None
     ):
         self.alert_type = alert_type
         self.severity = severity
@@ -46,8 +51,8 @@ class Alert:
         self.data = data or {}
         self.timestamp = timestamp or datetime.utcnow()
         self.id = f"{alert_type.value}_{int(self.timestamp.timestamp())}"
-    
-    def to_dict(self) -> Dict:
+
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "type": self.alert_type.value,
@@ -62,11 +67,11 @@ class Alert:
 
 class AlertService:
     """Service for monitoring business metrics and generating alerts"""
-    
+
     def __init__(self, db: Session):
         self.db = db
         self.analytics_service = AnalyticsService(db)
-        
+
         # Alert thresholds - can be made configurable
         self.thresholds = {
             "low_stock_quantity": 10,
@@ -79,35 +84,35 @@ class AlertService:
             "mrr_decline_percentage": 10.0,  # 10% MRR decline triggers alert
             "aov_drop_percentage": 15.0      # 15% AOV drop triggers alert
         }
-    
-    def check_all_alerts(self) -> List[Alert]:
+
+    def check_all_alerts(self) -> list[Alert]:
         """Check all alert conditions and return triggered alerts"""
         alerts = []
-        
+
         # Check inventory alerts
         alerts.extend(self.check_inventory_alerts())
-        
+
         # Check revenue alerts
         alerts.extend(self.check_revenue_alerts())
-        
+
         # Check order alerts
         alerts.extend(self.check_order_alerts())
-        
+
         # Check conversion alerts
         alerts.extend(self.check_conversion_alerts())
-        
+
         # Check customer health alerts
         alerts.extend(self.check_customer_health_alerts())
-        
+
         # Check KPI alerts
         alerts.extend(self.check_kpi_alerts())
-        
+
         return alerts
-    
-    def check_inventory_alerts(self) -> List[Alert]:
+
+    def check_inventory_alerts(self) -> list[Alert]:
         """Check for inventory-related alerts"""
         alerts = []
-        
+
         # Low stock products
         low_stock_query = (
             select(Product.name, Product.sku, Stock.quantity)
@@ -119,13 +124,13 @@ class AlertService:
             )
         )
         low_stock_products = self.db.exec(low_stock_query).all()
-        
+
         if low_stock_products:
             product_list = [
                 f"{product.name} ({product.sku}): {product.quantity} units"
                 for product in low_stock_products
             ]
-            
+
             alerts.append(Alert(
                 alert_type=AlertType.INVENTORY_LOW_STOCK,
                 severity=AlertSeverity.WARNING,
@@ -143,7 +148,7 @@ class AlertService:
                     "threshold": self.thresholds["low_stock_quantity"]
                 }
             ))
-        
+
         # Out of stock products
         out_of_stock_query = (
             select(Product.name, Product.sku)
@@ -154,10 +159,10 @@ class AlertService:
             )
         )
         out_of_stock_products = self.db.exec(out_of_stock_query).all()
-        
+
         if out_of_stock_products:
             product_names = [f"{p.name} ({p.sku})" for p in out_of_stock_products]
-            
+
             alerts.append(Alert(
                 alert_type=AlertType.INVENTORY_OUT_OF_STOCK,
                 severity=AlertSeverity.CRITICAL,
@@ -173,13 +178,13 @@ class AlertService:
                     ]
                 }
             ))
-        
+
         return alerts
-    
-    def check_revenue_alerts(self) -> List[Alert]:
+
+    def check_revenue_alerts(self) -> list[Alert]:
         """Check for revenue-related alerts"""
         alerts = []
-        
+
         try:
             # Compare revenue with previous period
             period_days = self.thresholds["analysis_period_days"]
@@ -187,13 +192,13 @@ class AlertService:
             start_current = end_date - timedelta(days=period_days)
             start_previous = start_current - timedelta(days=period_days)
             end_previous = start_current
-            
+
             current_revenue = self.analytics_service.get_total_revenue(start_current, end_date)
             previous_revenue = self.analytics_service.get_total_revenue(start_previous, end_previous)
-            
+
             if previous_revenue > 0:
                 change_percentage = float((current_revenue - previous_revenue) / previous_revenue * 100)
-                
+
                 if change_percentage <= -self.thresholds["revenue_drop_percentage"]:
                     alerts.append(Alert(
                         alert_type=AlertType.REVENUE_DROP,
@@ -211,20 +216,20 @@ class AlertService:
         except Exception as e:
             # Log error but don't fail the entire alert check
             print(f"Error checking revenue alerts: {e}")
-        
+
         return alerts
-    
-    def check_order_alerts(self) -> List[Alert]:
+
+    def check_order_alerts(self) -> list[Alert]:
         """Check for order-related alerts"""
         alerts = []
-        
+
         # High number of pending orders
         pending_orders_count = self.db.exec(
             select(func.count(SalesOrder.so_id)).where(
                 SalesOrder.status == OrderStatus.PENDING
             )
         ).first() or 0
-        
+
         if pending_orders_count > self.thresholds["high_pending_orders"]:
             alerts.append(Alert(
                 alert_type=AlertType.HIGH_PENDING_ORDERS,
@@ -236,22 +241,22 @@ class AlertService:
                     "threshold": self.thresholds["high_pending_orders"]
                 }
             ))
-        
+
         return alerts
-    
-    def check_conversion_alerts(self) -> List[Alert]:
+
+    def check_conversion_alerts(self) -> list[Alert]:
         """Check for conversion-related alerts"""
         alerts = []
-        
+
         try:
             # Compare cart abandonment rates
             period_days = self.thresholds["analysis_period_days"]
             current_abandonment = self.analytics_service.get_cart_abandonment_rate(period_days)
             previous_abandonment = self.analytics_service.get_cart_abandonment_rate(period_days * 2)  # Previous period
-            
+
             if previous_abandonment > 0:
                 change = current_abandonment - previous_abandonment
-                
+
                 if change >= self.thresholds["conversion_drop_percentage"]:
                     alerts.append(Alert(
                         alert_type=AlertType.CONVERSION_DROP,
@@ -268,13 +273,13 @@ class AlertService:
         except Exception as e:
             # Log error but don't fail the entire alert check
             print(f"Error checking conversion alerts: {e}")
-        
+
         return alerts
-    
-    def get_alert_summary(self) -> Dict:
+
+    def get_alert_summary(self) -> dict:
         """Get a summary of current alerts by severity"""
         alerts = self.check_all_alerts()
-        
+
         summary = {
             "total_alerts": len(alerts),
             "critical_alerts": len([a for a in alerts if a.severity == AlertSeverity.CRITICAL]),
@@ -283,23 +288,23 @@ class AlertService:
             "last_checked": datetime.utcnow().isoformat(),
             "alerts": [alert.to_dict() for alert in alerts]
         }
-        
+
         return summary
-    
-    def get_alerts_by_type(self, alert_type: AlertType) -> List[Alert]:
+
+    def get_alerts_by_type(self, alert_type: AlertType) -> list[Alert]:
         """Get alerts filtered by type"""
         all_alerts = self.check_all_alerts()
         return [alert for alert in all_alerts if alert.alert_type == alert_type]
-    
-    def get_alerts_by_severity(self, severity: AlertSeverity) -> List[Alert]:
+
+    def get_alerts_by_severity(self, severity: AlertSeverity) -> list[Alert]:
         """Get alerts filtered by severity"""
         all_alerts = self.check_all_alerts()
         return [alert for alert in all_alerts if alert.severity == severity]
-    
-    def check_customer_health_alerts(self) -> List[Alert]:
+
+    def check_customer_health_alerts(self) -> list[Alert]:
         """Check for customer health-related alerts"""
         alerts = []
-        
+
         try:
             # Check churn rate
             churn_rate = self.analytics_service.calculate_churn_rate()
@@ -315,21 +320,21 @@ class AlertService:
                         "retention_rate": round(100 - churn_rate, 2)
                     }
                 ))
-            
+
             # Check average CLV for recent customers
             recent_customers = self.db.exec(
                 select(func.distinct(Transaction.customer_id)).where(
                     Transaction.created_at >= datetime.utcnow() - timedelta(days=30)
                 )
             ).all()
-            
+
             if recent_customers:
                 low_clv_customers = []
                 for customer_id in recent_customers[:10]:  # Check first 10 recent customers
                     clv = self.analytics_service.calculate_customer_lifetime_value(customer_id)
                     if clv < self.thresholds["low_clv_threshold"]:
                         low_clv_customers.append((customer_id, clv))
-                
+
                 if len(low_clv_customers) >= 5:  # If 5 or more have low CLV
                     avg_low_clv = sum(clv for _, clv in low_clv_customers) / len(low_clv_customers)
                     alerts.append(Alert(
@@ -345,25 +350,25 @@ class AlertService:
                     ))
         except Exception as e:
             print(f"Error checking customer health alerts: {e}")
-        
+
         return alerts
-    
-    def check_kpi_alerts(self) -> List[Alert]:
+
+    def check_kpi_alerts(self) -> list[Alert]:
         """Check for KPI-related alerts"""
         alerts = []
-        
+
         try:
             # Check MRR decline (compare current vs previous month)
             current_mrr = self.analytics_service.calculate_mrr()
             # For previous MRR, we'll approximate by looking at revenue 30-60 days ago
             start_previous = datetime.utcnow() - timedelta(days=60)
             end_previous = datetime.utcnow() - timedelta(days=30)
-            
+
             previous_month_revenue = self.analytics_service.get_total_revenue(start_previous, end_previous)
-            
+
             if previous_month_revenue > 0 and current_mrr > 0:
                 mrr_change = float((current_mrr - previous_month_revenue) / previous_month_revenue * 100)
-                
+
                 if mrr_change <= -self.thresholds["mrr_decline_percentage"]:
                     alerts.append(Alert(
                         alert_type=AlertType.MRR_DECLINE,
@@ -377,16 +382,16 @@ class AlertService:
                             "threshold": self.thresholds["mrr_decline_percentage"]
                         }
                     ))
-            
+
             # Check AOV decline
             current_aov = self.analytics_service.get_average_order_value()
             previous_aov = self.analytics_service.get_average_order_value(
                 start_previous, end_previous
             )
-            
+
             if previous_aov > 0 and current_aov > 0:
                 aov_change = float((current_aov - previous_aov) / previous_aov * 100)
-                
+
                 if aov_change <= -self.thresholds["aov_drop_percentage"]:
                     alerts.append(Alert(
                         alert_type=AlertType.AOV_DROP,
@@ -402,10 +407,10 @@ class AlertService:
                     ))
         except Exception as e:
             print(f"Error checking KPI alerts: {e}")
-        
+
         return alerts
-    
-    def update_thresholds(self, new_thresholds: Dict) -> Dict:
+
+    def update_thresholds(self, new_thresholds: dict) -> dict:
         """Update alert thresholds"""
         self.thresholds.update(new_thresholds)
         return self.thresholds

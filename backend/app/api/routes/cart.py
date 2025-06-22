@@ -1,21 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
-from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import Optional
 from uuid import UUID
 
-from app.models import User
-from app.schemas.cart import CartRead, AddToCartRequest, UpdateCartItemRequest
-from app.services.cart_service import CartService
-from app.core.database import get_db
+from fastapi import APIRouter, Depends, Request, status
+from sqlmodel.ext.asyncio.session import AsyncSession
+
 from app.api.deps import get_current_user
+from app.core.database import get_db
 from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
+from app.models import User
+from app.schemas.cart import AddToCartRequest, CartRead, UpdateCartItemRequest
+from app.services.cart_service import CartService
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 
 def get_cart_identifier(
     request: Request,
-    current_user: Optional[User] = Depends(get_current_user)
-) -> tuple[Optional[UUID], Optional[str]]:
+    current_user: User | None = Depends(get_current_user)
+) -> tuple[UUID | None, str | None]:
     """Get cart identifier - either user_id or session_id"""
     if current_user:
         return current_user.id, None
@@ -30,10 +30,37 @@ def get_cart_identifier(
 @router.get("/", response_model=CartRead)
 @apply_endpoint_limits("cart")
 async def get_cart(
+    request: Request,
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db)
 ) -> CartRead:
-    """Get current cart"""
+    """
+    Retrieve shopping cart for authenticated user or guest session.
+    
+    This endpoint supports both authenticated users (via JWT token) and
+    guest users (via session ID in headers). Cart state is maintained
+    separately for each context to ensure seamless shopping experience.
+    
+    Args:
+        cart_ids (tuple): Contains (user_id, session_id) from dependency
+        session (AsyncSession): Database session for cart operations
+        
+    Returns:
+        CartRead: Complete cart information including items, quantities,
+                 prices, and total calculations
+                 
+    Headers:
+        X-Session-ID: Required for guest users to maintain cart state
+        Authorization: Bearer token for authenticated users (optional)
+        
+    Rate Limiting:
+        Applied via @apply_endpoint_limits("cart") decorator
+        Standard cart limits apply per user/session
+        
+    Note:
+        Guest carts are identified by session ID and will be merged
+        with user cart upon authentication.
+    """
     user_id, session_id = cart_ids
     service = CartService(session)
     return await service.get_cart(user_id, session_id)
@@ -41,11 +68,46 @@ async def get_cart(
 @router.post("/items", response_model=CartRead, status_code=status.HTTP_201_CREATED)
 @apply_endpoint_limits("cart")
 async def add_to_cart(
+    http_request: Request,
     request: AddToCartRequest,
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db)
 ) -> CartRead:
-    """Add item to cart"""
+    """
+    Add product to shopping cart with specified quantity.
+    
+    This endpoint handles adding new products to cart or updating
+    quantity if product already exists. Supports both authenticated
+    users and guest sessions with proper validation.
+    
+    Args:
+        request (AddToCartRequest): Contains product_id and quantity
+        cart_ids (tuple): Contains (user_id, session_id) from dependency
+        session (AsyncSession): Database session for cart operations
+        
+    Returns:
+        CartRead: Updated cart information with new item included
+        
+    Raises:
+        HTTPException: 404 if product not found or out of stock
+        HTTPException: 400 if quantity exceeds available stock
+        HTTPException: 422 if invalid product or quantity data
+        
+    Request Body:
+        {
+            "product_id": int,
+            "quantity": int (min: 1, max: 999)
+        }
+        
+    Rate Limiting:
+        Applied via @apply_endpoint_limits("cart") decorator
+        Higher limits for add operations due to user interaction patterns
+        
+    Business Rules:
+        - Quantity is additive (adds to existing if product already in cart)
+        - Stock validation performed before adding
+        - Price locked at time of addition to cart
+    """
     user_id, session_id = cart_ids
     service = CartService(session)
     return await service.add_to_cart(request, user_id, session_id)
@@ -53,6 +115,7 @@ async def add_to_cart(
 @router.put("/items/{product_id}", response_model=CartRead)
 @apply_endpoint_limits("cart")
 async def update_cart_item(
+    http_request: Request,
     product_id: int,
     request: UpdateCartItemRequest,
     cart_ids: tuple = Depends(get_cart_identifier),

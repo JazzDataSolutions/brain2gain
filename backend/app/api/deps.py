@@ -1,7 +1,7 @@
-from typing import Annotated
-import jwt
 import uuid
+from typing import Annotated
 
+import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
@@ -30,7 +30,7 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials"
         )
-    
+
     try:
         # Convert string ID to UUID for database lookup
         user_id = uuid.UUID(str(token_data.sub))
@@ -40,15 +40,15 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Invalid token format"
         )
-    
+
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
+            status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
     return user
@@ -68,13 +68,13 @@ def get_current_admin_user(current_user: CurrentUser) -> User:
     """Allow only users with ADMIN or MANAGER roles or superuser."""
     if current_user.is_superuser:
         return current_user
-    
+
     role_names = {role.name for role in current_user.roles}
     allowed_roles = {"ADMIN", "MANAGER"}
-    
+
     if role_names & allowed_roles:
         return current_user
-    
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="User does not have admin privileges"
@@ -84,13 +84,13 @@ def get_current_seller_user(current_user: CurrentUser) -> User:
     """Allow users with ADMIN, MANAGER, or SELLER roles or superuser."""
     if current_user.is_superuser:
         return current_user
-    
+
     role_names = {role.name for role in current_user.roles}
     allowed_roles = {"ADMIN", "MANAGER", "SELLER"}
-    
+
     if role_names & allowed_roles:
         return current_user
-    
+
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="User does not have seller privileges"

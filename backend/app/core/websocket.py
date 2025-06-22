@@ -1,7 +1,7 @@
-from typing import Dict, List
-from fastapi import WebSocket, WebSocketDisconnect
 import json
 import logging
+
+from fastapi import WebSocket, WebSocketDisconnect
 
 logger = logging.getLogger(__name__)
 
@@ -9,41 +9,41 @@ logger = logging.getLogger(__name__)
 class ConnectionManager:
     def __init__(self):
         # Store active connections by user_id
-        self.active_connections: Dict[str, WebSocket] = {}
+        self.active_connections: dict[str, WebSocket] = {}
         # Store connections by role for broadcasting
-        self.role_connections: Dict[str, List[str]] = {}
+        self.role_connections: dict[str, list[str]] = {}
 
     async def connect(self, websocket: WebSocket, user_id: str, role: str = "user"):
         """Accept and store WebSocket connection"""
         await websocket.accept()
-        
+
         # Close existing connection for same user
         if user_id in self.active_connections:
             try:
                 await self.active_connections[user_id].close()
             except:
                 pass
-        
+
         self.active_connections[user_id] = websocket
-        
+
         # Add to role group
         if role not in self.role_connections:
             self.role_connections[role] = []
         if user_id not in self.role_connections[role]:
             self.role_connections[role].append(user_id)
-        
+
         logger.info(f"User {user_id} connected with role {role}")
 
     def disconnect(self, user_id: str):
         """Remove WebSocket connection"""
         if user_id in self.active_connections:
             del self.active_connections[user_id]
-        
+
         # Remove from all role groups
         for role, users in self.role_connections.items():
             if user_id in users:
                 users.remove(user_id)
-        
+
         logger.info(f"User {user_id} disconnected")
 
     async def send_personal_message(self, message: str, user_id: str, notification_type: str = "info"):
@@ -67,7 +67,7 @@ class ConnectionManager:
         """Send message to all users with specific role"""
         if role not in self.role_connections:
             return
-        
+
         disconnected_users = []
         for user_id in self.role_connections[role]:
             if user_id in self.active_connections:
@@ -84,7 +84,7 @@ class ConnectionManager:
                 except Exception as e:
                     logger.error(f"Error broadcasting to user {user_id}: {e}")
                     disconnected_users.append(user_id)
-        
+
         # Clean up disconnected users
         for user_id in disconnected_users:
             self.disconnect(user_id)
@@ -104,7 +104,7 @@ class ConnectionManager:
             except Exception as e:
                 logger.error(f"Error broadcasting to user {user_id}: {e}")
                 disconnected_users.append(user_id)
-        
+
         # Clean up disconnected users
         for user_id in disconnected_users:
             self.disconnect(user_id)

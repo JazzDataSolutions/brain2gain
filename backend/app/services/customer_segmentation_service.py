@@ -3,22 +3,18 @@ Customer Segmentation Service - Advanced Analytics Phase 2
 Implements RFM (Recency, Frequency, Monetary) analysis and customer segmentation.
 """
 
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
-from sqlmodel import Session, select, func, and_
-from sqlalchemy import text
 from dataclasses import dataclass
-import pandas as pd
-import numpy as np
+from datetime import datetime
 from enum import Enum
 
-from app.models import Customer, SalesOrder, SalesItem, Transaction, TransactionType, OrderStatus
+import pandas as pd
+from sqlalchemy import text
+from sqlmodel import Session
 
 
 class RFMSegment(str, Enum):
     CHAMPIONS = "Champions"
-    LOYAL_CUSTOMERS = "Loyal_Customers" 
+    LOYAL_CUSTOMERS = "Loyal_Customers"
     POTENTIAL_LOYALISTS = "Potential_Loyalists"
     NEW_CUSTOMERS = "New_Customers"
     PROMISING = "Promising"
@@ -46,18 +42,18 @@ class RFMScores:
 class CustomerSegmentProfile:
     segment: RFMSegment
     description: str
-    characteristics: List[str]
-    marketing_strategy: List[str]
+    characteristics: list[str]
+    marketing_strategy: list[str]
     expected_percentage: float
     color: str
 
 
 class CustomerSegmentationService:
     """Service for advanced customer segmentation using RFM analysis"""
-    
+
     def __init__(self, db: Session):
         self.db = db
-        
+
         # RFM Segment definitions based on score combinations
         self.rfm_segments = {
             # Champions: R=4-5, F=4-5, M=4-5
@@ -69,7 +65,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 11.1,
                 "color": "#10B981"  # Green
             },
-            
+
             # Loyal Customers: R=2-5, F=3-5, M=3-5
             RFMSegment.LOYAL_CUSTOMERS: {
                 "R": [2, 5], "F": [3, 5], "M": [3, 5],
@@ -79,7 +75,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 15.6,
                 "color": "#059669"  # Dark green
             },
-            
+
             # Potential Loyalists: R=3-5, F=1-3, M=1-3
             RFMSegment.POTENTIAL_LOYALISTS: {
                 "R": [3, 5], "F": [1, 3], "M": [1, 3],
@@ -89,7 +85,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 18.2,
                 "color": "#34D399"  # Light green
             },
-            
+
             # New Customers: R=4-5, F=1, M=1
             RFMSegment.NEW_CUSTOMERS: {
                 "R": [4, 5], "F": [1, 1], "M": [1, 1],
@@ -99,7 +95,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 13.3,
                 "color": "#3B82F6"  # Blue
             },
-            
+
             # Promising: R=3-4, F=1, M=2-3
             RFMSegment.PROMISING: {
                 "R": [3, 4], "F": [1, 1], "M": [2, 3],
@@ -109,7 +105,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 12.9,
                 "color": "#6366F1"  # Indigo
             },
-            
+
             # Need Attention: R=2-3, F=2-3, M=2-3
             RFMSegment.NEED_ATTENTION: {
                 "R": [2, 3], "F": [2, 3], "M": [2, 3],
@@ -119,7 +115,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 8.1,
                 "color": "#F59E0B"  # Yellow
             },
-            
+
             # About to Sleep: R=2-3, F=1-2, M=1-2
             RFMSegment.ABOUT_TO_SLEEP: {
                 "R": [2, 3], "F": [1, 2], "M": [1, 2],
@@ -129,7 +125,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 7.8,
                 "color": "#F97316"  # Orange
             },
-            
+
             # At Risk: R=1-2, F=2-4, M=2-4
             RFMSegment.AT_RISK: {
                 "R": [1, 2], "F": [2, 4], "M": [2, 4],
@@ -139,7 +135,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 7.3,
                 "color": "#EF4444"  # Red
             },
-            
+
             # Cannot Lose: R=1-2, F=4-5, M=4-5
             RFMSegment.CANNOT_LOSE: {
                 "R": [1, 2], "F": [4, 5], "M": [4, 5],
@@ -149,7 +145,7 @@ class CustomerSegmentationService:
                 "expected_percentage": 2.4,
                 "color": "#DC2626"  # Dark red
             },
-            
+
             # Hibernating: R=1-2, F=1-2, M=1-2
             RFMSegment.HIBERNATING: {
                 "R": [1, 2], "F": [1, 2], "M": [1, 2],
@@ -160,12 +156,12 @@ class CustomerSegmentationService:
                 "color": "#6B7280"  # Gray
             }
         }
-    
-    def calculate_rfm_scores(self, analysis_date: datetime = None) -> List[RFMScores]:
+
+    def calculate_rfm_scores(self, analysis_date: datetime = None) -> list[RFMScores]:
         """Calculate RFM scores for all customers"""
         if analysis_date is None:
             analysis_date = datetime.utcnow()
-        
+
         # Get customer RFM data
         rfm_query = '''
         WITH customer_rfm AS (
@@ -195,34 +191,34 @@ class CustomerSegmentationService:
         SELECT * FROM customer_rfm
         ORDER BY customer_id
         '''
-        
+
         result = self.db.exec(text(rfm_query), {"analysis_date": analysis_date})
         customers_data = result.fetchall()
-        
+
         if not customers_data:
             return []
-        
+
         # Convert to DataFrame for easier analysis
         df = pd.DataFrame(customers_data, columns=[
-            'customer_id', 'first_name', 'last_name', 'email', 
+            'customer_id', 'first_name', 'last_name', 'email',
             'recency_days', 'frequency', 'monetary_value'
         ])
-        
+
         # Calculate RFM scores using quintile-based scoring
         df['recency_score'] = pd.qcut(df['recency_days'].rank(method='first'), 5, labels=[5,4,3,2,1])
         df['frequency_score'] = pd.qcut(df['frequency'].rank(method='first'), 5, labels=[1,2,3,4,5])
         df['monetary_score'] = pd.qcut(df['monetary_value'].rank(method='first'), 5, labels=[1,2,3,4,5])
-        
+
         # Create RFM score string
         df['rfm_score'] = (
-            df['recency_score'].astype(str) + 
-            df['frequency_score'].astype(str) + 
+            df['recency_score'].astype(str) +
+            df['frequency_score'].astype(str) +
             df['monetary_score'].astype(str)
         )
-        
+
         # Assign segments
         df['segment'] = df.apply(self._assign_rfm_segment, axis=1)
-        
+
         # Convert to RFMScores objects
         rfm_scores = []
         for _, row in df.iterrows():
@@ -237,26 +233,26 @@ class CustomerSegmentationService:
                 rfm_score=str(row['rfm_score']),
                 segment=RFMSegment(row['segment'])
             ))
-        
+
         return rfm_scores
-    
+
     def _assign_rfm_segment(self, row) -> str:
         """Assign RFM segment based on R, F, M scores"""
         r, f, m = int(row['recency_score']), int(row['frequency_score']), int(row['monetary_score'])
-        
+
         for segment, criteria in self.rfm_segments.items():
-            if (criteria["R"][0] <= r <= criteria["R"][1] and 
-                criteria["F"][0] <= f <= criteria["F"][1] and 
+            if (criteria["R"][0] <= r <= criteria["R"][1] and
+                criteria["F"][0] <= f <= criteria["F"][1] and
                 criteria["M"][0] <= m <= criteria["M"][1]):
                 return segment.value
-        
+
         # Default fallback
         return RFMSegment.HIBERNATING.value
-    
-    def get_segment_analysis(self) -> Dict:
+
+    def get_segment_analysis(self) -> dict:
         """Get comprehensive segment analysis"""
         rfm_scores = self.calculate_rfm_scores()
-        
+
         if not rfm_scores:
             return {
                 "total_customers": 0,
@@ -264,11 +260,11 @@ class CustomerSegmentationService:
                 "segment_distribution": {},
                 "insights": []
             }
-        
+
         # Count customers by segment
         segment_counts = {}
         total_customers = len(rfm_scores)
-        
+
         for score in rfm_scores:
             segment = score.segment
             if segment not in segment_counts:
@@ -280,13 +276,13 @@ class CustomerSegmentationService:
                     "avg_monetary": 0,
                     "total_monetary": 0
                 }
-            
+
             segment_counts[segment]["count"] += 1
             segment_counts[segment]["avg_recency"] += score.recency_days
             segment_counts[segment]["avg_frequency"] += score.frequency
             segment_counts[segment]["avg_monetary"] += score.monetary_value
             segment_counts[segment]["total_monetary"] += score.monetary_value
-        
+
         # Calculate averages and percentages
         for segment, data in segment_counts.items():
             count = data["count"]
@@ -295,7 +291,7 @@ class CustomerSegmentationService:
             data["avg_frequency"] = round(data["avg_frequency"] / count, 1)
             data["avg_monetary"] = round(data["avg_monetary"] / count, 2)
             data["total_monetary"] = round(data["total_monetary"], 2)
-        
+
         # Get segment profiles
         segment_profiles = {}
         for segment in segment_counts.keys():
@@ -309,10 +305,10 @@ class CustomerSegmentationService:
                     expected_percentage=profile_data["expected_percentage"],
                     color=profile_data["color"]
                 )
-        
+
         # Generate insights
         insights = self._generate_segment_insights(segment_counts, total_customers)
-        
+
         return {
             "total_customers": total_customers,
             "analysis_date": datetime.utcnow().isoformat(),
@@ -336,18 +332,18 @@ class CustomerSegmentationService:
             ],
             "insights": insights
         }
-    
-    def _generate_segment_insights(self, segment_counts: Dict, total_customers: int) -> List[str]:
+
+    def _generate_segment_insights(self, segment_counts: dict, total_customers: int) -> list[str]:
         """Generate actionable insights from segmentation analysis"""
         insights = []
-        
+
         # Check for high-value segments
         champions_pct = segment_counts.get(RFMSegment.CHAMPIONS, {}).get("percentage", 0)
         if champions_pct < 5:
             insights.append("Low Champions percentage suggests need for customer retention programs")
         elif champions_pct > 15:
             insights.append("High Champions percentage indicates strong customer loyalty")
-        
+
         # Check for at-risk customers
         at_risk_pct = (
             segment_counts.get(RFMSegment.AT_RISK, {}).get("percentage", 0) +
@@ -355,35 +351,35 @@ class CustomerSegmentationService:
         )
         if at_risk_pct > 15:
             insights.append(f"High percentage ({at_risk_pct:.1f}%) of at-risk customers needs immediate attention")
-        
+
         # Check for new customer conversion
         new_customers_pct = segment_counts.get(RFMSegment.NEW_CUSTOMERS, {}).get("percentage", 0)
         potential_loyalists_pct = segment_counts.get(RFMSegment.POTENTIAL_LOYALISTS, {}).get("percentage", 0)
-        
+
         if new_customers_pct > potential_loyalists_pct:
             insights.append("Focus on converting new customers to repeat buyers")
-        
+
         # Check hibernating customers
         hibernating_pct = segment_counts.get(RFMSegment.HIBERNATING, {}).get("percentage", 0)
         if hibernating_pct > 10:
             insights.append("Consider cleaning hibernating customers from active marketing lists")
-        
+
         # Revenue concentration
         champions_revenue = segment_counts.get(RFMSegment.CHAMPIONS, {}).get("total_monetary", 0)
         loyal_revenue = segment_counts.get(RFMSegment.LOYAL_CUSTOMERS, {}).get("total_monetary", 0)
         total_revenue = sum(data.get("total_monetary", 0) for data in segment_counts.values())
-        
+
         high_value_revenue_pct = ((champions_revenue + loyal_revenue) / total_revenue * 100) if total_revenue > 0 else 0
-        
+
         if high_value_revenue_pct > 60:
             insights.append(f"High revenue concentration ({high_value_revenue_pct:.1f}%) in top segments - ensure retention")
-        
+
         return insights
-    
-    def get_customers_by_segment(self, segment: RFMSegment, limit: int = 100) -> List[Dict]:
+
+    def get_customers_by_segment(self, segment: RFMSegment, limit: int = 100) -> list[dict]:
         """Get customers belonging to a specific segment"""
         rfm_scores = self.calculate_rfm_scores()
-        
+
         segment_customers = [
             {
                 "customer_id": score.customer_id,
@@ -395,20 +391,20 @@ class CustomerSegmentationService:
                 "frequency_score": score.frequency_score,
                 "monetary_score": score.monetary_score
             }
-            for score in rfm_scores 
+            for score in rfm_scores
             if score.segment == segment
         ][:limit]
-        
+
         return segment_customers
-    
-    def get_segment_recommendations(self, segment: RFMSegment) -> Dict:
+
+    def get_segment_recommendations(self, segment: RFMSegment) -> dict:
         """Get marketing recommendations for a specific segment"""
         if segment not in self.rfm_segments:
             return {}
-        
+
         profile = self.rfm_segments[segment]
         customers = self.get_customers_by_segment(segment, limit=10)
-        
+
         return {
             "segment": segment.value,
             "profile": profile,

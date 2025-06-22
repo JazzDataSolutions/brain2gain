@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends
 from pydantic.networks import EmailStr
 
 from app.api.deps import get_current_active_superuser
+from app.core.cache import get_cache_health, get_cache_stats, reset_cache_metrics
+from app.middlewares.advanced_rate_limiting import get_rate_limit_stats
 from app.models import Message
 from app.utils import generate_test_email, send_email
-from app.core.cache import get_cache_stats, get_cache_health, reset_cache_metrics
-from app.middlewares.advanced_rate_limiting import get_rate_limit_stats
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 

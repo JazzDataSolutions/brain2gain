@@ -1,24 +1,25 @@
 # Event Integration Service for Brain2Gain Microservices
 # Integrates event sourcing with existing services
 
-from typing import Any, Dict, List, Optional
-from uuid import UUID, uuid4
 from datetime import datetime
+from typing import Any
+from uuid import UUID, uuid4
 
 from app.core.event_sourcing import (
-    DomainEvent, EventType, EventSourcingMixin, 
-    publish_event, get_aggregate_events
+    DomainEvent,
+    EventType,
+    get_aggregate_events,
+    publish_event,
 )
-from app.models import User, Product, SalesOrder, Cart
+from app.schemas.cart import CartItemCreate
 from app.schemas.product import ProductCreate, ProductUpdate
-from app.schemas.cart import CartItemCreate, CartItemUpdate
 
 
 class ProductEventService:
     """Service to integrate product operations with event sourcing"""
-    
+
     @staticmethod
-    async def create_product_with_events(product_data: ProductCreate, user_id: UUID) -> Dict[str, Any]:
+    async def create_product_with_events(product_data: ProductCreate, user_id: UUID) -> dict[str, Any]:
         """Create product and publish domain event"""
         # Create the product event
         event = DomainEvent(
@@ -42,23 +43,23 @@ class ProductEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         # Publish the event
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
             "occurred_at": event.occurred_at
         }
-    
+
     @staticmethod
     async def update_product_with_events(
-        product_id: UUID, 
-        product_data: ProductUpdate, 
+        product_id: UUID,
+        product_data: ProductUpdate,
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update product and publish domain event"""
         event = DomainEvent(
             id=uuid4(),
@@ -73,23 +74,23 @@ class ProductEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
             "occurred_at": event.occurred_at
         }
-    
+
     @staticmethod
     async def update_stock_with_events(
-        product_id: UUID, 
-        new_stock: int, 
+        product_id: UUID,
+        new_stock: int,
         reason: str,
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Update product stock and publish domain event"""
         event = DomainEvent(
             id=uuid4(),
@@ -108,9 +109,9 @@ class ProductEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
@@ -121,12 +122,12 @@ class ProductEventService:
 
 class OrderEventService:
     """Service to integrate order operations with event sourcing"""
-    
+
     @staticmethod
-    async def create_order_with_events(order_data: Dict[str, Any], user_id: UUID) -> Dict[str, Any]:
+    async def create_order_with_events(order_data: dict[str, Any], user_id: UUID) -> dict[str, Any]:
         """Create order and publish domain events"""
         order_id = uuid4()
-        
+
         # Create order created event
         order_event = DomainEvent(
             id=uuid4(),
@@ -141,10 +142,10 @@ class OrderEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         # Publish order event (this will trigger inventory updates)
         await publish_event(order_event)
-        
+
         # Create inventory events for each order item
         if "items" in order_data:
             for item in order_data["items"]:
@@ -165,23 +166,23 @@ class OrderEventService:
                     },
                     occurred_at=datetime.utcnow()
                 )
-                
+
                 await publish_event(inventory_event)
-        
+
         return {
             "event_id": str(order_event.id),
             "aggregate_id": str(order_id),
             "event_type": order_event.event_type.value,
             "occurred_at": order_event.occurred_at
         }
-    
+
     @staticmethod
     async def update_order_status_with_events(
-        order_id: UUID, 
-        new_status: str, 
+        order_id: UUID,
+        new_status: str,
         user_id: UUID,
-        additional_data: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+        additional_data: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Update order status and publish domain event"""
         # Determine event type based on status
         event_type_mapping = {
@@ -189,9 +190,9 @@ class OrderEventService:
             "shipped": EventType.ORDER_SHIPPED,
             "delivered": EventType.ORDER_DELIVERED
         }
-        
+
         event_type = event_type_mapping.get(new_status.lower(), EventType.ORDER_UPDATED)
-        
+
         event = DomainEvent(
             id=uuid4(),
             event_type=event_type,
@@ -210,9 +211,9 @@ class OrderEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
@@ -223,13 +224,13 @@ class OrderEventService:
 
 class CartEventService:
     """Service to integrate cart operations with event sourcing"""
-    
+
     @staticmethod
     async def add_item_to_cart_with_events(
-        cart_id: UUID, 
-        item_data: CartItemCreate, 
+        cart_id: UUID,
+        item_data: CartItemCreate,
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Add item to cart and publish domain event"""
         event = DomainEvent(
             id=uuid4(),
@@ -248,22 +249,22 @@ class CartEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
             "occurred_at": event.occurred_at
         }
-    
+
     @staticmethod
     async def remove_item_from_cart_with_events(
-        cart_id: UUID, 
-        product_id: UUID, 
+        cart_id: UUID,
+        product_id: UUID,
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Remove item from cart and publish domain event"""
         event = DomainEvent(
             id=uuid4(),
@@ -281,9 +282,9 @@ class CartEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
@@ -294,12 +295,12 @@ class CartEventService:
 
 class UserEventService:
     """Service to integrate user operations with event sourcing"""
-    
+
     @staticmethod
-    async def register_user_with_events(user_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def register_user_with_events(user_data: dict[str, Any]) -> dict[str, Any]:
         """Register user and publish domain event"""
         user_id = uuid4()
-        
+
         event = DomainEvent(
             id=uuid4(),
             event_type=EventType.USER_REGISTERED,
@@ -318,9 +319,9 @@ class UserEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(user_id),
@@ -331,16 +332,16 @@ class UserEventService:
 
 class PaymentEventService:
     """Service to integrate payment operations with event sourcing"""
-    
+
     @staticmethod
     async def initiate_payment_with_events(
-        order_id: UUID, 
-        payment_data: Dict[str, Any], 
+        order_id: UUID,
+        payment_data: dict[str, Any],
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Initiate payment and publish domain event"""
         payment_id = uuid4()
-        
+
         event = DomainEvent(
             id=uuid4(),
             event_type=EventType.PAYMENT_INITIATED,
@@ -360,22 +361,22 @@ class PaymentEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(payment_id),
             "event_type": event.event_type.value,
             "occurred_at": event.occurred_at
         }
-    
+
     @staticmethod
     async def complete_payment_with_events(
-        payment_id: UUID, 
-        transaction_data: Dict[str, Any], 
+        payment_id: UUID,
+        transaction_data: dict[str, Any],
         user_id: UUID
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Complete payment and publish domain event"""
         event = DomainEvent(
             id=uuid4(),
@@ -395,9 +396,9 @@ class PaymentEventService:
             },
             occurred_at=datetime.utcnow()
         )
-        
+
         await publish_event(event)
-        
+
         return {
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
@@ -409,27 +410,27 @@ class PaymentEventService:
 # Event Query Service for retrieving event history
 class EventQueryService:
     """Service for querying event history"""
-    
+
     @staticmethod
-    async def get_product_history(product_id: UUID) -> List[Dict[str, Any]]:
+    async def get_product_history(product_id: UUID) -> list[dict[str, Any]]:
         """Get complete event history for a product"""
         events = await get_aggregate_events(product_id, "Product")
         return [event.to_dict() for event in events]
-    
+
     @staticmethod
-    async def get_order_history(order_id: UUID) -> List[Dict[str, Any]]:
+    async def get_order_history(order_id: UUID) -> list[dict[str, Any]]:
         """Get complete event history for an order"""
         events = await get_aggregate_events(order_id, "Order")
         return [event.to_dict() for event in events]
-    
+
     @staticmethod
-    async def get_user_history(user_id: UUID) -> List[Dict[str, Any]]:
+    async def get_user_history(user_id: UUID) -> list[dict[str, Any]]:
         """Get complete event history for a user"""
         events = await get_aggregate_events(user_id, "User")
         return [event.to_dict() for event in events]
-    
+
     @staticmethod
-    async def get_cart_history(cart_id: UUID) -> List[Dict[str, Any]]:
+    async def get_cart_history(cart_id: UUID) -> list[dict[str, Any]]:
         """Get complete event history for a cart"""
         events = await get_aggregate_events(cart_id, "Cart")
         return [event.to_dict() for event in events]
@@ -438,12 +439,12 @@ class EventQueryService:
 # Event-driven aggregate reconstruction
 class AggregateReconstructionService:
     """Service for reconstructing aggregate state from events"""
-    
+
     @staticmethod
-    async def reconstruct_product_state(product_id: UUID) -> Dict[str, Any]:
+    async def reconstruct_product_state(product_id: UUID) -> dict[str, Any]:
         """Reconstruct product state from events"""
         events = await get_aggregate_events(product_id, "Product")
-        
+
         # Initialize state
         state = {
             "id": str(product_id),
@@ -458,7 +459,7 @@ class AggregateReconstructionService:
             "updated_at": None,
             "events_count": len(events)
         }
-        
+
         # Apply events in chronological order
         for event in events:
             if event.event_type == EventType.PRODUCT_CREATED:
@@ -470,14 +471,14 @@ class AggregateReconstructionService:
             elif event.event_type == EventType.PRODUCT_STOCK_UPDATED:
                 state["stock"] = event.data.get("new_stock")
                 state["updated_at"] = event.occurred_at.isoformat()
-        
+
         return state
-    
+
     @staticmethod
-    async def reconstruct_order_state(order_id: UUID) -> Dict[str, Any]:
+    async def reconstruct_order_state(order_id: UUID) -> dict[str, Any]:
         """Reconstruct order state from events"""
         events = await get_aggregate_events(order_id, "Order")
-        
+
         state = {
             "id": str(order_id),
             "status": "pending",
@@ -488,7 +489,7 @@ class AggregateReconstructionService:
             "status_history": [],
             "events_count": len(events)
         }
-        
+
         for event in events:
             if event.event_type == EventType.ORDER_CREATED:
                 state.update(event.data)
@@ -497,9 +498,9 @@ class AggregateReconstructionService:
                     "status": "created",
                     "timestamp": event.occurred_at.isoformat()
                 })
-            elif event.event_type in [EventType.ORDER_UPDATED, 
-                                      EventType.ORDER_CANCELLED, 
-                                      EventType.ORDER_SHIPPED, 
+            elif event.event_type in [EventType.ORDER_UPDATED,
+                                      EventType.ORDER_CANCELLED,
+                                      EventType.ORDER_SHIPPED,
                                       EventType.ORDER_DELIVERED]:
                 if "new_status" in event.data:
                     state["status"] = event.data["new_status"]
@@ -508,5 +509,5 @@ class AggregateReconstructionService:
                         "timestamp": event.occurred_at.isoformat()
                     })
                 state["updated_at"] = event.occurred_at.isoformat()
-        
+
         return state

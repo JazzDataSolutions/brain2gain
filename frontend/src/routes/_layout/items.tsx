@@ -17,7 +17,7 @@ import { z } from "zod"
 
 import { ItemsService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
-import Navbar from "../../components/Common/Navbar"
+import AdminNavbar from "../../components/Common/AdminNavbar"
 import AddItem from "../../components/Items/AddItem"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 
@@ -139,7 +139,7 @@ function Items() {
         Items Management
       </Heading>
 
-      <Navbar type={"Item"} addModalAs={AddItem} />
+      <AdminNavbar type={"Item"} addModalAs={AddItem} />
       <ItemsTable />
     </Container>
   )

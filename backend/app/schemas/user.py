@@ -1,6 +1,7 @@
 # backend/app/schemas/user.py
 from pydantic import BaseModel, EmailStr
 
+
 class UserBase(BaseModel):
     username: str
     email: EmailStr
@@ -14,6 +15,3 @@ class UserRead(UserBase):
     roles: list[str]
 
     model_config = {"from_attributes": True}
-
-    class Config:
-        orm_mode = True

@@ -2,27 +2,37 @@
 Test data factories using Factory Boy for creating test objects.
 """
 
-import factory
-from faker import Faker
-from sqlmodel import Session
 from decimal import Decimal
 from uuid import uuid4
 
-from app.models import (
-    User, Role, UserRoleLink, Product, Stock, Customer, 
-    SalesOrder, SalesItem, Cart, CartItem, Transaction
-)
+import factory
+from faker import Faker
+from sqlmodel import Session
+
 from app.core.security import get_password_hash
+from app.models import (
+    Cart,
+    CartItem,
+    Customer,
+    Product,
+    Role,
+    SalesItem,
+    SalesOrder,
+    Stock,
+    Transaction,
+    User,
+    UserRoleLink,
+)
 
 fake = Faker()
 
 
 class RoleFactory(factory.Factory):
     """Factory for Role model."""
-    
+
     class Meta:
         model = Role
-    
+
     role_id = factory.LazyFunction(uuid4)
     name = factory.Iterator(["ADMIN", "MANAGER", "SELLER", "ACCOUNTANT", "USER"])
     description = factory.LazyAttribute(lambda obj: f"Role for {obj.name.lower()}")
@@ -30,10 +40,10 @@ class RoleFactory(factory.Factory):
 
 class UserFactory(factory.Factory):
     """Factory for User model."""
-    
+
     class Meta:
         model = User
-    
+
     user_id = factory.LazyFunction(uuid4)
     email = factory.LazyAttribute(lambda _: fake.email())
     hashed_password = factory.LazyFunction(lambda: get_password_hash("testpassword123"))
@@ -44,17 +54,17 @@ class UserFactory(factory.Factory):
 
 class SuperUserFactory(UserFactory):
     """Factory for superuser."""
-    
+
     is_superuser = True
     email = factory.Sequence(lambda n: f"admin{n}@brain2gain.com")
 
 
 class ProductFactory(factory.Factory):
     """Factory for Product model."""
-    
+
     class Meta:
         model = Product
-    
+
     product_id = factory.LazyFunction(uuid4)
     sku = factory.Sequence(lambda n: f"WP-{n:03d}")
     name = factory.LazyAttribute(lambda _: fake.sentence(nb_words=3)[:-1])  # Remove period
@@ -73,10 +83,10 @@ class ProductFactory(factory.Factory):
 
 class StockFactory(factory.Factory):
     """Factory for Stock model."""
-    
+
     class Meta:
         model = Stock
-    
+
     stock_id = factory.LazyFunction(uuid4)
     product_id = factory.SubFactory(ProductFactory)
     quantity = factory.LazyAttribute(lambda _: fake.random_int(min=0, max=1000))
@@ -86,10 +96,10 @@ class StockFactory(factory.Factory):
 
 class CustomerFactory(factory.Factory):
     """Factory for Customer model."""
-    
+
     class Meta:
         model = Customer
-    
+
     customer_id = factory.LazyFunction(uuid4)
     first_name = factory.LazyAttribute(lambda _: fake.first_name())
     last_name = factory.LazyAttribute(lambda _: fake.last_name())
@@ -103,10 +113,10 @@ class CustomerFactory(factory.Factory):
 
 class SalesOrderFactory(factory.Factory):
     """Factory for SalesOrder model."""
-    
+
     class Meta:
         model = SalesOrder
-    
+
     order_id = factory.LazyFunction(uuid4)
     customer_id = factory.SubFactory(CustomerFactory)
     order_date = factory.LazyAttribute(lambda _: fake.date_time_this_year())
@@ -120,10 +130,10 @@ class SalesOrderFactory(factory.Factory):
 
 class SalesItemFactory(factory.Factory):
     """Factory for SalesItem model."""
-    
+
     class Meta:
         model = SalesItem
-    
+
     item_id = factory.LazyFunction(uuid4)
     order_id = factory.SubFactory(SalesOrderFactory)
     product_id = factory.SubFactory(ProductFactory)
@@ -135,10 +145,10 @@ class SalesItemFactory(factory.Factory):
 
 class CartFactory(factory.Factory):
     """Factory for Cart model."""
-    
+
     class Meta:
         model = Cart
-    
+
     cart_id = factory.LazyFunction(uuid4)
     user_id = factory.SubFactory(UserFactory)
     session_id = factory.LazyAttribute(lambda _: fake.uuid4())
@@ -148,10 +158,10 @@ class CartFactory(factory.Factory):
 
 class CartItemFactory(factory.Factory):
     """Factory for CartItem model."""
-    
+
     class Meta:
         model = CartItem
-    
+
     cart_item_id = factory.LazyFunction(uuid4)
     cart_id = factory.SubFactory(CartFactory)
     product_id = factory.SubFactory(ProductFactory)
@@ -161,10 +171,10 @@ class CartItemFactory(factory.Factory):
 
 class TransactionFactory(factory.Factory):
     """Factory for Transaction model."""
-    
+
     class Meta:
         model = Transaction
-    
+
     transaction_id = factory.LazyFunction(uuid4)
     order_id = factory.SubFactory(SalesOrderFactory)
     transaction_type = factory.Iterator(["SALE", "REFUND", "PAYMENT"])
@@ -185,15 +195,15 @@ def create_user_with_role(session: Session, role_name: str = "USER") -> User:
         role = RoleFactory(name=role_name)
         session.add(role)
         session.commit()
-    
+
     user = UserFactory()
     session.add(user)
     session.commit()
-    
+
     user_role_link = UserRoleLink(user_id=user.user_id, role_id=role.role_id)
     session.add(user_role_link)
     session.commit()
-    
+
     return user
 
 
@@ -202,11 +212,11 @@ def create_product_with_stock(session: Session, stock_quantity: int = 100) -> tu
     product = ProductFactory()
     session.add(product)
     session.commit()
-    
+
     stock = StockFactory(product_id=product.product_id, quantity=stock_quantity)
     session.add(stock)
     session.commit()
-    
+
     return product, stock
 
 
@@ -215,31 +225,31 @@ def create_order_with_items(session: Session, num_items: int = 3) -> tuple[Sales
     customer = CustomerFactory()
     session.add(customer)
     session.commit()
-    
+
     order = SalesOrderFactory(customer_id=customer.customer_id)
     session.add(order)
     session.commit()
-    
+
     items = []
     total_amount = Decimal('0')
-    
+
     for _ in range(num_items):
         product = ProductFactory()
         session.add(product)
         session.commit()
-        
+
         item = SalesItemFactory(
             order_id=order.order_id,
             product_id=product.product_id
         )
         session.add(item)
         items.append(item)
-        
+
         total_amount += item.unit_price * item.quantity
-    
+
     order.total_amount = total_amount
     session.commit()
-    
+
     return order, items
 
 
@@ -250,24 +260,24 @@ def create_cart_with_items(session: Session, user_id: str = None, num_items: int
         session.add(user)
         session.commit()
         user_id = user.user_id
-    
+
     cart = CartFactory(user_id=user_id)
     session.add(cart)
     session.commit()
-    
+
     items = []
     for _ in range(num_items):
         product = ProductFactory()
         session.add(product)
         session.commit()
-        
+
         item = CartItemFactory(
             cart_id=cart.cart_id,
             product_id=product.product_id
         )
         session.add(item)
         items.append(item)
-    
+
     session.commit()
     return cart, items
 
@@ -281,7 +291,7 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
     Returns a dictionary with all created objects for easy access in tests.
     """
     from datetime import datetime, timedelta
-    
+
     # Create customers
     customers = []
     for i in range(20):
@@ -289,33 +299,33 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
         session.add(customer)
         customers.append(customer)
     session.commit()
-    
+
     # Create products with stock
     products = []
     for i in range(10):
         product = ProductFactory()
         session.add(product)
         session.commit()
-        
+
         stock = StockFactory(
-            product_id=product.product_id, 
+            product_id=product.product_id,
             quantity=fake.random_int(min=0, max=500)
         )
         session.add(stock)
         products.append((product, stock))
     session.commit()
-    
+
     # Create orders and transactions across time period
     orders = []
     transactions = []
-    
+
     end_date = datetime.utcnow()
     start_date = end_date - timedelta(days=time_period_days)
-    
+
     for i in range(50):  # 50 orders across the period
         # Random date within the period
         order_date = fake.date_time_between(start_date=start_date, end_date=end_date)
-        
+
         customer = fake.choice(customers)
         order = SalesOrderFactory(
             customer_id=customer.customer_id,
@@ -324,16 +334,16 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
         )
         session.add(order)
         session.commit()
-        
+
         # Add items to order
         num_items = fake.random_int(min=1, max=4)
         total_amount = Decimal('0')
-        
+
         for _ in range(num_items):
             product, _ = fake.choice(products)
             quantity = fake.random_int(min=1, max=3)
             unit_price = product.unit_price
-            
+
             item = SalesItemFactory(
                 order_id=order.order_id,
                 product_id=product.product_id,
@@ -342,10 +352,10 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
             )
             session.add(item)
             total_amount += unit_price * quantity
-        
+
         order.total_amount = total_amount
         orders.append(order)
-        
+
         # Create corresponding transaction if order is completed
         if order.status == "COMPLETED":
             transaction = TransactionFactory(
@@ -359,20 +369,20 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
             )
             session.add(transaction)
             transactions.append(transaction)
-    
+
     session.commit()
-    
+
     # Create some carts (for abandonment rate calculation)
     carts = []
     for i in range(15):
         user = UserFactory()
         session.add(user)
         session.commit()
-        
+
         cart = CartFactory(user_id=user.user_id)
         session.add(cart)
         session.commit()
-        
+
         # Add items to some carts
         for _ in range(fake.random_int(min=1, max=3)):
             product, _ = fake.choice(products)
@@ -381,11 +391,11 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
                 product_id=product.product_id
             )
             session.add(cart_item)
-        
+
         carts.append(cart)
-    
+
     session.commit()
-    
+
     return {
         "customers": customers,
         "products": [p[0] for p in products],
@@ -406,21 +416,21 @@ def create_churn_scenario_data(session: Session) -> dict:
     Create specific data scenario for testing churn rate calculations.
     """
     from datetime import datetime, timedelta
-    
+
     customers = []
     orders = []
     transactions = []
-    
+
     # Scenario: 10 customers, 5 are churned (haven't ordered in 60+ days)
     current_date = datetime.utcnow()
-    
+
     # Active customers (ordered recently)
     for i in range(5):
         customer = CustomerFactory()
         session.add(customer)
         session.commit()
         customers.append(customer)
-        
+
         # Recent order (within last 30 days)
         recent_date = current_date - timedelta(days=fake.random_int(min=1, max=30))
         order = SalesOrderFactory(
@@ -430,7 +440,7 @@ def create_churn_scenario_data(session: Session) -> dict:
         )
         session.add(order)
         orders.append(order)
-        
+
         transaction = TransactionFactory(
             order_id=order.order_id,
             customer_id=customer.customer_id,
@@ -440,14 +450,14 @@ def create_churn_scenario_data(session: Session) -> dict:
         )
         session.add(transaction)
         transactions.append(transaction)
-    
+
     # Churned customers (last order 60+ days ago)
     for i in range(5):
         customer = CustomerFactory()
         session.add(customer)
         session.commit()
         customers.append(customer)
-        
+
         # Old order (60+ days ago)
         old_date = current_date - timedelta(days=fake.random_int(min=60, max=180))
         order = SalesOrderFactory(
@@ -457,7 +467,7 @@ def create_churn_scenario_data(session: Session) -> dict:
         )
         session.add(order)
         orders.append(order)
-        
+
         transaction = TransactionFactory(
             order_id=order.order_id,
             customer_id=customer.customer_id,
@@ -467,9 +477,9 @@ def create_churn_scenario_data(session: Session) -> dict:
         )
         session.add(transaction)
         transactions.append(transaction)
-    
+
     session.commit()
-    
+
     return {
         "customers": customers,
         "orders": orders,
@@ -485,31 +495,31 @@ def create_mrr_scenario_data(session: Session) -> dict:
     Create specific data scenario for testing MRR calculations.
     """
     from datetime import datetime, timedelta
-    
+
     customers = []
     orders = []
     transactions = []
-    
+
     current_date = datetime.utcnow()
     thirty_days_ago = current_date - timedelta(days=30)
-    
+
     # Create customers with multiple orders (recurring revenue pattern)
     recurring_amounts = []
-    
+
     for i in range(8):  # 8 customers with recurring patterns
         customer = CustomerFactory()
         session.add(customer)
         session.commit()
         customers.append(customer)
-        
+
         # Each customer has 2-3 orders in the last 30 days
         num_orders = fake.random_int(min=2, max=3)
         customer_total = Decimal('0')
-        
+
         for j in range(num_orders):
             order_date = fake.date_time_between(start_date=thirty_days_ago, end_date=current_date)
             amount = Decimal(str(fake.pydecimal(left_digits=2, right_digits=2, positive=True, min_value=50, max_value=200)))
-            
+
             order = SalesOrderFactory(
                 customer_id=customer.customer_id,
                 order_date=order_date,
@@ -518,7 +528,7 @@ def create_mrr_scenario_data(session: Session) -> dict:
             )
             session.add(order)
             orders.append(order)
-            
+
             transaction = TransactionFactory(
                 order_id=order.order_id,
                 customer_id=customer.customer_id,
@@ -530,13 +540,13 @@ def create_mrr_scenario_data(session: Session) -> dict:
             session.add(transaction)
             transactions.append(transaction)
             customer_total += amount
-        
+
         recurring_amounts.append(customer_total)
-    
+
     session.commit()
-    
+
     expected_mrr = sum(recurring_amounts)
-    
+
     return {
         "customers": customers,
         "orders": orders,
@@ -554,45 +564,45 @@ def create_conversion_scenario_data(session: Session) -> dict:
     users = []
     carts = []
     orders = []
-    
+
     # Scenario: 20 visitors, 4 convert (20% conversion rate)
-    
+
     # 16 visitors who added to cart but didn't convert
     for i in range(16):
         user = UserFactory()
         session.add(user)
         session.commit()
         users.append(user)
-        
+
         cart = CartFactory(user_id=user.user_id)
         session.add(cart)
         carts.append(cart)
-    
+
     # 4 visitors who converted
     for i in range(4):
         user = UserFactory()
         session.add(user)
         session.commit()
         users.append(user)
-        
+
         cart = CartFactory(user_id=user.user_id)
         session.add(cart)
         carts.append(cart)
-        
+
         # Create corresponding order
         customer = CustomerFactory(email=user.email)
         session.add(customer)
         session.commit()
-        
+
         order = SalesOrderFactory(
             customer_id=customer.customer_id,
             status="COMPLETED"
         )
         session.add(order)
         orders.append(order)
-    
+
     session.commit()
-    
+
     return {
         "users": users,
         "carts": carts,

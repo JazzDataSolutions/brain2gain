@@ -1,0 +1,162 @@
+# ═══════════════════════════════════════════════════════════════════
+# Base Docker Compose Configuration
+# ═══════════════════════════════════════════════════════════════════
+# Contains core infrastructure services shared across all environments
+# Usage: This file is included by all other compose files
+
+version: '3.8'
+
+# ═══════════════════════════════════════════════════════════════════
+# SHARED CONFIGURATIONS
+# ═══════════════════════════════════════════════════════════════════
+
+x-common-variables: &common-variables
+  TZ: America/Mexico_City
+  PYTHONUNBUFFERED: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+x-postgres-healthcheck: &postgres-healthcheck
+  test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brain2gain_user} -d ${POSTGRES_DB:-brain2gain}"]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 30s
+
+x-redis-healthcheck: &redis-healthcheck
+  test: ["CMD", "redis-cli", "--no-auth-warning", "ping"]
+  interval: 10s
+  timeout: 5s
+  retries: 3
+  start_period: 20s
+
+services:
+  # ═══════════════════════════════════════════════════════════════════
+  # DATABASE SERVICES
+  # ═══════════════════════════════════════════════════════════════════
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: brain2gain-postgres
+    restart: unless-stopped
+    environment:
+      <<: *common-variables
+      POSTGRES_DB: ${POSTGRES_DB:-brain2gain}
+      POSTGRES_USER: ${POSTGRES_USER:-brain2gain_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD?Variable not set}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+      - ./database/backups:/backups:rw
+    healthcheck: *postgres-healthcheck
+    networks:
+      - brain2gain-network
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: brain2gain-redis
+    restart: unless-stopped
+    environment:
+      <<: *common-variables
+    command: |
+      redis-server 
+      --appendonly yes 
+      --requirepass ${REDIS_PASSWORD?Variable not set}
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck: *redis-healthcheck
+    networks:
+      - brain2gain-network
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+
+  # ═══════════════════════════════════════════════════════════════════
+  # DEVELOPMENT & ADMIN TOOLS
+  # ═══════════════════════════════════════════════════════════════════
+
+  adminer:
+    image: adminer:4.8.1
+    container_name: brain2gain-adminer
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${ADMINER_PORT:-8080}:8080"
+    environment:
+      <<: *common-variables
+      ADMINER_DESIGN: pepa-linha-dark
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DEFAULT_DB: ${POSTGRES_DB:-brain2gain}
+    networks:
+      - brain2gain-network
+    profiles:
+      - tools
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  mailcatcher:
+    image: schickling/mailcatcher
+    container_name: brain2gain-mailcatcher
+    restart: unless-stopped
+    ports:
+      - "${MAILCATCHER_WEB_PORT:-1080}:1080"  # Web UI
+      - "${MAILCATCHER_SMTP_PORT:-1025}:1025"  # SMTP server
+    networks:
+      - brain2gain-network
+    profiles:
+      - tools
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+# ═══════════════════════════════════════════════════════════════════
+# SHARED VOLUMES
+# ═══════════════════════════════════════════════════════════════════
+volumes:
+  postgres_data:
+    driver: local
+    name: brain2gain_postgres_data
+  redis_data:
+    driver: local
+    name: brain2gain_redis_data
+
+# ═══════════════════════════════════════════════════════════════════
+# SHARED NETWORKS
+# ═══════════════════════════════════════════════════════════════════
+networks:
+  brain2gain-network:
+    driver: bridge
+    name: brain2gain-network
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

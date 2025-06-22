@@ -2,6 +2,7 @@
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
+
 async def catch_exceptions_middleware(request: Request, call_next):
     try:
         return await call_next(request)
