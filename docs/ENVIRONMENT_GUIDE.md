@@ -22,6 +22,16 @@ Brain2Gain/
 └── Makefile                    # 📋 Comandos simplificados
 ```
 
+### Preparar archivos de entorno
+
+Copie el archivo `.env.example` en la carpeta `config/` para cada entorno:
+
+```bash
+cp .env.example config/.env.development
+cp .env.example config/.env.testing
+cp .env.example config/.env.production
+```
+
 ## 🚀 Comandos Principales
 
 ### Gestión de Entornos

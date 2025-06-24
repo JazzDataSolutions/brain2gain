@@ -1,6 +1,5 @@
-# Development Docker Compose Configuration
-# Optimized for team development with hot reload and shared volumes
-# Usage: docker-compose -f docker-compose.dev.yml up
+# Development overrides for Docker Compose
+# Applied automatically when running `docker compose up` during development.
 
 include:
   - docker-compose.base.yml
