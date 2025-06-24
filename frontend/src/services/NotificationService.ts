@@ -19,13 +19,18 @@ class NotificationService {
       this.disconnect();
     }
 
-    const wsUrl = `ws://localhost:8000/api/v1/ws/notifications/${userId}`;
-    console.log('Connecting to WebSocket:', wsUrl);
+    const baseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+    const wsUrl = `${baseUrl}/api/v1/ws/notifications/${userId}`;
+    if (import.meta.env.DEV) {
+      console.debug('Connecting to WebSocket:', wsUrl);
+    }
     
     this.ws = new WebSocket(wsUrl);
     
     this.ws.onopen = () => {
-      console.log('WebSocket connected');
+      if (import.meta.env.DEV) {
+        console.debug('WebSocket connected');
+      }
       this.reconnectAttempts = 0;
       
       // Update role if not default
@@ -39,7 +44,9 @@ class NotificationService {
     this.ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        console.log('WebSocket message received:', data);
+        if (import.meta.env.DEV) {
+          console.debug('WebSocket message received:', data);
+        }
         
         // Emit specific event type
         this.emit(data.type || 'message', data);
@@ -56,14 +63,18 @@ class NotificationService {
     };
     
     this.ws.onclose = (event) => {
-      console.log('WebSocket disconnected:', event.code, event.reason);
+      if (import.meta.env.DEV) {
+        console.debug('WebSocket disconnected:', event.code, event.reason);
+      }
       this.emit('disconnected', { code: event.code, reason: event.reason });
       
       // Attempt to reconnect
       if (this.reconnectAttempts < this.maxReconnectAttempts) {
         setTimeout(() => {
           this.reconnectAttempts++;
-          console.log(`Reconnecting attempt ${this.reconnectAttempts}...`);
+          if (import.meta.env.DEV) {
+            console.debug(`Reconnecting attempt ${this.reconnectAttempts}...`);
+          }
           this.connect(userId, role);
         }, this.reconnectInterval * Math.pow(2, this.reconnectAttempts));
       }

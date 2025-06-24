@@ -12,17 +12,13 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
-  type ApiError,
   type ItemPublic,
   type ItemUpdate,
   ItemsService,
 } from "../../client"
-import useCustomToast from "../../hooks/useCustomToast"
-import { handleError } from "../../utils"
+import useItemForm from "../../hooks/useItemForm"
 
 interface EditItemProps {
   item: ItemPublic
@@ -31,40 +27,20 @@ interface EditItemProps {
 }
 
 const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
   const {
     register,
     handleSubmit,
-    reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<ItemUpdate>({
-    mode: "onBlur",
-    criteriaMode: "all",
+    onSubmit,
+  } = useItemForm<ItemUpdate>({
     defaultValues: item,
-  })
-
-  const mutation = useMutation({
     mutationFn: (data: ItemUpdate) =>
       ItemsService.updateItem({ id: item.id, requestBody: data }),
-    onSuccess: () => {
-      showToast("Success!", "Item updated successfully.", "success")
-      onClose()
-    },
-    onError: (err: ApiError) => {
-      handleError(err, showToast)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
-    },
+    successMessage: "Item updated successfully.",
+    onSuccess: onClose,
   })
 
-  const onSubmit: SubmitHandler<ItemUpdate> = async (data) => {
-    mutation.mutate(data)
-  }
-
   const onCancel = () => {
-    reset()
     onClose()
   }
 

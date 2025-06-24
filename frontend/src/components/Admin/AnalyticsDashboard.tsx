@@ -41,6 +41,7 @@ import {
   Tooltip
 } from '@chakra-ui/react'
 import { Icon } from '@chakra-ui/react'
+import RevenueOverview from './RevenueOverview'
 import { 
   FiTrendingUp, 
   FiTrendingDown, 
@@ -405,107 +406,12 @@ const AnalyticsDashboard: React.FC = () => {
         )}
 
         {/* Revenue Overview */}
-        <Box>
-          <Heading size="md" mb={4}>Revenue Overview</Heading>
-          <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiDollarSign} boxSize={4} />
-                      <Text>Today's Revenue</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.today || 0)}</StatNumber>
-                  <StatHelpText>
-                    Real-time: {formatCurrency(realtimeData?.current_revenue_today || 0)}
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiDollarSign} boxSize={4} />
-                      <Text>Monthly Revenue</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.month || 0)}</StatNumber>
-                  <StatHelpText>
-                    <StatArrow 
-                      type={financialData?.revenue.growth_rate >= 0 ? 'increase' : 'decrease'} 
-                    />
-                    {formatPercentage(Math.abs(financialData?.revenue.growth_rate || 0))} growth
-                  </StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiTrendingUp} boxSize={4} />
-                      <Text>MRR</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.mrr || 0)}</StatNumber>
-                  <StatHelpText>Monthly Recurring Revenue</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiTrendingUp} boxSize={4} />
-                      <Text>ARR</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.arr || 0)}</StatNumber>
-                  <StatHelpText>Annual Recurring Revenue</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiShoppingCart} boxSize={4} />
-                      <Text>Average Order Value</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.orders.average_order_value || 0)}</StatNumber>
-                  <StatHelpText>Per completed order</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-
-            <Card>
-              <CardBody>
-                <Stat>
-                  <StatLabel>
-                    <HStack>
-                      <Icon as={FiUsers} boxSize={4} />
-                      <Text>Revenue Per Visitor</Text>
-                    </HStack>
-                  </StatLabel>
-                  <StatNumber>{formatCurrency(financialData?.revenue.revenue_per_visitor || 0)}</StatNumber>
-                  <StatHelpText>RPV (30 days)</StatHelpText>
-                </Stat>
-              </CardBody>
-            </Card>
-          </Grid>
-        </Box>
+        <RevenueOverview
+          financialData={financialData}
+          realtimeData={realtimeData}
+          formatCurrency={formatCurrency}
+          formatPercentage={formatPercentage}
+        />
 
         {/* KPI Summary Cards */}
         <Box>

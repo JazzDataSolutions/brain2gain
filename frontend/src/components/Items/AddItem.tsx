@@ -12,12 +12,9 @@ import {
   ModalHeader,
   ModalOverlay,
 } from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type ApiError, type ItemCreate, ItemsService } from "../../client"
-import useCustomToast from "../../hooks/useCustomToast"
-import { handleError } from "../../utils"
+import { type ItemCreate, ItemsService } from "../../client"
+import useItemForm from "../../hooks/useItemForm"
 
 interface AddItemProps {
   isOpen: boolean
@@ -25,41 +22,18 @@ interface AddItemProps {
 }
 
 const AddItem = ({ isOpen, onClose }: AddItemProps) => {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
   const {
     register,
     handleSubmit,
-    reset,
     formState: { errors, isSubmitting },
-  } = useForm<ItemCreate>({
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: {
-      title: "",
-      description: "",
-    },
-  })
-
-  const mutation = useMutation({
+    onSubmit,
+  } = useItemForm<ItemCreate>({
+    defaultValues: { title: "", description: "" },
     mutationFn: (data: ItemCreate) =>
       ItemsService.createItem({ requestBody: data }),
-    onSuccess: () => {
-      showToast("Success!", "Item created successfully.", "success")
-      reset()
-      onClose()
-    },
-    onError: (err: ApiError) => {
-      handleError(err, showToast)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
-    },
+    successMessage: "Item created successfully.",
+    onSuccess: onClose,
   })
-
-  const onSubmit: SubmitHandler<ItemCreate> = (data) => {
-    mutation.mutate(data)
-  }
 
   return (
     <>
