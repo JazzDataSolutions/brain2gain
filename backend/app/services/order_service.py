@@ -507,7 +507,7 @@ class OrderService:
         statement = select(Stock).where(Stock.product_id == product_id)
         result = self.session.exec(statement)
         return result.first()
-
+      
     async def _send_order_notifications(self, order: Order, event_type: str):
         """Send order-related notifications"""
         try:

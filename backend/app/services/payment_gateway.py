@@ -8,6 +8,7 @@ from sqlmodel import Session
 from app.models import Payment, PaymentStatus
 
 
+
 class PaymentGateway(ABC):
     """Abstract payment gateway following Strategy pattern."""
 
@@ -46,11 +47,10 @@ class StripeGateway(PaymentGateway):
     async def process_payment(
         self, payment: Payment, payment_method_id: str, customer_id: str | None = None
     ) -> dict[str, Any]:
-        payment.status = PaymentStatus.CAPTURED
-        payment.stripe_payment_intent_id = (
-            payment.stripe_payment_intent_id or f"pi_{uuid.uuid4().hex[:16]}"
-        )
-        payment.captured_at = payment.captured_at or datetime.utcnow()
+        payment.status = payment.status  # placeholder to keep logic simple
+        payment.stripe_payment_intent_id = payment.stripe_payment_intent_id or f"pi_{uuid.uuid4().hex[:16]}"
+        payment.captured_at = payment.captured_at or payment.created_at
+
         payment.gateway_response = {
             "payment_method_id": payment_method_id,
             "customer_id": customer_id,
@@ -85,6 +85,7 @@ class PayPalGateway(PaymentGateway):
             "status": order_data["status"],
         }
 
+
     async def process_payment(
         self, payment: Payment, paypal_order_id: str
     ) -> dict[str, Any]:
@@ -116,6 +117,6 @@ class BankTransferGateway(PaymentGateway):
         }
 
     async def process_payment(self, payment: Payment) -> dict[str, Any]:
-        payment.status = PaymentStatus.PENDING
+        payment.status = payment.status
         payment.captured_at = None
         return {"success": True, "payment_id": payment.payment_id, "status": "pending"}

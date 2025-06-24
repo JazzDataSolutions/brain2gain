@@ -25,6 +25,12 @@ from app.services.payment_gateway import (
     StripeGateway,
 )
 from app.services.paypal_service import PayPalService
+from app.services.payment_gateway import (
+    BankTransferGateway,
+    PayPalGateway,
+    PaymentGateway,
+    StripeGateway,
+)
 from app.services.stripe_service import StripeService
 
 logger = logging.getLogger(__name__)
@@ -77,39 +83,25 @@ class PaymentService:
         return init_data
 
     # ─── PAYMENT PROCESSING ──────────────────────────────────────────────
-    async def process_payment(
-        self, payment_id: uuid.UUID, **kwargs: Any
-    ) -> PaymentProcessResponse:
+    async def process_payment(self, payment_id: uuid.UUID, **kwargs: Any) -> PaymentProcessResponse:
         """Process payment using the configured gateway."""
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
 
         gateway = self.gateways.get(payment.payment_method)
         if not gateway:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Unsupported payment method",
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
 
         result = await gateway.process_payment(payment, **kwargs)
 
-        payment.status = (
-            PaymentStatus.CAPTURED
-            if result.get("status") in {"succeeded", "completed"}
-            else PaymentStatus.PENDING
-        )
+        payment.status = PaymentStatus.CAPTURED if result.get("status") in {"succeeded", "completed"} else PaymentStatus.PENDING
+
         payment.captured_at = datetime.utcnow()
         self.session.add(payment)
         self.session.commit()
 
-        return PaymentProcessResponse(
-            success=result.get("success", True),
-            payment_id=payment_id,
-            status=payment.status,
-        )
+        return PaymentProcessResponse(success=result.get("success", True), payment_id=payment_id, status=payment.status)
 
     async def process_stripe_payment(
         self,
