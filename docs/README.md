@@ -27,7 +27,6 @@ Welcome to the comprehensive documentation for Brain2Gain e-commerce platform.
 - [**Monitoring Guide**](./performance/monitoring.md) - System monitoring and alerting
 
 ### 🚀 Deployment
-- [**Docker Setup**](../DOCKER_SETUP.md) - Container deployment guide
 - [**Production Setup**](./deployment/production.md) - Production environment configuration
 - [**CI/CD Pipeline**](./deployment/cicd.md) - Continuous integration and deployment
 
@@ -49,7 +48,6 @@ Welcome to the comprehensive documentation for Brain2Gain e-commerce platform.
 - **Performance**: [Optimization Plan](./performance/optimization-plan.md)
 
 ### For DevOps
-- **Deployment**: [Docker Setup](../DOCKER_SETUP.md)
 - **Monitoring**: [Monitoring Guide](./performance/monitoring.md)
 - **Security**: [Security Policy](../SECURITY.md)
 
