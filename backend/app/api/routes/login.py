@@ -25,7 +25,7 @@ router = APIRouter(tags=["login"])
 @router.post("/login/access-token")
 @apply_endpoint_limits("auth")
 def login_access_token(
-    _request: Request,
+    request: Request,
     session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
 ) -> Token:

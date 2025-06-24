@@ -18,7 +18,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 @router.get("/", response_model=list[ProductRead])
 @apply_endpoint_limits("products")
 async def list_products(
-    _request: Request,
+    request: Request,
     session: SessionDep,
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(
@@ -57,7 +57,7 @@ async def create_product(
 @router.get("/{product_id}", response_model=ProductRead)
 @apply_endpoint_limits("products")
 async def get_product(
-    _request: Request,
+    request: Request,
     product_id: int,
     session: SessionDep,
 ) -> ProductRead:

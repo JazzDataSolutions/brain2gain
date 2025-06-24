@@ -31,7 +31,7 @@ def get_cart_identifier(
 @router.get("/", response_model=CartRead)
 @apply_endpoint_limits("cart")
 async def get_cart(
-    _request: Request,
+    request: Request,
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db),
 ) -> CartRead:
@@ -70,8 +70,8 @@ async def get_cart(
 @router.post("/items", response_model=CartRead, status_code=status.HTTP_201_CREATED)
 @apply_endpoint_limits("cart")
 async def add_to_cart(
-    _http_request: Request,
-    request: AddToCartRequest,
+    request: Request,
+    add_request: AddToCartRequest,
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db),
 ) -> CartRead:
@@ -112,22 +112,22 @@ async def add_to_cart(
     """
     user_id, session_id = cart_ids
     service = CartService(session)
-    return await service.add_to_cart(request, user_id, session_id)
+    return await service.add_to_cart(add_request, user_id, session_id)
 
 
 @router.put("/items/{product_id}", response_model=CartRead)
 @apply_endpoint_limits("cart")
 async def update_cart_item(
-    _http_request: Request,
+    request: Request,
     product_id: int,
-    request: UpdateCartItemRequest,
+    update_request: UpdateCartItemRequest,
     cart_ids: tuple = Depends(get_cart_identifier),
     session: AsyncSession = Depends(get_db),
 ) -> CartRead:
     """Update cart item quantity"""
     user_id, session_id = cart_ids
     service = CartService(session)
-    return await service.update_cart_item(product_id, request, user_id, session_id)
+    return await service.update_cart_item(product_id, update_request, user_id, session_id)
 
 
 @router.delete("/items/{product_id}", response_model=CartRead)
