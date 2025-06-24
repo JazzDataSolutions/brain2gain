@@ -1,0 +1,550 @@
+name: 🧪 Comprehensive Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run comprehensive tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '18'
+  PYTHON_VERSION: '3.11'
+  COVERAGE_THRESHOLD_BACKEND: 90
+  COVERAGE_THRESHOLD_FRONTEND: 85
+
+jobs:
+  # Quality Gates - Fast feedback
+  quality-gates:
+    name: 🔍 Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: 🔧 Install uv
+        run: pip install uv
+        
+      - name: 🔍 Backend Linting
+        run: |
+          cd backend
+          uv sync --dev
+          uv run ruff check app/
+          uv run ruff format app/ --check
+          uv run mypy app/
+          
+      - name: 🔍 Frontend Linting
+        run: |
+          cd frontend
+          npm ci
+          npm run lint
+          npm run build  # TypeScript compilation check
+
+  # Backend Testing
+  backend-tests:
+    name: 🐍 Backend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality-gates
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: brain2gain_user
+          POSTGRES_PASSWORD: brain2gain_password
+          POSTGRES_DB: brain2gain_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 🔧 Install uv
+        run: pip install uv
+        
+      - name: 📦 Install dependencies
+        run: |
+          cd backend
+          uv sync --dev
+          
+      - name: 🧪 Run Unit Tests
+        run: |
+          cd backend
+          uv run pytest tests/unit/ -v \
+            --cov=app \
+            --cov-report=xml:coverage-unit.xml \
+            --cov-report=html:htmlcov-unit \
+            --junit-xml=junit-unit.xml
+            
+      - name: 🔗 Run Integration Tests
+        run: |
+          cd backend
+          uv run pytest tests/integration/ -v \
+            --cov=app \
+            --cov-report=xml:coverage-integration.xml \
+            --junit-xml=junit-integration.xml
+        env:
+          DATABASE_URL: postgresql://brain2gain_user:brain2gain_password@localhost:5432/brain2gain_test
+          REDIS_URL: redis://localhost:6379
+          
+      - name: 🛡️ Run Security Tests
+        run: |
+          cd backend
+          uv run pytest tests/security/ -v \
+            --junit-xml=junit-security.xml
+            
+      - name: ⚡ Run Performance Tests
+        run: |
+          cd backend
+          uv run pytest tests/performance/ -v \
+            --junit-xml=junit-performance.xml
+            
+      - name: 📊 Generate Coverage Report
+        run: |
+          cd backend
+          uv run pytest \
+            --cov=app \
+            --cov-report=xml:coverage-full.xml \
+            --cov-report=html:htmlcov-full \
+            --cov-fail-under=${{ env.COVERAGE_THRESHOLD_BACKEND }}
+            
+      - name: 📤 Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: backend/coverage-full.xml
+          flags: backend
+          name: backend-coverage
+          
+      - name: 📋 Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: |
+            backend/junit-*.xml
+            backend/htmlcov-*/
+            backend/coverage-*.xml
+
+  # Frontend Testing
+  frontend-tests:
+    name: ⚛️ Frontend Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: quality-gates
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: 📦 Install dependencies
+        run: |
+          cd frontend
+          npm ci
+          
+      - name: 🧪 Run Unit Tests
+        run: |
+          cd frontend
+          npm run test:coverage
+          
+      - name: 🔗 Run Integration Tests
+        run: |
+          cd frontend
+          npm run test -- --run src/test/integration/
+          
+      - name: 📊 Check Coverage Threshold
+        run: |
+          cd frontend
+          npm run test:coverage -- --coverage.thresholds.global.lines=${{ env.COVERAGE_THRESHOLD_FRONTEND }}
+          
+      - name: 📤 Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: frontend/coverage/lcov.info
+          flags: frontend
+          name: frontend-coverage
+          
+      - name: 📋 Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-test-results
+          path: |
+            frontend/coverage/
+            frontend/test-reports/
+
+  # E2E Testing
+  e2e-tests:
+    name: 🎭 E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [backend-tests, frontend-tests]
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: brain2gain_user
+          POSTGRES_PASSWORD: brain2gain_password
+          POSTGRES_DB: brain2gain_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: 🔧 Install uv
+        run: pip install uv
+        
+      - name: 📦 Install backend dependencies
+        run: |
+          cd backend
+          uv sync --dev
+          
+      - name: 📦 Install frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+          npx playwright install --with-deps
+          
+      - name: 🗄️ Setup Database
+        run: |
+          cd backend
+          uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql://brain2gain_user:brain2gain_password@localhost:5432/brain2gain_test
+          
+      - name: 🚀 Start Backend
+        run: |
+          cd backend
+          uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+          sleep 10
+        env:
+          DATABASE_URL: postgresql://brain2gain_user:brain2gain_password@localhost:5432/brain2gain_test
+          REDIS_URL: redis://localhost:6379
+          
+      - name: 🏗️ Build Frontend
+        run: |
+          cd frontend
+          npm run build
+          
+      - name: 🌐 Start Frontend
+        run: |
+          cd frontend
+          npm run preview -- --host 0.0.0.0 --port 5173 &
+          sleep 10
+          
+      - name: 🎭 Run E2E Tests
+        run: |
+          cd frontend
+          npx playwright test --reporter=html
+          
+      - name: 🔍 Run Accessibility Tests
+        run: |
+          cd frontend
+          npx playwright test tests/accessibility/ --reporter=junit
+          
+      - name: 📋 Upload E2E Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+
+  # Security Scanning
+  security-scan:
+    name: 🔒 Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality-gates
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: 🔧 Install uv
+        run: pip install uv
+        
+      - name: 🛡️ Backend Security Scan
+        run: |
+          cd backend
+          uv sync --dev
+          uv add --dev safety bandit semgrep
+          uv run safety check --json --output security-report.json || true
+          uv run bandit -r app/ -f json -o bandit-report.json || true
+          uv run semgrep --config=auto app/ --json --output=semgrep-report.json || true
+          
+      - name: 🛡️ Frontend Security Scan
+        run: |
+          cd frontend
+          npm ci
+          npm audit --json > npm-audit-report.json || true
+          
+      - name: 🔍 Container Security Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          
+      - name: 📤 Upload Security Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+          
+      - name: 📋 Upload Security Reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-reports
+          path: |
+            backend/security-report.json
+            backend/bandit-report.json
+            backend/semgrep-report.json
+            frontend/npm-audit-report.json
+            trivy-results.sarif
+
+  # Performance Testing
+  performance-tests:
+    name: ⚡ Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [backend-tests, frontend-tests]
+    if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf]')
+    
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: brain2gain_user
+          POSTGRES_PASSWORD: brain2gain_password
+          POSTGRES_DB: brain2gain_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: 📦 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+          
+      - name: 🔧 Install uv
+        run: pip install uv
+        
+      - name: 📦 Install dependencies
+        run: |
+          cd backend
+          uv sync --dev
+          cd ../frontend
+          npm ci
+          
+      - name: 🔥 Install Artillery
+        run: npm install -g artillery
+        
+      - name: 🚀 Start Application
+        run: |
+          make dev
+          sleep 30
+          
+      - name: ⚡ Run Load Tests
+        run: |
+          cd backend
+          ./scripts/test-performance.sh
+          
+      - name: 🔍 Run Lighthouse Audit
+        uses: treosh/lighthouse-ci-action@v9
+        with:
+          configPath: './frontend/lighthouse-ci.json'
+          uploadArtifacts: true
+          
+      - name: 📋 Upload Performance Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: performance-reports
+          path: |
+            backend/performance-reports/
+            frontend/lighthouse-reports/
+
+  # Final Report Generation
+  generate-report:
+    name: 📊 Generate Final Report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [backend-tests, frontend-tests, e2e-tests, security-scan]
+    if: always()
+    
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        
+      - name: 📥 Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: test-results/
+          
+      - name: 📊 Generate Comprehensive Report
+        run: |
+          ./scripts/test-master.sh --ci
+          
+      - name: 📋 Upload Final Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: comprehensive-test-report
+          path: |
+            test-reports/
+            test-results/
+            
+      - name: 💬 Comment PR with Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const report = fs.readFileSync('test-reports/master-test-report.md', 'utf8');
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '## 🧪 Comprehensive Test Results\n\n' + report
+              });
+            } catch (error) {
+              console.log('Could not read test report:', error);
+            }
+
+  # Deployment Gate
+  deployment-gate:
+    name: 🚀 Deployment Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [backend-tests, frontend-tests, e2e-tests, security-scan]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: ✅ All Tests Passed
+        run: |
+          echo "🎉 All tests passed! Ready for deployment."
+          echo "Quality gates met:"
+          echo "  ✅ Backend tests passed"
+          echo "  ✅ Frontend tests passed"
+          echo "  ✅ E2E tests passed"
+          echo "  ✅ Security scan completed"
+          
+      - name: 🚀 Trigger Deployment
+        if: success()
+        run: |
+          echo "Deployment would be triggered here"
+          # Add your deployment trigger here

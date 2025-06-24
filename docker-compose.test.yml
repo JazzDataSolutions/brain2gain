@@ -1,0 +1,44 @@
+# Simple Testing Environment - Database Only
+# For running integration tests that need DB connectivity
+
+services:
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: brain2gain-postgres-test
+    restart: unless-stopped
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: brain2gain_test
+      POSTGRES_USER: brain2gain_test
+      POSTGRES_PASSWORD: TestPassword123!
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brain2gain_test -d brain2gain_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  redis-test:
+    image: redis:7.2-alpine
+    container_name: brain2gain-redis-test
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    command: redis-server --appendonly no --requirepass TestRedisPass123! --save ""
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "TestRedisPass123!", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  postgres_test_data:
+    name: brain2gain_postgres_test_data
+
+# Use default Docker network

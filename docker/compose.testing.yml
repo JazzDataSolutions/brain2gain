@@ -1,0 +1,195 @@
+# ═══════════════════════════════════════════════════════════════════
+# Testing Environment - Isolated Testing Services
+# ═══════════════════════════════════════════════════════════════════
+
+# Remove base include for testing to avoid conflicts
+
+services:
+  # ═══════════════════════════════════════════════════════════════════
+  # DATABASE OVERRIDES - TESTING
+  # ═══════════════════════════════════════════════════════════════════
+
+  postgres-test:
+    image: postgres:17-alpine
+    container_name: brain2gain-postgres-test
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-brain2gain_test}
+      POSTGRES_USER: ${POSTGRES_USER:-brain2gain_test}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-TestPassword123!}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    command: |
+      postgres
+      -c log_statement=all
+      -c log_destination=stderr
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+      - ../database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brain2gain_test} -d ${POSTGRES_DB:-brain2gain_test}"]
+      interval: 3s
+      timeout: 2s
+      retries: 5
+    networks:
+      - brain2gain-test-network
+
+  redis-test:
+    image: redis:7.2-alpine
+    container_name: brain2gain-redis-test
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    command: redis-server --appendonly no --requirepass ${REDIS_PASSWORD:-TestRedisPass123!} --save ""
+    volumes: []  # No persistence for testing
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 3
+    networks:
+      - brain2gain-test-network
+
+  # ═══════════════════════════════════════════════════════════════════
+  # APPLICATION SERVICES - TESTING
+  # ═══════════════════════════════════════════════════════════════════
+
+  backend-test:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: brain2gain-backend-test
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+    env_file:
+      - ../config/.env.testing
+    volumes:
+      - ../backend/app:/app/app:ro
+      - ../backend/tests:/app/tests:ro
+      - ../backend/alembic.ini:/app/alembic.ini:ro
+      - test_coverage:/app/htmlcov:rw
+    command: >
+      sh -c "
+        echo '🧪 Setting up test backend...' &&
+        uv sync --dev &&
+        until pg_isready -h postgres-test -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
+          echo 'Waiting for postgres...'
+          sleep 1
+        done &&
+        alembic upgrade head &&
+        fastapi run app/main.py --host 0.0.0.0 --port 8000
+      "
+    networks:
+      - brain2gain-test-network
+
+  frontend-test:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: brain2gain-frontend-test
+    depends_on:
+      - backend-test
+    ports:
+      - "5174:5173"
+    env_file:
+      - ../config/.env.testing
+    volumes:
+      - ../frontend/src:/app/src:ro
+      - ../frontend/tests:/app/tests:ro
+      - ../frontend/test-results:/app/test-results:rw
+    command: npm run build && npm run preview -- --host 0.0.0.0 --port 5173
+    networks:
+      - brain2gain-test-network
+
+  # ═══════════════════════════════════════════════════════════════════
+  # TESTING TOOLS
+  # ═══════════════════════════════════════════════════════════════════
+
+  pytest-runner:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: brain2gain-pytest
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+    env_file:
+      - ../config/.env.testing
+    volumes:
+      - ../backend:/app:ro
+      - test_coverage:/app/htmlcov:rw
+      - ../backend/test-results:/app/test-results:rw
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🧪 Running backend tests...' &&
+        uv sync --dev &&
+        until pg_isready -h postgres-test -U ${POSTGRES_USER} -d ${POSTGRES_DB}; do
+          sleep 1
+        done &&
+        alembic upgrade head &&
+        python -m pytest app/tests/ --cov=app --cov-report=html --cov-report=xml -v --junitxml=test-results/pytest.xml
+      "
+    networks:
+      - brain2gain-test-network
+    profiles:
+      - testing
+
+  playwright-runner:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.playwright
+    container_name: brain2gain-playwright
+    depends_on:
+      - backend-test
+      - frontend-test
+    env_file:
+      - ../config/.env.testing
+    volumes:
+      - ../frontend/tests:/app/tests:ro
+      - ../frontend/test-results:/app/test-results:rw
+      - ../frontend/playwright-report:/app/playwright-report:rw
+    command: >
+      sh -c "
+        echo '🎭 Running E2E tests...' &&
+        npm ci &&
+        npx playwright install --with-deps &&
+        npx playwright test --reporter=html
+      "
+    networks:
+      - brain2gain-test-network
+    profiles:
+      - testing
+
+  # Testing tools
+  mailcatcher-test:
+    image: schickling/mailcatcher
+    container_name: brain2gain-mailcatcher-test
+    restart: unless-stopped
+    ports:
+      - "${MAILCATCHER_WEB_PORT:-1081}:1080"
+      - "${MAILCATCHER_SMTP_PORT:-1026}:1025"
+    networks:
+      - brain2gain-test-network
+
+volumes:
+  postgres_test_data:
+    name: brain2gain_postgres_test_data
+  test_coverage:
+    name: brain2gain_test_coverage
+
+networks:
+  brain2gain-test-network:
+    name: brain2gain-test-network
+    driver: bridge

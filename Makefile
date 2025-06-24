@@ -1,232 +1,157 @@
 SHELL := /bin/bash
 
-.PHONY: dev test lint build ci production stop clean logs help
+.PHONY: help dev test prod tools clean setup logs status
 
-# === ENVIRONMENT COMMANDS ===
-dev:
-	@echo "🚀 Starting development environment with hot reload..."
-	docker compose -f docker-compose.dev.yml up --build -d
+# ═══════════════════════════════════════════════════════════════════
+# 🚀 Brain2Gain - Simplified Development Commands
+# ═══════════════════════════════════════════════════════════════════
+
+help: ## Show this help message
+	@echo "Brain2Gain Development Commands"
+	@echo "================================"
+	@echo ""
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+
+##@ Environment Management
+
+setup: ## Setup development environment
+	@echo "🔧 Setting up development environment..."
+	@./scripts/env-manager.sh setup development
+	@echo "✅ Development environment configured!"
+
+dev: ## Start development environment with hot reload
+	@echo "🚀 Starting development environment..."
+	@./scripts/env-manager.sh start development
 	@echo "✅ Development environment started!"
 	@echo "   Frontend: http://localhost:5173"
 	@echo "   Backend API: http://localhost:8000"
 	@echo "   Admin: http://localhost:8080"
 	@echo "   Mailcatcher: http://localhost:1080"
 
-production:
-	@echo "🏭 Starting production environment..."
-	docker compose up --build -d
-	@echo "✅ Production environment started!"
-	@echo "   Application: http://localhost"
-	@echo "   API: http://localhost:8000"
-
-ci:
-	@echo "🔬 Running CI tests..."
-	docker compose -f docker-compose.ci.yml up --build --abort-on-container-exit
-	@echo "✅ CI tests completed!"
-
-# === DEVELOPMENT TOOLS ===
-dev-tools:
-	@echo "🛠️ Starting development tools..."
-	docker compose -f docker-compose.dev.yml --profile tools up -d
-
-dev-testing:
+test-env: ## Start testing environment
 	@echo "🧪 Starting testing environment..."
-	docker compose -f docker-compose.dev.yml --profile testing up -d
+	@./scripts/env-manager.sh start testing
+	@echo "✅ Testing environment started!"
 
-# === STOP & CLEANUP ===
-stop:
-	@echo "🛑 Stopping all environments..."
-	docker compose down
-	docker compose -f docker-compose.dev.yml down
-	docker compose -f docker-compose.ci.yml down
+prod: ## Start production environment
+	@echo "🏭 Starting production environment..."
+	@./scripts/env-manager.sh setup production
+	@./scripts/env-manager.sh start production
 
-clean:
-	@echo "🧹 Cleaning up containers and volumes..."
-	docker compose down -v --remove-orphans
-	docker compose -f docker-compose.dev.yml down -v --remove-orphans
-	docker compose -f docker-compose.ci.yml down -v --remove-orphans
-	docker system prune -f
-	@echo "✅ Cleanup completed!"
+##@ Testing Commands
 
-# === TESTING COMMANDS ===
-test:
-	@echo "🧪 Running local tests..."
-	cd backend && uv run pytest
-	cd frontend && npm run test
+test-setup: ## Setup testing environment
+	@./scripts/test-manager.sh setup
 
-test-backend:
-	@echo "🧪 Running backend tests..."
-	cd backend && uv run pytest --cov=app --cov-report=html --cov-report=term-missing
+test: ## Run all tests
+	@./scripts/test-manager.sh all
 
-test-frontend:
-	@echo "🧪 Running frontend tests..."
-	cd frontend && npm run test:coverage
+test-unit: ## Run unit tests only
+	@./scripts/test-manager.sh unit
 
-test-e2e:
-	@echo "🎭 Running E2E tests..."
-	docker compose -f docker-compose.dev.yml --profile testing up -d playwright
+test-integration: ## Run integration tests
+	@./scripts/test-manager.sh integration
 
-test-integration:
-	@echo "🔗 Running integration tests..."
-	cd backend && uv run pytest tests/integration/ -v
+test-e2e: ## Run end-to-end tests
+	@./scripts/test-manager.sh e2e
 
-test-all:
-	@echo "🚀 Running all tests via CI..."
-	make ci
+test-security: ## Run security tests
+	@./scripts/test-manager.sh security
 
-# === LINTING COMMANDS ===
-lint:
-	@echo "🔍 Running linting..."
-	cd backend && uv run ruff check app && uv run ruff format app --check
-	cd frontend && npm run lint
+test-performance: ## Run performance tests
+	@./scripts/test-manager.sh performance
 
-lint-fix:
-	@echo "🔧 Fixing linting issues..."
-	cd backend && uv run ruff check app --fix && uv run ruff format app
-	cd frontend && npm run lint:fix
+test-coverage: ## Generate coverage reports
+	@./scripts/test-manager.sh coverage
 
-type-check:
-	@echo "📝 Running type checking..."
-	cd backend && uv run mypy app
-	cd frontend && npm run build  # TypeScript compilation serves as type check
+test-backend: ## Run backend tests only
+	@./scripts/test-manager.sh all --backend-only
 
-# === BUILD COMMANDS ===
-build:
-	@echo "🏗️ Building frontend..."
-	cd frontend && npm run build
+test-frontend: ## Run frontend tests only
+	@./scripts/test-manager.sh all --frontend-only
 
-build-backend:
-	@echo "🏗️ Building backend Docker image..."
-	docker compose build backend
+test-fast: ## Run fast tests (skip slow integration and e2e)
+	@./scripts/test-manager.sh all --fast
 
-build-frontend:
-	@echo "🏗️ Building frontend Docker image..."
-	docker compose build frontend
+##@ Development Tools
 
-build-all:
-	@echo "🏗️ Building all Docker images..."
-	docker compose build
+tools: ## Start development tools (Adminer, Mailcatcher)
+	@echo "🛠️ Starting development tools..."
+	@docker compose -f docker/compose.development.yml --profile tools up -d
+	@echo "✅ Tools started: Adminer (8080), Mailcatcher (1080)"
 
-# === UTILITY COMMANDS ===
-logs:
-	@echo "📋 Showing logs (Ctrl+C to exit)..."
-	docker compose logs -f
+logs: ## Show logs for development environment
+	@./scripts/env-manager.sh logs development
 
-logs-dev:
-	@echo "📋 Showing development logs (Ctrl+C to exit)..."
-	docker compose -f docker-compose.dev.yml logs -f
+status: ## Show environment status
+	@./scripts/env-manager.sh status development
 
-logs-backend:
-	docker compose logs -f backend
+##@ Cleanup Commands
 
-logs-frontend:
-	docker compose logs -f frontend
+stop: ## Stop current environment
+	@echo "🛑 Stopping environment..."
+	@./scripts/env-manager.sh stop development 2>/dev/null || true
+	@./scripts/env-manager.sh stop testing 2>/dev/null || true
+	@./scripts/env-manager.sh stop production 2>/dev/null || true
 
-status:
-	@echo "📊 Environment status:"
-	docker compose ps
+clean: ## Clean all environments and volumes
+	@echo "🧹 Cleaning all environments..."
+	@./scripts/env-manager.sh clean development 2>/dev/null || true
+	@./scripts/env-manager.sh clean testing 2>/dev/null || true
+	@./scripts/test-manager.sh clean
 
-shell-backend:
-	@echo "🐚 Opening backend shell..."
-	docker compose exec backend bash
+clean-test: ## Clean only testing environment
+	@./scripts/test-manager.sh clean
 
-shell-db:
-	@echo "🗄️ Opening database shell..."
-	docker compose exec postgres psql -U brain2gain_user -d brain2gain
+##@ Quick Commands
 
-# === BACKEND DEVELOPMENT ===
-run-backend:
-	@echo "🏃 Running backend locally..."
-	cd backend && uv run fastapi dev app/main.py --port 8000
+quick-start: setup dev ## Setup and start development environment
+	@echo "🎉 Quick start completed!"
 
-shell-backend-local:
-	@echo "🐚 Starting backend Python shell..."
-	cd backend && uv run python
+quick-test: test-setup test-fast ## Setup and run fast tests
+	@echo "🎉 Quick test completed!"
 
-generate-migration:
-	@echo "📝 Generating new database migration..."
-	cd backend && uv run alembic revision --autogenerate -m "$(name)"
+full-test: test-setup test ## Setup and run all tests
+	@echo "🎉 Full test suite completed!"
 
-upgrade-db:
-	@echo "⬆️ Upgrading database to latest migration..."
-	cd backend && uv run alembic upgrade head
+##@ Advanced Commands
 
-# === DATABASE COMMANDS ===
-db-reset:
-	@echo "🗄️ Resetting database..."
-	docker compose exec postgres psql -U brain2gain_user -d brain2gain -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	make upgrade-db
+backend-shell: ## Access backend container shell
+	@docker exec -it brain2gain-backend-dev /bin/bash
 
-db-backup:
-	@echo "💾 Creating database backup..."
-	mkdir -p ./database/backups
-	docker compose exec postgres pg_dump -U brain2gain_user brain2gain > ./database/backups/backup_$(shell date +%Y%m%d_%H%M%S).sql
+frontend-shell: ## Access frontend container shell
+	@docker exec -it brain2gain-frontend-dev /bin/bash
 
-db-restore:
-	@echo "📥 Restoring database from backup: $(file)"
-	docker compose exec -T postgres psql -U brain2gain_user -d brain2gain < $(file)
+db-shell: ## Access database shell
+	@docker exec -it brain2gain-postgres-dev psql -U $(POSTGRES_USER) -d $(POSTGRES_DB)
 
-# === FRONTEND DEVELOPMENT ===
-run-frontend:
-	@echo "🏃 Running frontend locally..."
-	cd frontend && npm run dev
+reset: stop clean setup dev ## Reset entire development environment
+	@echo "🔄 Environment reset completed!"
 
-generate-client:
-	@echo "🔄 Generating API client from OpenAPI spec..."
-	cd frontend && npm run generate-client
+##@ Information
 
-# === QUICK ACCESS ===
-open-app:
-	@echo "🌐 Opening application in browser..."
-	open http://localhost:5173
-
-open-api:
-	@echo "📚 Opening API documentation..."
-	open http://localhost:8000/docs
-
-open-admin:
-	@echo "🛠️ Opening database admin..."
-	open http://localhost:8080
-
-# === HELP COMMAND ===
-help:
-	@echo "📖 Brain2Gain Development Commands:"
+info: ## Show environment information
+	@echo "Brain2Gain Development Environment Info"
+	@echo "======================================="
 	@echo ""
-	@echo "🚀 Environment Management:"
-	@echo "  dev                 - Start development environment with hot reload"
-	@echo "  production          - Start production environment"
-	@echo "  ci                  - Run CI tests"
-	@echo "  stop                - Stop all environments"
-	@echo "  clean               - Clean containers, volumes, and images"
+	@echo "📁 Project Structure:"
+	@echo "   config/          - Environment configurations"
+	@echo "   docker/          - Docker compose files"
+	@echo "   scripts/         - Management scripts"
+	@echo "   backend/         - FastAPI backend"
+	@echo "   frontend/        - React frontend"
 	@echo ""
-	@echo "🧪 Testing:"
-	@echo "  test                - Run local tests"
-	@echo "  test-backend        - Run backend tests with coverage"
-	@echo "  test-frontend       - Run frontend tests with coverage"
-	@echo "  test-e2e            - Run E2E tests"
-	@echo "  test-all            - Run all tests via CI"
+	@echo "🔧 Available Environments:"
+	@echo "   development      - Hot reload, debugging tools"
+	@echo "   testing          - Isolated testing environment"
+	@echo "   production       - Optimized for production"
 	@echo ""
-	@echo "🔍 Code Quality:"
-	@echo "  lint                - Run linting"
-	@echo "  lint-fix            - Fix linting issues"
-	@echo "  type-check          - Run type checking"
-	@echo ""
-	@echo "🏗️ Building:"
-	@echo "  build               - Build frontend"
-	@echo "  build-all           - Build all Docker images"
-	@echo ""
-	@echo "🗄️ Database:"
-	@echo "  db-reset            - Reset database schema"
-	@echo "  upgrade-db          - Run database migrations"
-	@echo "  generate-migration  - Generate new migration (name=<description>)"
-	@echo ""
-	@echo "🌐 Quick Access:"
-	@echo "  open-app            - Open application (http://localhost:5173)"
-	@echo "  open-api            - Open API docs (http://localhost:8000/docs)"
-	@echo "  open-admin          - Open DB admin (http://localhost:8080)"
-	@echo ""
-	@echo "📋 Utilities:"
-	@echo "  logs                - Show all logs"
-	@echo "  status              - Show container status"
-	@echo "  shell-backend       - Open backend shell"
-	@echo "  shell-db            - Open database shell"
+	@echo "🧪 Testing Categories:"
+	@echo "   unit             - Fast unit tests"
+	@echo "   integration      - Database and API tests"
+	@echo "   e2e              - End-to-end browser tests"
+	@echo "   security         - Security validation"
+	@echo "   performance      - Load and performance tests"
+
+# Default target
+.DEFAULT_GOAL := help

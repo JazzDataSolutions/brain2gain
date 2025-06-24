@@ -1,0 +1,224 @@
+# ============================================================================
+# Docker Compose configuration for CI/CD pipeline
+# Optimized for automated testing and continuous integration
+# ============================================================================
+
+version: '3.8'
+
+services:
+  # =================
+  # Database for CI
+  # =================
+  postgres-ci:
+    image: postgres:15-alpine
+    container_name: brain2gain-postgres-ci
+    environment:
+      POSTGRES_USER: brain2gain_test
+      POSTGRES_PASSWORD: test_password_ci
+      POSTGRES_DB: brain2gain_test
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=C"
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_ci_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U brain2gain_test -d brain2gain_test"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - ci-network
+    tmpfs:
+      - /tmp
+      - /var/run/postgresql
+
+  # =================
+  # Backend CI Tests
+  # =================
+  backend-ci:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for testing
+    container_name: brain2gain-backend-ci
+    environment:
+      # Database configuration
+      POSTGRES_SERVER: postgres-ci
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: brain2gain_test
+      POSTGRES_PASSWORD: test_password_ci
+      POSTGRES_DB: brain2gain_test
+      
+      # Application configuration
+      SECRET_KEY: test-secret-key-for-ci-only
+      FIRST_SUPERUSER: test@brain2gain.com
+      FIRST_SUPERUSER_PASSWORD: test123456789
+      PROJECT_NAME: "Brain2Gain API Test"
+      
+      # CI specific settings
+      ENVIRONMENT: testing
+      BACKEND_CORS_ORIGINS: '["http://localhost:3000", "http://localhost:5173"]'
+      
+      # Testing settings
+      PYTHONPATH: /app
+      COVERAGE_FILE: /app/.coverage
+    volumes:
+      - ./backend:/app:ro
+      - ci_coverage:/app/coverage
+    depends_on:
+      postgres-ci:
+        condition: service_healthy
+    networks:
+      - ci-network
+    command: >
+      sh -c "
+        echo 'Starting CI tests...' &&
+        echo 'Waiting for database to be ready...' &&
+        sleep 5 &&
+        echo 'Running database migrations...' &&
+        alembic upgrade head &&
+        echo 'Running linting...' &&
+        ruff check app &&
+        ruff format app --check &&
+        echo 'Running type checking...' &&
+        mypy app &&
+        echo 'Running unit tests with coverage...' &&
+        coverage run --source=app -m pytest app/tests/ -v --tb=short &&
+        echo 'Generating coverage report...' &&
+        coverage report --show-missing &&
+        coverage html --directory=/app/coverage/html &&
+        coverage xml -o /app/coverage/coverage.xml &&
+        echo 'All tests completed successfully!'
+      "
+    healthcheck:
+      test: ["CMD", "python", "-c", "import app.main"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =================
+  # Frontend CI Tests
+  # =================
+  frontend-ci:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder  # Use builder stage for testing
+    container_name: brain2gain-frontend-ci
+    environment:
+      NODE_ENV: test
+      VITE_API_URL: http://backend-ci:8000
+      CI: true
+    volumes:
+      - ./frontend:/app:ro
+      - ci_node_modules:/app/node_modules
+      - ci_frontend_coverage:/app/coverage
+    networks:
+      - ci-network
+    command: >
+      sh -c "
+        echo 'Starting frontend CI tests...' &&
+        echo 'Installing dependencies...' &&
+        npm ci --silent &&
+        echo 'Running linting...' &&
+        npm run lint &&
+        echo 'Running type checking...' &&
+        npm run build &&
+        echo 'Running unit tests...' &&
+        npm run test:run &&
+        echo 'Running coverage report...' &&
+        npm run test:coverage &&
+        echo 'Frontend tests completed successfully!'
+      "
+
+  # =================
+  # Integration Tests
+  # =================
+  integration-tests:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: brain2gain-integration-tests
+    environment:
+      POSTGRES_SERVER: postgres-ci
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: brain2gain_test
+      POSTGRES_PASSWORD: test_password_ci
+      POSTGRES_DB: brain2gain_test
+      SECRET_KEY: test-secret-key-for-ci-only
+      FIRST_SUPERUSER: test@brain2gain.com
+      FIRST_SUPERUSER_PASSWORD: test123456789
+      PROJECT_NAME: "Brain2Gain API Test"
+      ENVIRONMENT: testing
+    depends_on:
+      postgres-ci:
+        condition: service_healthy
+      backend-ci:
+        condition: service_completed_successfully
+    networks:
+      - ci-network
+    command: >
+      sh -c "
+        echo 'Starting integration tests...' &&
+        echo 'Waiting for services...' &&
+        sleep 10 &&
+        echo 'Running integration tests...' &&
+        pytest app/tests/api/ -v --tb=short &&
+        echo 'Integration tests completed successfully!'
+      "
+
+  # =================
+  # E2E Tests (Optional)
+  # =================
+  e2e-tests:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.playwright
+    container_name: brain2gain-e2e-tests
+    environment:
+      PLAYWRIGHT_BASE_URL: http://frontend-ci
+      API_BASE_URL: http://backend-ci:8000
+    volumes:
+      - ./frontend/tests:/app/tests:ro
+      - e2e_reports:/app/test-results
+    depends_on:
+      - backend-ci
+      - frontend-ci
+    networks:
+      - ci-network
+    command: >
+      sh -c "
+        echo 'Starting E2E tests...' &&
+        echo 'Waiting for services to be ready...' &&
+        sleep 30 &&
+        echo 'Running Playwright tests...' &&
+        npx playwright test --reporter=html &&
+        echo 'E2E tests completed!'
+      "
+    profiles:
+      - e2e  # Only run when explicitly requested
+
+# =================
+# Networks
+# =================
+networks:
+  ci-network:
+    driver: bridge
+    name: brain2gain-ci-network
+
+# =================
+# Volumes
+# =================
+volumes:
+  postgres_ci_data:
+    name: brain2gain-postgres-ci-data
+  ci_coverage:
+    name: brain2gain-ci-coverage
+  ci_node_modules:
+    name: brain2gain-ci-node-modules
+  ci_frontend_coverage:
+    name: brain2gain-ci-frontend-coverage
+  e2e_reports:
+    name: brain2gain-e2e-reports
