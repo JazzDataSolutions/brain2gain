@@ -72,6 +72,15 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Commit message lint
+        run: |
+          npm install -g @commitlint/cli @commitlint/config-conventional
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx commitlint --from="${{ github.event.pull_request.base.sha }}" --to="${{ github.event.pull_request.head.sha }}"
+          else
+            npx commitlint --from="${{ github.event.before }}" --to="${{ github.sha }}"
+          fi
+
       # Backend linting and formatting
       - name: Backend - Ruff linting
         working-directory: backend
