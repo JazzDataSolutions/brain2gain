@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
-from typing import Any
 import uuid
+from abc import ABC, abstractmethod
 from datetime import datetime
+from typing import Any
 
 from sqlmodel import Session
 
@@ -47,7 +47,9 @@ class StripeGateway(PaymentGateway):
         self, payment: Payment, payment_method_id: str, customer_id: str | None = None
     ) -> dict[str, Any]:
         payment.status = PaymentStatus.CAPTURED
-        payment.stripe_payment_intent_id = payment.stripe_payment_intent_id or f"pi_{uuid.uuid4().hex[:16]}"
+        payment.stripe_payment_intent_id = (
+            payment.stripe_payment_intent_id or f"pi_{uuid.uuid4().hex[:16]}"
+        )
         payment.captured_at = payment.captured_at or datetime.utcnow()
         payment.gateway_response = {
             "payment_method_id": payment_method_id,
@@ -83,7 +85,9 @@ class PayPalGateway(PaymentGateway):
             "status": order_data["status"],
         }
 
-    async def process_payment(self, payment: Payment, paypal_order_id: str) -> dict[str, Any]:
+    async def process_payment(
+        self, payment: Payment, paypal_order_id: str
+    ) -> dict[str, Any]:
         payment.paypal_order_id = paypal_order_id
         payment.status = PaymentStatus.CAPTURED
         payment.captured_at = payment.captured_at or datetime.utcnow()

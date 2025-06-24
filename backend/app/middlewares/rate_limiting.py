@@ -3,6 +3,7 @@ Rate limiting middleware for Brain2Gain API.
 
 Provides protection against abuse and DoS attacks.
 """
+
 import logging
 import time
 
@@ -16,14 +17,14 @@ logger = logging.getLogger(__name__)
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     Rate limiting middleware using in-memory storage.
-    
+
     For production, consider using Redis for distributed rate limiting.
     """
 
     def __init__(self, app, calls: int = 100, period: int = 60):
         """
         Initialize rate limiter.
-        
+
         Args:
             app: FastAPI application
             calls: Number of calls allowed per period
@@ -51,7 +52,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         """Remove expired entries from memory."""
         current_time = time.time()
         expired_clients = [
-            client_id for client_id, (_, timestamp) in self.clients.items()
+            client_id
+            for client_id, (_, timestamp) in self.clients.items()
             if current_time - timestamp > self.period
         ]
         for client_id in expired_clients:
@@ -80,7 +82,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             else:
                 # Check if limit exceeded
                 if call_count >= self.calls:
-                    retry_after = int(self.period - (current_time - first_call_time) + 1)
+                    retry_after = int(
+                        self.period - (current_time - first_call_time) + 1
+                    )
 
                     logger.warning(
                         f"Rate limit exceeded for client {client_id}",
@@ -88,8 +92,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                             "client_id": client_id,
                             "calls": call_count,
                             "period": self.period,
-                            "retry_after": retry_after
-                        }
+                            "retry_after": retry_after,
+                        },
                     )
 
                     return JSONResponse(
@@ -98,9 +102,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                             "detail": "Too many requests",
                             "retry_after": retry_after,
                             "limit": self.calls,
-                            "period": self.period
+                            "period": self.period,
                         },
-                        headers={"Retry-After": str(retry_after)}
+                        headers={"Retry-After": str(retry_after)},
                     )
 
                 # Increment counter
@@ -129,10 +133,13 @@ class AuthenticatedRateLimitMiddleware(BaseHTTPMiddleware):
     Rate limiting with different limits for authenticated vs anonymous users.
     """
 
-    def __init__(self, app,
-                 anonymous_calls: int = 20,
-                 authenticated_calls: int = 200,
-                 period: int = 60):
+    def __init__(
+        self,
+        app,
+        anonymous_calls: int = 20,
+        authenticated_calls: int = 200,
+        period: int = 60,
+    ):
         super().__init__(app)
         self.anonymous_calls = anonymous_calls
         self.authenticated_calls = authenticated_calls
@@ -183,7 +190,9 @@ class AuthenticatedRateLimitMiddleware(BaseHTTPMiddleware):
                 self.clients[client_id] = (1, current_time, is_authenticated)
             else:
                 if call_count >= limit:
-                    retry_after = int(self.period - (current_time - first_call_time) + 1)
+                    retry_after = int(
+                        self.period - (current_time - first_call_time) + 1
+                    )
 
                     return JSONResponse(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -192,12 +201,16 @@ class AuthenticatedRateLimitMiddleware(BaseHTTPMiddleware):
                             "retry_after": retry_after,
                             "limit": limit,
                             "period": self.period,
-                            "authenticated": is_authenticated
+                            "authenticated": is_authenticated,
                         },
-                        headers={"Retry-After": str(retry_after)}
+                        headers={"Retry-After": str(retry_after)},
                     )
 
-                self.clients[client_id] = (call_count + 1, first_call_time, is_authenticated)
+                self.clients[client_id] = (
+                    call_count + 1,
+                    first_call_time,
+                    is_authenticated,
+                )
         else:
             self.clients[client_id] = (1, current_time, is_authenticated)
 
@@ -212,6 +225,8 @@ class AuthenticatedRateLimitMiddleware(BaseHTTPMiddleware):
             response.headers["X-RateLimit-Limit"] = str(limit)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
             response.headers["X-RateLimit-Reset"] = str(reset_time)
-            response.headers["X-RateLimit-Type"] = "authenticated" if is_authenticated else "anonymous"
+            response.headers["X-RateLimit-Type"] = (
+                "authenticated" if is_authenticated else "anonymous"
+            )
 
         return response

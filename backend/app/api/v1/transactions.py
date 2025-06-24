@@ -9,16 +9,17 @@ from app.services.transaction_service import TransactionService
 
 router = APIRouter(prefix="/transactions")
 
+
 @router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
 @apply_endpoint_limits("orders")
 async def create_tx(
-    request: Request,
+    _request: Request,
     payload: TransactionCreate,
     svc: TransactionService = Depends(get_transaction_service),
 ):
     return await svc.create(payload)
 
+
 @router.get("/", response_model=list[TransactionRead])
 async def list_tx(svc: TransactionService = Depends(get_transaction_service)):
     return await svc.list()
-

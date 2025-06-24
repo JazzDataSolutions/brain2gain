@@ -8,10 +8,12 @@ from app.models import User, UserCreate
 # Se crea el motor de conexión a la base de datos usando la URL generada a partir de settings
 engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
 
+
 def get_session() -> Session:
     """Crea y retorna una sesión de la base de datos."""
     with Session(engine) as session:
         yield session
+
 
 # Alias for backward compatibility
 get_db = get_session

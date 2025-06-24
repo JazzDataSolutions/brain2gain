@@ -36,18 +36,18 @@ class StripeService:
         currency: str = "mxn",
         payment_id: uuid.UUID = None,
         customer_email: str = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Create a Stripe Payment Intent
-        
+
         Args:
             amount: Payment amount in smallest currency unit (centavos for MXN)
             currency: Currency code (default: mxn)
             payment_id: Internal payment ID for tracking
             customer_email: Customer email for receipt
             metadata: Additional metadata to store with the payment
-        
+
         Returns:
             Dict containing payment intent details
         """
@@ -59,7 +59,7 @@ class StripeService:
             intent_metadata = {
                 "brain2gain_payment_id": str(payment_id) if payment_id else "",
                 "platform": "brain2gain",
-                "environment": settings.ENVIRONMENT
+                "environment": settings.ENVIRONMENT,
             }
             if metadata:
                 intent_metadata.update(metadata)
@@ -71,13 +71,15 @@ class StripeService:
                 metadata=intent_metadata,
                 receipt_email=customer_email,
                 automatic_payment_methods={
-                    'enabled': True,
+                    "enabled": True,
                 },
                 # Enable setup for future payments (optional)
-                setup_future_usage='off_session' if customer_email else None,
+                setup_future_usage="off_session" if customer_email else None,
             )
 
-            logger.info(f"Created Stripe Payment Intent: {intent.id} for amount: {amount} {currency}")
+            logger.info(
+                f"Created Stripe Payment Intent: {intent.id} for amount: {amount} {currency}"
+            )
 
             return {
                 "payment_intent_id": intent.id,
@@ -85,100 +87,102 @@ class StripeService:
                 "status": intent.status,
                 "amount": amount,
                 "currency": currency,
-                "created": intent.created
+                "created": intent.created,
             }
 
         except stripe.error.CardError as e:
             logger.error(f"Stripe Card Error: {e.user_message}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Card error: {e.user_message}"
+                detail=f"Card error: {e.user_message}",
             )
         except stripe.error.RateLimitError as e:
             logger.error(f"Stripe Rate Limit Error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many requests to payment processor"
+                detail="Too many requests to payment processor",
             )
         except stripe.error.InvalidRequestError as e:
             logger.error(f"Stripe Invalid Request: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid payment request: {str(e)}"
+                detail=f"Invalid payment request: {str(e)}",
             )
         except stripe.error.AuthenticationError as e:
             logger.error(f"Stripe Authentication Error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Payment processor authentication failed"
+                detail="Payment processor authentication failed",
             )
         except stripe.error.APIConnectionError as e:
             logger.error(f"Stripe Connection Error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Payment processor temporarily unavailable"
+                detail="Payment processor temporarily unavailable",
             )
         except Exception as e:
             logger.error(f"Unexpected Stripe error: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Payment processing failed"
+                detail="Payment processing failed",
             )
 
     async def confirm_payment_intent(
-        self,
-        payment_intent_id: str,
-        payment_method_id: str = None
+        self, payment_intent_id: str, payment_method_id: str = None
     ) -> dict[str, Any]:
         """
         Confirm a Stripe Payment Intent
-        
+
         Args:
             payment_intent_id: Stripe Payment Intent ID
             payment_method_id: Stripe Payment Method ID (optional if already attached)
-        
+
         Returns:
             Dict containing confirmation result
         """
         try:
             confirm_params = {}
             if payment_method_id:
-                confirm_params['payment_method'] = payment_method_id
+                confirm_params["payment_method"] = payment_method_id
 
-            intent = stripe.PaymentIntent.confirm(
-                payment_intent_id,
-                **confirm_params
+            intent = stripe.PaymentIntent.confirm(payment_intent_id, **confirm_params)
+
+            logger.info(
+                f"Confirmed Stripe Payment Intent: {intent.id}, Status: {intent.status}"
             )
-
-            logger.info(f"Confirmed Stripe Payment Intent: {intent.id}, Status: {intent.status}")
 
             return {
                 "payment_intent_id": intent.id,
                 "status": intent.status,
-                "amount_received": intent.amount_received / 100,  # Convert back to currency units
-                "charges": [self._format_charge(charge) for charge in intent.charges.data] if intent.charges else []
+                "amount_received": intent.amount_received
+                / 100,  # Convert back to currency units
+                "charges": (
+                    [self._format_charge(charge) for charge in intent.charges.data]
+                    if intent.charges
+                    else []
+                ),
             }
 
         except stripe.error.CardError as e:
             logger.error(f"Card Error during confirmation: {e.user_message}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Payment failed: {e.user_message}"
+                detail=f"Payment failed: {e.user_message}",
             )
         except Exception as e:
             logger.error(f"Error confirming payment intent: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Payment confirmation failed"
+                detail="Payment confirmation failed",
             )
 
     async def retrieve_payment_intent(self, payment_intent_id: str) -> dict[str, Any]:
         """
         Retrieve a Stripe Payment Intent
-        
+
         Args:
             payment_intent_id: Stripe Payment Intent ID
-        
+
         Returns:
             Dict containing payment intent details
         """
@@ -192,45 +196,38 @@ class StripeService:
                 "currency": intent.currency.upper(),
                 "created": intent.created,
                 "metadata": intent.metadata,
-                "last_payment_error": intent.last_payment_error
+                "last_payment_error": intent.last_payment_error,
             }
 
         except stripe.error.InvalidRequestError:
             logger.error(f"Invalid Payment Intent ID: {payment_intent_id}")
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
         except Exception as e:
             logger.error(f"Error retrieving payment intent: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve payment information"
+                detail="Failed to retrieve payment information",
             )
 
     # ─── CUSTOMER OPERATIONS ──────────────────────────────────────────────
     async def create_customer(
-        self,
-        email: str,
-        name: str = None,
-        metadata: dict[str, Any] | None = None
+        self, email: str, name: str = None, metadata: dict[str, Any] | None = None
     ) -> dict[str, Any]:
         """
         Create a Stripe Customer
-        
+
         Args:
             email: Customer email
             name: Customer name
             metadata: Additional metadata
-        
+
         Returns:
             Dict containing customer details
         """
         try:
-            customer_data = {
-                "email": email,
-                "metadata": metadata or {}
-            }
+            customer_data = {"email": email, "metadata": metadata or {}}
             if name:
                 customer_data["name"] = name
 
@@ -242,23 +239,23 @@ class StripeService:
                 "customer_id": customer.id,
                 "email": customer.email,
                 "name": customer.name,
-                "created": customer.created
+                "created": customer.created,
             }
 
         except Exception as e:
             logger.error(f"Error creating Stripe customer: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create customer profile"
+                detail="Failed to create customer profile",
             )
 
     async def retrieve_customer(self, customer_id: str) -> dict[str, Any]:
         """
         Retrieve a Stripe Customer
-        
+
         Args:
             customer_id: Stripe Customer ID
-        
+
         Returns:
             Dict containing customer details
         """
@@ -270,19 +267,18 @@ class StripeService:
                 "email": customer.email,
                 "name": customer.name,
                 "created": customer.created,
-                "default_source": customer.default_source
+                "default_source": customer.default_source,
             }
 
         except stripe.error.InvalidRequestError:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Customer not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found"
             )
         except Exception as e:
             logger.error(f"Error retrieving customer: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve customer"
+                detail="Failed to retrieve customer",
             )
 
     # ─── REFUND OPERATIONS ────────────────────────────────────────────────
@@ -291,17 +287,17 @@ class StripeService:
         payment_intent_id: str,
         amount: Decimal | None = None,
         reason: str = "requested_by_customer",
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Create a refund for a Stripe payment
-        
+
         Args:
             payment_intent_id: Original Payment Intent ID
             amount: Refund amount (if partial, otherwise full refund)
             reason: Refund reason
             metadata: Additional metadata
-        
+
         Returns:
             Dict containing refund details
         """
@@ -309,7 +305,7 @@ class StripeService:
             refund_data = {
                 "payment_intent": payment_intent_id,
                 "reason": reason,
-                "metadata": metadata or {}
+                "metadata": metadata or {},
             }
 
             if amount:
@@ -317,7 +313,9 @@ class StripeService:
 
             refund = stripe.Refund.create(**refund_data)
 
-            logger.info(f"Created Stripe Refund: {refund.id} for Payment Intent: {payment_intent_id}")
+            logger.info(
+                f"Created Stripe Refund: {refund.id} for Payment Intent: {payment_intent_id}"
+            )
 
             return {
                 "refund_id": refund.id,
@@ -326,31 +324,31 @@ class StripeService:
                 "currency": refund.currency.upper(),
                 "status": refund.status,
                 "reason": refund.reason,
-                "created": refund.created
+                "created": refund.created,
             }
 
         except stripe.error.InvalidRequestError as e:
             logger.error(f"Invalid refund request: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Refund failed: {str(e)}"
+                detail=f"Refund failed: {str(e)}",
             )
         except Exception as e:
             logger.error(f"Error creating refund: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Refund processing failed"
+                detail="Refund processing failed",
             )
 
     # ─── WEBHOOK PROCESSING ───────────────────────────────────────────────
     async def process_webhook(self, payload: bytes, signature: str) -> dict[str, Any]:
         """
         Process Stripe webhook events
-        
+
         Args:
             payload: Raw webhook payload
             signature: Stripe signature header
-        
+
         Returns:
             Dict containing processed event information
         """
@@ -363,41 +361,39 @@ class StripeService:
             logger.info(f"Processing Stripe webhook: {event['type']}")
 
             # Handle different event types
-            event_type = event['type']
-            event_data = event['data']['object']
+            event_type = event["type"]
+            event_data = event["data"]["object"]
 
-            if event_type == 'payment_intent.succeeded':
+            if event_type == "payment_intent.succeeded":
                 await self._handle_payment_succeeded(event_data)
-            elif event_type == 'payment_intent.payment_failed':
+            elif event_type == "payment_intent.payment_failed":
                 await self._handle_payment_failed(event_data)
-            elif event_type == 'charge.dispute.created':
+            elif event_type == "charge.dispute.created":
                 await self._handle_chargeback_created(event_data)
-            elif event_type == 'invoice.payment_succeeded':
+            elif event_type == "invoice.payment_succeeded":
                 await self._handle_invoice_paid(event_data)
 
             return {
-                "event_id": event['id'],
+                "event_id": event["id"],
                 "event_type": event_type,
-                "processed": True
+                "processed": True,
             }
 
         except ValueError as e:
             logger.error(f"Invalid webhook payload: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid payload"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid payload"
             )
         except stripe.error.SignatureVerificationError as e:
             logger.error(f"Invalid webhook signature: {str(e)}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid signature"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid signature"
             )
         except Exception as e:
             logger.error(f"Error processing webhook: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Webhook processing failed"
+                detail="Webhook processing failed",
             )
 
     # ─── PRIVATE METHODS ──────────────────────────────────────────────────
@@ -409,12 +405,12 @@ class StripeService:
             "currency": charge.currency.upper(),
             "status": charge.status,
             "created": charge.created,
-            "payment_method_details": charge.payment_method_details
+            "payment_method_details": charge.payment_method_details,
         }
 
     async def _handle_payment_succeeded(self, payment_intent) -> None:
         """Handle successful payment webhook"""
-        payment_id = payment_intent.get('metadata', {}).get('brain2gain_payment_id')
+        payment_id = payment_intent.get("metadata", {}).get("brain2gain_payment_id")
 
         if payment_id:
             # Update payment status in database
@@ -423,7 +419,7 @@ class StripeService:
                 if payment:
                     payment.status = PaymentStatus.CAPTURED
                     payment.captured_at = datetime.utcnow()
-                    payment.stripe_payment_intent_id = payment_intent['id']
+                    payment.stripe_payment_intent_id = payment_intent["id"]
                     payment.gateway_response = payment_intent
 
                     self.session.add(payment)
@@ -435,7 +431,7 @@ class StripeService:
 
     async def _handle_payment_failed(self, payment_intent) -> None:
         """Handle failed payment webhook"""
-        payment_id = payment_intent.get('metadata', {}).get('brain2gain_payment_id')
+        payment_id = payment_intent.get("metadata", {}).get("brain2gain_payment_id")
 
         if payment_id:
             try:
@@ -443,7 +439,9 @@ class StripeService:
                 if payment:
                     payment.status = PaymentStatus.FAILED
                     payment.failed_at = datetime.utcnow()
-                    payment.failure_reason = payment_intent.get('last_payment_error', {}).get('message', 'Payment failed')
+                    payment.failure_reason = payment_intent.get(
+                        "last_payment_error", {}
+                    ).get("message", "Payment failed")
                     payment.gateway_response = payment_intent
 
                     self.session.add(payment)

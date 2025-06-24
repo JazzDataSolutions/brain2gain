@@ -18,13 +18,13 @@ from app.schemas.payment import (
     PayPalPaymentResponse,
     StripePaymentResponse,
 )
-from app.services.paypal_service import PayPalService
 from app.services.payment_gateway import (
     BankTransferGateway,
-    PayPalGateway,
     PaymentGateway,
+    PayPalGateway,
     StripeGateway,
 )
+from app.services.paypal_service import PayPalService
 from app.services.stripe_service import StripeService
 
 logger = logging.getLogger(__name__)
@@ -47,10 +47,7 @@ class PaymentService:
 
     # ─── PAYMENT INITIATION ──────────────────────────────────────────────
     async def initiate_payment(
-        self,
-        order_id: uuid.UUID,
-        payment_method: str,
-        amount: Decimal
+        self, order_id: uuid.UUID, payment_method: str, amount: Decimal
     ) -> dict[str, Any]:
         """
         Initiate payment for an order
@@ -61,7 +58,7 @@ class PaymentService:
             amount=amount,
             currency="MXN",
             payment_method=payment_method,
-            status=PaymentStatus.PENDING
+            status=PaymentStatus.PENDING,
         )
 
         self.session.add(payment)
@@ -80,29 +77,45 @@ class PaymentService:
         return init_data
 
     # ─── PAYMENT PROCESSING ──────────────────────────────────────────────
-    async def process_payment(self, payment_id: uuid.UUID, **kwargs: Any) -> PaymentProcessResponse:
+    async def process_payment(
+        self, payment_id: uuid.UUID, **kwargs: Any
+    ) -> PaymentProcessResponse:
         """Process payment using the configured gateway."""
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
+            )
 
         gateway = self.gateways.get(payment.payment_method)
         if not gateway:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Unsupported payment method",
+            )
 
         result = await gateway.process_payment(payment, **kwargs)
 
-        payment.status = PaymentStatus.CAPTURED if result.get("status") in {"succeeded", "completed"} else PaymentStatus.PENDING
+        payment.status = (
+            PaymentStatus.CAPTURED
+            if result.get("status") in {"succeeded", "completed"}
+            else PaymentStatus.PENDING
+        )
         payment.captured_at = datetime.utcnow()
         self.session.add(payment)
         self.session.commit()
 
-        return PaymentProcessResponse(success=result.get("success", True), payment_id=payment_id, status=payment.status)
+        return PaymentProcessResponse(
+            success=result.get("success", True),
+            payment_id=payment_id,
+            status=payment.status,
+        )
+
     async def process_stripe_payment(
         self,
         payment_id: uuid.UUID,
         payment_method_id: str,
-        customer_id: str | None = None
+        customer_id: str | None = None,
     ) -> PaymentProcessResponse:
         """
         Process Stripe payment
@@ -110,8 +123,7 @@ class PaymentService:
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
 
         try:
@@ -125,7 +137,7 @@ class PaymentService:
             payment.gateway_response = {
                 "payment_method_id": payment_method_id,
                 "customer_id": customer_id,
-                "status": "succeeded"
+                "status": "succeeded",
             }
 
             self.session.add(payment)
@@ -135,7 +147,7 @@ class PaymentService:
             stripe_response = StripePaymentResponse(
                 success=True,
                 payment_intent_id=payment.stripe_payment_intent_id,
-                status="succeeded"
+                status="succeeded",
             )
 
             return PaymentProcessResponse(
@@ -143,7 +155,7 @@ class PaymentService:
                 payment_id=payment_id,
                 status=PaymentStatus.CAPTURED,
                 message="Payment processed successfully",
-                stripe_response=stripe_response
+                stripe_response=stripe_response,
             )
 
         except Exception as e:
@@ -158,13 +170,11 @@ class PaymentService:
             logger.error(f"Stripe payment failed for payment {payment_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Payment processing failed: {str(e)}"
+                detail=f"Payment processing failed: {str(e)}",
             )
 
     async def process_paypal_payment(
-        self,
-        payment_id: uuid.UUID,
-        paypal_order_id: str
+        self, payment_id: uuid.UUID, paypal_order_id: str
     ) -> PaymentProcessResponse:
         """
         Process PayPal payment
@@ -172,8 +182,7 @@ class PaymentService:
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
 
         try:
@@ -186,7 +195,7 @@ class PaymentService:
             payment.captured_at = datetime.utcnow()
             payment.gateway_response = {
                 "paypal_order_id": paypal_order_id,
-                "status": "completed"
+                "status": "completed",
             }
 
             self.session.add(payment)
@@ -194,9 +203,7 @@ class PaymentService:
 
             # Create response
             paypal_response = PayPalPaymentResponse(
-                success=True,
-                order_id=paypal_order_id,
-                status="completed"
+                success=True, order_id=paypal_order_id, status="completed"
             )
 
             return PaymentProcessResponse(
@@ -204,7 +211,7 @@ class PaymentService:
                 payment_id=payment_id,
                 status=PaymentStatus.CAPTURED,
                 message="Payment processed successfully",
-                paypal_response=paypal_response
+                paypal_response=paypal_response,
             )
 
         except Exception as e:
@@ -219,12 +226,11 @@ class PaymentService:
             logger.error(f"PayPal payment failed for payment {payment_id}: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Payment processing failed: {str(e)}"
+                detail=f"Payment processing failed: {str(e)}",
             )
 
     async def process_bank_transfer(
-        self,
-        payment_id: uuid.UUID
+        self, payment_id: uuid.UUID
     ) -> PaymentProcessResponse:
         """
         Process bank transfer payment (manual confirmation required)
@@ -232,8 +238,7 @@ class PaymentService:
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
 
         # Bank transfers are pending until manually confirmed
@@ -251,13 +256,13 @@ class PaymentService:
                 "bank_name": "Banco Nacional de México",
                 "account_number": "1234567890",
                 "clabe": "012345678901234567",
-                "beneficiary": "Brain2Gain Mexico S.A. de C.V."
+                "beneficiary": "Brain2Gain Mexico S.A. de C.V.",
             },
             instructions=(
                 f"Transfer ${payment.amount} MXN to the account above using "
                 f"reference: {payment.gateway_transaction_id}"
             ),
-            expiry_date=datetime.utcnow()
+            expiry_date=datetime.utcnow(),
         )
 
         return PaymentProcessResponse(
@@ -267,7 +272,7 @@ class PaymentService:
             message="Bank transfer details generated. Payment pending confirmation.",
             bank_transfer_response=bank_response,
             requires_user_action=True,
-            next_step="Complete bank transfer using provided details"
+            next_step="Complete bank transfer using provided details",
         )
 
     # ─── PAYMENT RETRIEVAL ───────────────────────────────────────────────
@@ -282,22 +287,20 @@ class PaymentService:
         user_id: uuid.UUID,
         page: int = 1,
         page_size: int = 10,
-        filters: PaymentFilters | None = None
+        filters: PaymentFilters | None = None,
     ) -> list[Payment]:
         """Get user's payments"""
         # Join with orders to filter by user
-        statement = (
-            select(Payment)
-            .join(Order)
-            .where(Order.user_id == user_id)
-        )
+        statement = select(Payment).join(Order).where(Order.user_id == user_id)
 
         # Apply filters
         if filters:
             if filters.status:
                 statement = statement.where(Payment.status.in_(filters.status))
             if filters.payment_method:
-                statement = statement.where(Payment.payment_method.in_(filters.payment_method))
+                statement = statement.where(
+                    Payment.payment_method.in_(filters.payment_method)
+                )
             if filters.date_from:
                 statement = statement.where(Payment.created_at >= filters.date_from)
             if filters.date_to:
@@ -317,10 +320,7 @@ class PaymentService:
         return list(result)
 
     async def get_all_payments(
-        self,
-        page: int = 1,
-        page_size: int = 20,
-        filters: PaymentFilters | None = None
+        self, page: int = 1, page_size: int = 20, filters: PaymentFilters | None = None
     ) -> list[Payment]:
         """Get all payments (admin)"""
         statement = select(Payment)
@@ -330,7 +330,9 @@ class PaymentService:
             if filters.status:
                 statement = statement.where(Payment.status.in_(filters.status))
             if filters.payment_method:
-                statement = statement.where(Payment.payment_method.in_(filters.payment_method))
+                statement = statement.where(
+                    Payment.payment_method.in_(filters.payment_method)
+                )
             if filters.date_from:
                 statement = statement.where(Payment.created_at >= filters.date_from)
             if filters.date_to:
@@ -362,7 +364,7 @@ class PaymentService:
                 min_amount=Decimal("10"),
                 max_amount=Decimal("50000"),
                 processing_fee_percentage=Decimal("2.9"),
-                fixed_fee=Decimal("0")
+                fixed_fee=Decimal("0"),
             ),
             PaymentMethodConfig(
                 method="paypal",
@@ -373,7 +375,7 @@ class PaymentService:
                 min_amount=Decimal("10"),
                 max_amount=Decimal("25000"),
                 processing_fee_percentage=Decimal("3.4"),
-                fixed_fee=Decimal("0")
+                fixed_fee=Decimal("0"),
             ),
             PaymentMethodConfig(
                 method="bank_transfer",
@@ -384,41 +386,35 @@ class PaymentService:
                 min_amount=Decimal("50"),
                 max_amount=Decimal("100000"),
                 processing_fee_percentage=Decimal("0"),
-                fixed_fee=Decimal("15")
-            )
+                fixed_fee=Decimal("15"),
+            ),
         ]
 
         return PaymentMethodsList(
-            methods=methods,
-            default_method="stripe",
-            currency="MXN"
+            methods=methods, default_method="stripe", currency="MXN"
         )
 
     # ─── REFUNDS ──────────────────────────────────────────────────────────
     async def create_refund(
-        self,
-        payment_id: uuid.UUID,
-        amount: Decimal,
-        reason: str
+        self, payment_id: uuid.UUID, amount: Decimal, reason: str
     ) -> Refund:
         """Create a refund"""
         payment = await self.get_payment_by_id(payment_id)
         if not payment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
 
         if payment.status != PaymentStatus.CAPTURED:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can only refund captured payments"
+                detail="Can only refund captured payments",
             )
 
         if amount > payment.amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Refund amount cannot exceed payment amount"
+                detail="Refund amount cannot exceed payment amount",
             )
 
         # Create refund record
@@ -427,7 +423,7 @@ class PaymentService:
             order_id=payment.order_id,
             amount=amount,
             reason=reason,
-            status="PENDING"
+            status="PENDING",
         )
 
         self.session.add(refund)
@@ -462,10 +458,12 @@ class PaymentService:
         """Get payment statistics for admin dashboard"""
         # Payment counts by status
         status_counts = {}
-        for status in PaymentStatus:
-            count_stmt = select(func.count(Payment.payment_id)).where(Payment.status == status)
+        for payment_status in PaymentStatus:
+            count_stmt = select(func.count(Payment.payment_id)).where(
+                Payment.status == payment_status
+            )
             count = self.session.exec(count_stmt).first()
-            status_counts[status.value] = count
+            status_counts[payment_status.value] = count
 
         # Payment amounts
         total_stmt = select(func.sum(Payment.amount)).where(
@@ -498,7 +496,9 @@ class PaymentService:
         # Conversion rate
         total_payments = sum(status_counts.values())
         successful_payments = status_counts.get("CAPTURED", 0)
-        conversion_rate = (successful_payments / total_payments * 100) if total_payments > 0 else 0
+        conversion_rate = (
+            (successful_payments / total_payments * 100) if total_payments > 0 else 0
+        )
 
         return {
             "total_payments": total_payments,
@@ -512,7 +512,7 @@ class PaymentService:
             "paypal_payments": method_counts.get("paypal", 0),
             "bank_transfer_payments": method_counts.get("bank_transfer", 0),
             "average_payment_amount": avg_amount,
-            "conversion_rate": float(conversion_rate)
+            "conversion_rate": float(conversion_rate),
         }
 
     # ─── WEBHOOK HANDLERS ─────────────────────────────────────────────────
@@ -523,7 +523,7 @@ class PaymentService:
         return {
             "id": "evt_mock",
             "type": "payment_intent.succeeded",
-            "data": {"object": {"id": "pi_mock"}}
+            "data": {"object": {"id": "pi_mock"}},
         }
 
     async def verify_paypal_webhook(self, body: bytes, headers: dict) -> dict:
@@ -533,7 +533,7 @@ class PaymentService:
         return {
             "id": "evt_mock",
             "event_type": "PAYMENT.CAPTURE.COMPLETED",
-            "resource": {"id": "paypal_mock"}
+            "resource": {"id": "paypal_mock"},
         }
 
     async def process_stripe_webhook(self, event: dict):
@@ -557,8 +557,8 @@ class PaymentService:
                 payment_id=payment.payment_id,
                 metadata={
                     "order_id": str(payment.order_id),
-                    "environment": "production" if payment.amount > 100 else "test"
-                }
+                    "environment": "production" if payment.amount > 100 else "test",
+                },
             )
 
             # Update payment record
@@ -569,12 +569,14 @@ class PaymentService:
             self.session.add(payment)
             self.session.commit()
 
-            logger.info(f"Created Stripe Payment Intent for payment {payment.payment_id}")
+            logger.info(
+                f"Created Stripe Payment Intent for payment {payment.payment_id}"
+            )
 
             return {
                 "payment_intent_id": intent_data["payment_intent_id"],
                 "client_secret": intent_data["client_secret"],
-                "status": intent_data["status"]
+                "status": intent_data["status"],
             }
 
         except Exception as e:
@@ -601,8 +603,8 @@ class PaymentService:
                 cancel_url="https://brain2gain.com/checkout/cancel",
                 metadata={
                     "order_id": str(payment.order_id),
-                    "environment": "production" if payment.amount > 100 else "test"
-                }
+                    "environment": "production" if payment.amount > 100 else "test",
+                },
             )
 
             # Update payment record
@@ -618,7 +620,7 @@ class PaymentService:
             return {
                 "order_id": order_data["order_id"],
                 "approval_url": order_data["approval_url"],
-                "status": order_data["status"]
+                "status": order_data["status"],
             }
 
         except Exception as e:
@@ -646,8 +648,8 @@ class PaymentService:
             "bank_details": {
                 "bank_name": "Banco Nacional de México",
                 "account_number": "1234567890",
-                "clabe": "012345678901234567"
-            }
+                "clabe": "012345678901234567",
+            },
         }
 
     def _calculate_total_refunded(self, payment_id: uuid.UUID) -> Decimal:

@@ -1,6 +1,6 @@
 # backend/app/api/routes/analytics.py
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session
@@ -19,19 +19,19 @@ router = APIRouter()
 async def get_financial_summary(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get comprehensive financial summary for executive dashboard.
-    
+
     This endpoint provides real-time financial metrics including revenue,
     orders, customer analytics, and inventory status. Data is cached for
     optimal performance while maintaining accuracy for business decisions.
-    
+
     Args:
         db (Session): Database session dependency
         current_user (User): Must be authenticated superuser
-        
+
     Returns:
         Dict: Financial summary containing:
             - total_revenue: Current period revenue (Decimal)
@@ -41,21 +41,21 @@ async def get_financial_summary(
             - inventory_value: Total inventory valuation (Decimal)
             - top_products: Best selling products (List[Dict])
             - revenue_trend: Period-over-period comparison (Dict)
-            
+
     Raises:
         HTTPException: 403 if user lacks superuser privileges
         HTTPException: 500 if database or cache operation fails
-        
+
     Security:
         - Requires superuser authentication
         - Admin-only endpoint (not exposed in public API mode)
         - Sensitive financial data requires proper authorization
-        
+
     Caching:
         - Cached for 5 minutes to balance performance and accuracy
         - Cache key: "analytics:financial_summary"
         - Cache invalidated on significant financial events
-        
+
     Performance:
         - Optimized queries with proper indexing
         - Aggregation performed at database level
@@ -82,7 +82,7 @@ async def get_financial_summary(
 async def get_realtime_metrics(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get real-time metrics for dashboard monitoring.
@@ -109,9 +109,13 @@ async def get_realtime_metrics(
 def get_total_revenue(
     *,
     db: Session = Depends(get_db),
-    start_date: datetime | None = Query(None, description="Start date for revenue calculation"),
-    end_date: datetime | None = Query(None, description="End date for revenue calculation"),
-    current_user: User = Depends(get_current_active_superuser)
+    start_date: datetime | None = Query(
+        None, description="Start date for revenue calculation"
+    ),
+    end_date: datetime | None = Query(
+        None, description="End date for revenue calculation"
+    ),
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get total revenue for a specified period.
@@ -124,7 +128,7 @@ def get_total_revenue(
         "total_revenue": float(total_revenue),
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
-        "currency": "USD"
+        "currency": "USD",
     }
 
 
@@ -133,7 +137,7 @@ def get_daily_revenue(
     *,
     target_date: date,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get revenue for a specific day.
@@ -145,7 +149,7 @@ def get_daily_revenue(
     return {
         "date": target_date.isoformat(),
         "revenue": float(daily_revenue),
-        "currency": "USD"
+        "currency": "USD",
     }
 
 
@@ -155,7 +159,7 @@ def get_monthly_revenue(
     year: int,
     month: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get revenue for a specific month.
@@ -171,16 +175,18 @@ def get_monthly_revenue(
         "year": year,
         "month": month,
         "revenue": float(monthly_revenue),
-        "currency": "USD"
+        "currency": "USD",
     }
 
 
 @router.get("/revenue/growth-rate")
 def get_revenue_growth_rate(
     *,
-    period_days: int = Query(30, description="Number of days for growth rate comparison"),
+    period_days: int = Query(
+        30, description="Number of days for growth rate comparison"
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get revenue growth rate comparing two periods.
@@ -192,7 +198,7 @@ def get_revenue_growth_rate(
     return {
         "growth_rate_percentage": growth_rate,
         "period_days": period_days,
-        "comparison_periods": f"Last {period_days} days vs previous {period_days} days"
+        "comparison_periods": f"Last {period_days} days vs previous {period_days} days",
     }
 
 
@@ -200,7 +206,7 @@ def get_revenue_growth_rate(
 def get_order_metrics(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get comprehensive order metrics including AOV and order counts.
@@ -214,9 +220,11 @@ def get_order_metrics(
 def get_average_order_value(
     *,
     db: Session = Depends(get_db),
-    start_date: datetime | None = Query(None, description="Start date for AOV calculation"),
+    start_date: datetime | None = Query(
+        None, description="Start date for AOV calculation"
+    ),
     end_date: datetime | None = Query(None, description="End date for AOV calculation"),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get Average Order Value (AOV) for a specified period.
@@ -229,7 +237,7 @@ def get_average_order_value(
         "average_order_value": float(aov),
         "start_date": start_date.isoformat() if start_date else None,
         "end_date": end_date.isoformat() if end_date else None,
-        "currency": "USD"
+        "currency": "USD",
     }
 
 
@@ -237,7 +245,7 @@ def get_average_order_value(
 def get_customer_metrics(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get comprehensive customer metrics including conversion rates and activity.
@@ -252,7 +260,7 @@ def get_customer_lifetime_value(
     *,
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get Customer Lifetime Value (CLV) for a specific customer.
@@ -264,16 +272,18 @@ def get_customer_lifetime_value(
     return {
         "customer_id": customer_id,
         "customer_lifetime_value": float(clv),
-        "currency": "USD"
+        "currency": "USD",
     }
 
 
 @router.get("/products/top-selling")
 def get_top_selling_products(
     *,
-    limit: int = Query(10, description="Number of top products to return", ge=1, le=100),
+    limit: int = Query(
+        10, description="Number of top products to return", ge=1, le=100
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get top selling products by quantity sold.
@@ -285,7 +295,7 @@ def get_top_selling_products(
     return {
         "top_products": top_products,
         "limit": limit,
-        "total_returned": len(top_products)
+        "total_returned": len(top_products),
     }
 
 
@@ -293,7 +303,7 @@ def get_top_selling_products(
 def get_inventory_metrics(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get inventory-related metrics including stock levels and values.
@@ -308,7 +318,7 @@ def get_cart_abandonment_rate(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=365),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get cart abandonment rate for a specified period.
@@ -320,7 +330,7 @@ def get_cart_abandonment_rate(
     return {
         "cart_abandonment_rate_percentage": abandonment_rate,
         "analysis_period_days": days,
-        "completion_rate_percentage": round(100 - abandonment_rate, 2)
+        "completion_rate_percentage": round(100 - abandonment_rate, 2),
     }
 
 
@@ -328,7 +338,7 @@ def get_cart_abandonment_rate(
 def get_monthly_recurring_revenue(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get Monthly Recurring Revenue (MRR).
@@ -340,7 +350,7 @@ def get_monthly_recurring_revenue(
     return {
         "mrr": float(mrr),
         "currency": "USD",
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
@@ -348,7 +358,7 @@ def get_monthly_recurring_revenue(
 def get_annual_recurring_revenue(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get Annual Recurring Revenue (ARR).
@@ -360,7 +370,7 @@ def get_annual_recurring_revenue(
     return {
         "arr": float(arr),
         "currency": "USD",
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
@@ -369,7 +379,7 @@ def get_conversion_rate(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=365),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get overall conversion rate for a specified period.
@@ -381,7 +391,7 @@ def get_conversion_rate(
     return {
         "conversion_rate_percentage": conversion_rate,
         "analysis_period_days": days,
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
@@ -390,7 +400,7 @@ def get_repeat_customer_rate(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=365),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get repeat customer rate for a specified period.
@@ -402,16 +412,18 @@ def get_repeat_customer_rate(
     return {
         "repeat_customer_rate_percentage": repeat_rate,
         "analysis_period_days": days,
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
 @router.get("/customers/churn-rate")
 def get_churn_rate(
     *,
-    period_days: int = Query(90, description="Period to analyze for churn", ge=30, le=365),
+    period_days: int = Query(
+        90, description="Period to analyze for churn", ge=30, le=365
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get customer churn rate for a specified period.
@@ -424,7 +436,7 @@ def get_churn_rate(
         "churn_rate_percentage": churn_rate,
         "retention_rate_percentage": round(100 - churn_rate, 2),
         "analysis_period_days": period_days,
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
@@ -433,7 +445,7 @@ def get_revenue_per_visitor(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=365),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get Revenue Per Visitor (RPV) for a specified period.
@@ -446,17 +458,18 @@ def get_revenue_per_visitor(
         "revenue_per_visitor": float(rpv),
         "currency": "USD",
         "analysis_period_days": days,
-        "calculation_date": datetime.utcnow().isoformat()
+        "calculation_date": datetime.utcnow().isoformat(),
     }
 
 
 # ─── ALERT ENDPOINTS ─────────────────────────────────────────────────────
 
+
 @router.get("/alerts/summary")
 async def get_alert_summary(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get summary of all current alerts.
@@ -483,7 +496,7 @@ async def get_alert_summary(
 def get_all_alerts(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get all current alerts with full details.
@@ -495,7 +508,7 @@ def get_all_alerts(
     return {
         "alerts": [alert.to_dict() for alert in alerts],
         "total_count": len(alerts),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -504,7 +517,7 @@ def get_alerts_by_severity(
     *,
     severity: AlertSeverity,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get alerts filtered by severity level.
@@ -517,7 +530,7 @@ def get_alerts_by_severity(
         "alerts": [alert.to_dict() for alert in alerts],
         "severity": severity.value,
         "count": len(alerts),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -526,7 +539,7 @@ def get_alerts_by_type(
     *,
     alert_type: AlertType,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get alerts filtered by type.
@@ -539,7 +552,7 @@ def get_alerts_by_type(
         "alerts": [alert.to_dict() for alert in alerts],
         "alert_type": alert_type.value,
         "count": len(alerts),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -547,7 +560,7 @@ def get_alerts_by_type(
 def get_inventory_alerts(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get inventory-specific alerts (low stock, out of stock).
@@ -559,7 +572,7 @@ def get_inventory_alerts(
     return {
         "alerts": [alert.to_dict() for alert in alerts],
         "count": len(alerts),
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
@@ -568,7 +581,7 @@ def update_alert_thresholds(
     *,
     thresholds: dict,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Update alert thresholds configuration.
@@ -580,17 +593,18 @@ def update_alert_thresholds(
     return {
         "message": "Alert thresholds updated successfully",
         "thresholds": updated_thresholds,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.utcnow().isoformat(),
     }
 
 
 # ─── CACHE MANAGEMENT ENDPOINTS ──────────────────────────────────────────────
 
+
 @router.delete("/cache/invalidate")
 async def invalidate_analytics_cache(
     *,
     pattern: str = Query("analytics:*", description="Cache pattern to invalidate"),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Invalidate analytics cache by pattern.
@@ -604,14 +618,13 @@ async def invalidate_analytics_cache(
         "message": "Cache invalidated successfully",
         "pattern": pattern,
         "deleted_keys": deleted_count,
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
     }
 
 
 @router.get("/cache/stats")
 async def get_cache_stats(
-    *,
-    current_user: User = Depends(get_current_active_superuser)
+    *, _current_user: User = Depends(get_current_active_superuser)
 ) -> dict:
     """
     Get cache statistics and performance metrics.
@@ -621,19 +634,17 @@ async def get_cache_stats(
 
     stats = await get_cache_stats()
 
-    return {
-        "cache_stats": stats,
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"cache_stats": stats, "timestamp": datetime.utcnow().isoformat()}
 
 
 # ─── PHASE 2: ADVANCED ANALYTICS ENDPOINTS ───────────────────────────────────
+
 
 @router.get("/segmentation/rfm")
 async def get_rfm_segmentation(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get RFM customer segmentation analysis.
@@ -659,7 +670,7 @@ def get_customers_by_segment(
     segment: str,
     limit: int = Query(100, description="Number of customers to return", ge=1, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get customers belonging to a specific RFM segment.
@@ -683,16 +694,18 @@ def get_customers_by_segment(
         "segment": segment,
         "customers": customers,
         "total_returned": len(customers),
-        "recommendations": recommendations
+        "recommendations": recommendations,
     }
 
 
 @router.get("/cohorts/retention")
 async def get_cohort_retention_analysis(
     *,
-    months_back: int = Query(12, description="Number of months to analyze", ge=3, le=24),
+    months_back: int = Query(
+        12, description="Number of months to analyze", ge=3, le=24
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get cohort retention analysis.
@@ -715,9 +728,11 @@ async def get_cohort_retention_analysis(
 @router.get("/cohorts/revenue")
 async def get_cohort_revenue_analysis(
     *,
-    months_back: int = Query(12, description="Number of months to analyze", ge=3, le=24),
+    months_back: int = Query(
+        12, description="Number of months to analyze", ge=3, le=24
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get cohort revenue analysis.
@@ -740,9 +755,11 @@ async def get_cohort_revenue_analysis(
 @router.get("/cohorts/product-adoption")
 def get_product_adoption_cohorts(
     *,
-    product_category: str | None = Query(None, description="Filter by product category"),
+    product_category: str | None = Query(
+        None, description="Filter by product category"
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get product adoption cohort analysis.
@@ -762,7 +779,7 @@ async def get_conversion_funnel(
     days: int = Query(30, description="Number of days to analyze", ge=1, le=90),
     channel: str | None = Query(None, description="Marketing channel filter"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get detailed conversion funnel analysis.
@@ -791,7 +808,7 @@ def get_product_conversion_funnel(
     product_id: int,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get conversion funnel for a specific product.
@@ -813,7 +830,7 @@ async def get_channel_conversion_funnels(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get conversion funnels by marketing channel.
@@ -838,7 +855,7 @@ async def get_device_conversion_comparison(
     *,
     days: int = Query(30, description="Number of days to analyze", ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get mobile vs desktop conversion funnel comparison.
@@ -861,9 +878,11 @@ async def get_device_conversion_comparison(
 @router.get("/reports/executive")
 async def get_executive_report(
     *,
-    period: str = Query("monthly", description="Report period: daily, weekly, monthly, quarterly"),
+    period: str = Query(
+        "monthly", description="Report period: daily, weekly, monthly, quarterly"
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Generate comprehensive executive report.
@@ -893,7 +912,7 @@ async def get_operational_report(
     *,
     days: int = Query(7, description="Number of days to analyze", ge=1, le=30),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Generate detailed operational report.
@@ -918,7 +937,7 @@ async def get_customer_analytics_report(
     *,
     months_back: int = Query(6, description="Number of months to analyze", ge=3, le=12),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Generate comprehensive customer analytics report.
@@ -942,7 +961,7 @@ async def get_customer_analytics_report(
 def get_scheduled_reports(
     *,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get configuration for automated report schedules.
@@ -958,13 +977,14 @@ def get_scheduled_reports(
 
 # ─── DATE RANGE ANALYTICS ─────────────────────────────────────────────────────
 
+
 @router.get("/metrics/date-range")
 async def get_metrics_by_date_range(
     *,
     start_date: datetime = Query(..., description="Start date for analysis"),
     end_date: datetime = Query(..., description="End date for analysis"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get comprehensive metrics for a specific date range.
@@ -985,21 +1005,32 @@ async def get_metrics_by_date_range(
         "date_range": {
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
-            "days": (end_date - start_date).days + 1
+            "days": (end_date - start_date).days + 1,
         },
         "revenue": {
             "total": float(analytics_service.get_total_revenue(start_date, end_date)),
-            "average_daily": float(analytics_service.get_total_revenue(start_date, end_date)) / ((end_date - start_date).days + 1)
+            "average_daily": float(
+                analytics_service.get_total_revenue(start_date, end_date)
+            )
+            / ((end_date - start_date).days + 1),
         },
         "orders": {
-            "average_order_value": float(analytics_service.get_average_order_value(start_date, end_date))
+            "average_order_value": float(
+                analytics_service.get_average_order_value(start_date, end_date)
+            )
         },
         "conversion": {
-            "cart_abandonment_rate": analytics_service.get_cart_abandonment_rate((end_date - start_date).days),
-            "conversion_rate": analytics_service.calculate_conversion_rate((end_date - start_date).days),
-            "repeat_customer_rate": analytics_service.calculate_repeat_customer_rate((end_date - start_date).days)
+            "cart_abandonment_rate": analytics_service.get_cart_abandonment_rate(
+                (end_date - start_date).days
+            ),
+            "conversion_rate": analytics_service.calculate_conversion_rate(
+                (end_date - start_date).days
+            ),
+            "repeat_customer_rate": analytics_service.calculate_repeat_customer_rate(
+                (end_date - start_date).days
+            ),
         },
-        "calculated_at": datetime.utcnow().isoformat()
+        "calculated_at": datetime.utcnow().isoformat(),
     }
 
     # Cache for 10 minutes (600 seconds) - longer TTL for historical data
@@ -1011,9 +1042,11 @@ async def get_metrics_by_date_range(
 @router.get("/trends/revenue")
 async def get_revenue_trends(
     *,
-    days: int = Query(30, description="Number of days for trend analysis", ge=7, le=365),
+    days: int = Query(
+        30, description="Number of days for trend analysis", ge=7, le=365
+    ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> dict:
     """
     Get revenue trends over time.
@@ -1035,11 +1068,13 @@ async def get_revenue_trends(
     for i in range(days):
         target_date = end_date - timedelta(days=i)
         daily_revenue = analytics_service.get_daily_revenue(target_date)
-        trends.append({
-            "date": target_date.isoformat(),
-            "revenue": float(daily_revenue),
-            "day_of_week": target_date.strftime("%A")
-        })
+        trends.append(
+            {
+                "date": target_date.isoformat(),
+                "revenue": float(daily_revenue),
+                "day_of_week": target_date.strftime("%A"),
+            }
+        )
 
     # Calculate trend statistics
     revenues = [t["revenue"] for t in trends]
@@ -1052,15 +1087,19 @@ async def get_revenue_trends(
     if mid_point > 0:
         first_half_avg = sum(revenues[:mid_point]) / mid_point
         second_half_avg = sum(revenues[mid_point:]) / (len(revenues) - mid_point)
-        growth_rate = ((second_half_avg - first_half_avg) / first_half_avg * 100) if first_half_avg > 0 else 0
+        growth_rate = (
+            ((second_half_avg - first_half_avg) / first_half_avg * 100)
+            if first_half_avg > 0
+            else 0
+        )
     else:
         growth_rate = 0
 
     data = {
         "period": {
             "days": days,
-            "start_date": (end_date - timedelta(days=days-1)).isoformat(),
-            "end_date": end_date.isoformat()
+            "start_date": (end_date - timedelta(days=days - 1)).isoformat(),
+            "end_date": end_date.isoformat(),
         },
         "trends": trends[::-1],  # Reverse to show chronological order
         "statistics": {
@@ -1068,9 +1107,9 @@ async def get_revenue_trends(
             "highest_day_revenue": round(max_revenue, 2),
             "lowest_day_revenue": round(min_revenue, 2),
             "growth_rate_percentage": round(growth_rate, 2),
-            "total_revenue": round(sum(revenues), 2)
+            "total_revenue": round(sum(revenues), 2),
         },
-        "calculated_at": datetime.utcnow().isoformat()
+        "calculated_at": datetime.utcnow().isoformat(),
     }
 
     # Cache for 15 minutes (900 seconds)

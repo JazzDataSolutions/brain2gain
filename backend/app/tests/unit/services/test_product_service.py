@@ -32,7 +32,9 @@ class TestProductService:
         """Create a ProductService instance with mocked dependencies."""
         return ProductService(repository=mock_repository, cache=mock_cache)
 
-    def test_get_product_by_id_from_cache(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_product_by_id_from_cache(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting product by ID from cache."""
         # Setup
         product_id = uuid4()
@@ -47,7 +49,9 @@ class TestProductService:
         mock_cache.get.assert_called_once_with(f"product:{product_id}")
         mock_repository.get_by_id.assert_not_called()
 
-    def test_get_product_by_id_from_db_cache_miss(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_product_by_id_from_db_cache_miss(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting product by ID from database when cache misses."""
         # Setup
         product_id = uuid4()
@@ -62,9 +66,13 @@ class TestProductService:
         assert result == db_product
         mock_cache.get.assert_called_once_with(f"product:{product_id}")
         mock_repository.get_by_id.assert_called_once_with(product_id)
-        mock_cache.set.assert_called_once_with(f"product:{product_id}", db_product, ttl=3600)
+        mock_cache.set.assert_called_once_with(
+            f"product:{product_id}", db_product, ttl=3600
+        )
 
-    def test_get_product_by_id_not_found(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_product_by_id_not_found(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting non-existent product by ID."""
         # Setup
         product_id = uuid4()
@@ -78,14 +86,16 @@ class TestProductService:
         assert result is None
         mock_cache.set.assert_not_called()
 
-    def test_create_product_success(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_create_product_success(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test creating a new product successfully."""
         # Setup
         product_data = {
             "sku": "NEW-001",
             "name": "New Product",
             "unit_price": Decimal("45.99"),
-            "category": "proteins"
+            "category": "proteins",
         }
         created_product = ProductFactory(**product_data)
         mock_repository.get_by_sku.return_value = None  # SKU doesn't exist
@@ -100,13 +110,15 @@ class TestProductService:
         mock_repository.create.assert_called_once_with(**product_data)
         mock_cache.invalidate_pattern.assert_called_once_with("products:*")
 
-    def test_create_product_duplicate_sku(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_create_product_duplicate_sku(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test creating product with duplicate SKU."""
         # Setup
         product_data = {
             "sku": "EXISTING-001",
             "name": "Duplicate SKU Product",
-            "unit_price": Decimal("45.99")
+            "unit_price": Decimal("45.99"),
         }
         existing_product = ProductFactory(sku="EXISTING-001")
         mock_repository.get_by_sku.return_value = existing_product
@@ -118,7 +130,9 @@ class TestProductService:
         mock_repository.create.assert_not_called()
         mock_cache.invalidate_pattern.assert_not_called()
 
-    def test_update_product_success(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_update_product_success(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test updating product successfully."""
         # Setup
         product_id = uuid4()
@@ -135,7 +149,9 @@ class TestProductService:
         mock_cache.delete.assert_called_once_with(f"product:{product_id}")
         mock_cache.invalidate_pattern.assert_called_once_with("products:*")
 
-    def test_update_product_not_found(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_update_product_not_found(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test updating non-existent product."""
         # Setup
         product_id = uuid4()
@@ -149,7 +165,9 @@ class TestProductService:
         mock_cache.delete.assert_not_called()
         mock_cache.invalidate_pattern.assert_not_called()
 
-    def test_delete_product_success(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_delete_product_success(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test deleting product successfully."""
         # Setup
         product_id = uuid4()
@@ -164,7 +182,9 @@ class TestProductService:
         mock_cache.delete.assert_called_once_with(f"product:{product_id}")
         mock_cache.invalidate_pattern.assert_called_once_with("products:*")
 
-    def test_delete_product_not_found(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_delete_product_not_found(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test deleting non-existent product."""
         # Setup
         product_id = uuid4()
@@ -178,7 +198,9 @@ class TestProductService:
         mock_cache.delete.assert_not_called()
         mock_cache.invalidate_pattern.assert_not_called()
 
-    def test_get_products_by_category_cached(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_products_by_category_cached(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting products by category from cache."""
         # Setup
         category = "proteins"
@@ -193,7 +215,9 @@ class TestProductService:
         mock_cache.get.assert_called_once_with(f"products:category:{category}")
         mock_repository.get_by_category.assert_not_called()
 
-    def test_get_products_by_category_cache_miss(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_products_by_category_cache_miss(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting products by category when cache misses."""
         # Setup
         category = "proteins"
@@ -208,20 +232,26 @@ class TestProductService:
         assert result == db_products
         mock_cache.get.assert_called_once_with(f"products:category:{category}")
         mock_repository.get_by_category.assert_called_once_with(category)
-        mock_cache.set.assert_called_once_with(f"products:category:{category}", db_products, ttl=1800)
+        mock_cache.set.assert_called_once_with(
+            f"products:category:{category}", db_products, ttl=1800
+        )
 
-    def test_search_products_with_filters(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_search_products_with_filters(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test searching products with multiple filters."""
         # Setup
         filters = {
             "category": "proteins",
             "min_price": Decimal("20.00"),
             "max_price": Decimal("80.00"),
-            "status": "ACTIVE"
+            "status": "ACTIVE",
         }
         search_results = [ProductFactory(**filters) for _ in range(2)]
 
-        with patch.object(service, '_apply_search_filters', return_value=search_results) as mock_filter:
+        with patch.object(
+            service, "_apply_search_filters", return_value=search_results
+        ) as mock_filter:
             # Execute
             result = service.search_products(**filters)
 
@@ -229,7 +259,9 @@ class TestProductService:
             assert result == search_results
             mock_filter.assert_called_once_with(**filters)
 
-    def test_get_featured_products_cached(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_featured_products_cached(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting featured products from cache."""
         # Setup
         featured_products = [ProductFactory() for _ in range(5)]
@@ -243,7 +275,9 @@ class TestProductService:
         mock_cache.get.assert_called_once_with("products:featured:5")
         mock_repository.get_featured.assert_not_called()
 
-    def test_get_low_stock_products(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_low_stock_products(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting low stock products."""
         # Setup
         low_stock_products = [ProductFactory() for _ in range(3)]
@@ -259,7 +293,9 @@ class TestProductService:
         mock_cache.get.assert_not_called()
         mock_cache.set.assert_not_called()
 
-    def test_bulk_update_status(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_bulk_update_status(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test bulk updating product status."""
         # Setup
         product_ids = [uuid4() for _ in range(3)]
@@ -271,7 +307,9 @@ class TestProductService:
 
         # Assert
         assert result == 3
-        mock_repository.bulk_update_status.assert_called_once_with(product_ids, new_status)
+        mock_repository.bulk_update_status.assert_called_once_with(
+            product_ids, new_status
+        )
 
         # Should invalidate individual product caches
         for product_id in product_ids:
@@ -280,19 +318,22 @@ class TestProductService:
         # Should invalidate list caches
         mock_cache.invalidate_pattern.assert_called_once_with("products:*")
 
-    def test_get_product_analytics(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_get_product_analytics(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test getting product analytics."""
         # Setup
-        analytics_data = {
-            "total_products": 150,
-            "active_products": 120,
-            "categories": {"proteins": 50, "creatine": 30, "vitamins": 40},
-            "low_stock_count": 5
-        }
 
         mock_repository.get_total_count.return_value = 150
-        mock_repository.get_count_by_status.return_value = {"ACTIVE": 120, "INACTIVE": 30}
-        mock_repository.get_count_by_category.return_value = {"proteins": 50, "creatine": 30, "vitamins": 40}
+        mock_repository.get_count_by_status.return_value = {
+            "ACTIVE": 120,
+            "INACTIVE": 30,
+        }
+        mock_repository.get_count_by_category.return_value = {
+            "proteins": 50,
+            "creatine": 30,
+            "vitamins": 40,
+        }
         mock_repository.get_low_stock_count.return_value = 5
 
         # Execute
@@ -305,11 +346,17 @@ class TestProductService:
         assert result["low_stock_count"] == 5
 
     @pytest.mark.asyncio
-    async def test_async_bulk_import_products(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    async def test_async_bulk_import_products(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test asynchronous bulk import of products."""
         # Setup
         product_data_list = [
-            {"sku": f"BULK-{i:03d}", "name": f"Bulk Product {i}", "unit_price": Decimal("30.00")}
+            {
+                "sku": f"BULK-{i:03d}",
+                "name": f"Bulk Product {i}",
+                "unit_price": Decimal("30.00"),
+            }
             for i in range(1, 4)
         ]
 
@@ -340,7 +387,7 @@ class TestProductService:
             "name": "Valid Product",
             "unit_price": Decimal("45.99"),
             "category": "proteins",
-            "status": "ACTIVE"
+            "status": "ACTIVE",
         }
 
         # Should not raise any exception
@@ -352,7 +399,7 @@ class TestProductService:
             "sku": "INVALID-001",
             "name": "Invalid Product",
             "unit_price": Decimal("-10.00"),  # Negative price
-            "category": "proteins"
+            "category": "proteins",
         }
 
         with pytest.raises(ValueError, match="Unit price must be positive"):
@@ -364,13 +411,15 @@ class TestProductService:
             "sku": "",  # Empty SKU
             "name": "Invalid Product",
             "unit_price": Decimal("45.99"),
-            "category": "proteins"
+            "category": "proteins",
         }
 
         with pytest.raises(ValueError, match="SKU cannot be empty"):
             service._validate_product_data(product_data)
 
-    def test_cache_warming(self, service: ProductService, mock_repository: Mock, mock_cache: Mock):
+    def test_cache_warming(
+        self, service: ProductService, mock_repository: Mock, mock_cache: Mock
+    ):
         """Test cache warming functionality."""
         # Setup
         popular_products = [ProductFactory() for _ in range(10)]
@@ -386,10 +435,12 @@ class TestProductService:
         service.warm_cache()
 
         # Assert
-        mock_cache.set.assert_any_call("products:popular:10", popular_products, ttl=3600)
+        mock_cache.set.assert_any_call(
+            "products:popular:10", popular_products, ttl=3600
+        )
         for category in categories:
             mock_cache.set.assert_any_call(
                 f"products:category:{category}",
                 mock_repository.get_by_category.return_value,
-                ttl=1800
+                ttl=1800,
             )

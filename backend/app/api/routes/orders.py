@@ -31,7 +31,7 @@ router = APIRouter()
 async def calculate_checkout(
     checkout_data: CheckoutInitiate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> CheckoutCalculation:
     """
     Calculate checkout totals (subtotal, tax, shipping, total)
@@ -43,15 +43,14 @@ async def calculate_checkout(
     cart = await cart_service.get_user_cart(current_user.id)
     if not cart or not cart.items:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cart is empty"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty"
         )
 
     # Calculate totals
     calculation = await order_service.calculate_order_totals(
         cart_items=cart.items,
         shipping_address=checkout_data.shipping_address,
-        payment_method=checkout_data.payment_method
+        payment_method=checkout_data.payment_method,
     )
 
     return calculation
@@ -61,7 +60,7 @@ async def calculate_checkout(
 async def validate_checkout(
     checkout_data: CheckoutInitiate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> CheckoutValidation:
     """
     Validate checkout data before processing
@@ -72,15 +71,11 @@ async def validate_checkout(
     # Get user's cart
     cart = await cart_service.get_user_cart(current_user.id)
     if not cart or not cart.items:
-        return CheckoutValidation(
-            valid=False,
-            errors=["Cart is empty"]
-        )
+        return CheckoutValidation(valid=False, errors=["Cart is empty"])
 
     # Validate checkout
     validation = await order_service.validate_checkout(
-        cart=cart,
-        checkout_data=checkout_data
+        cart=cart, checkout_data=checkout_data
     )
 
     return validation
@@ -90,7 +85,7 @@ async def validate_checkout(
 async def confirm_checkout(
     checkout_data: CheckoutInitiate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> CheckoutConfirmation:
     """
     Create order from cart and initiate payment
@@ -103,8 +98,7 @@ async def confirm_checkout(
     cart = await cart_service.get_user_cart(current_user.id)
     if not cart or not cart.items:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cart is empty"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Cart is empty"
         )
 
     # Validate checkout first
@@ -112,15 +106,13 @@ async def confirm_checkout(
     if not validation.valid:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Checkout validation failed: {', '.join(validation.errors)}"
+            detail=f"Checkout validation failed: {', '.join(validation.errors)}",
         )
 
     try:
         # Create order from cart
         order = await order_service.create_order_from_cart(
-            user_id=current_user.id,
-            cart=cart,
-            checkout_data=checkout_data
+            user_id=current_user.id, cart=cart, checkout_data=checkout_data
         )
 
         # Clear cart after successful order creation
@@ -128,19 +120,20 @@ async def confirm_checkout(
 
         # Initiate payment if required
         confirmation = CheckoutConfirmation(
-            order_id=order.order_id,
-            payment_required=True
+            order_id=order.order_id, payment_required=True
         )
 
         if checkout_data.payment_method != "bank_transfer":
             payment_response = await payment_service.initiate_payment(
                 order_id=order.order_id,
                 payment_method=checkout_data.payment_method,
-                amount=order.total_amount
+                amount=order.total_amount,
             )
 
             if checkout_data.payment_method == "stripe":
-                confirmation.payment_intent_id = payment_response.get("payment_intent_id")
+                confirmation.payment_intent_id = payment_response.get(
+                    "payment_intent_id"
+                )
             elif checkout_data.payment_method == "paypal":
                 confirmation.payment_url = payment_response.get("approval_url")
 
@@ -149,7 +142,7 @@ async def confirm_checkout(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create order: {str(e)}"
+            detail=f"Failed to create order: {str(e)}",
         )
 
 
@@ -160,7 +153,7 @@ async def get_my_orders(
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
     status: list[OrderStatus] | None = Query(None, description="Filter by status"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrderList:
     """
     Get current user's orders with pagination
@@ -170,25 +163,25 @@ async def get_my_orders(
     filters = OrderFilters(status=status) if status else None
 
     orders, total = await order_service.get_user_orders(
-        user_id=current_user.id,
-        page=page,
-        page_size=page_size,
-        filters=filters
+        user_id=current_user.id, page=page, page_size=page_size, filters=filters
     )
 
     return OrderList(
-        orders=[OrderSummary(
-            order_id=order.order_id,
-            status=order.status,
-            payment_status=order.payment_status,
-            total_amount=order.total_amount,
-            created_at=order.created_at,
-            items_count=len(order.items)
-        ) for order in orders],
+        orders=[
+            OrderSummary(
+                order_id=order.order_id,
+                status=order.status,
+                payment_status=order.payment_status,
+                total_amount=order.total_amount,
+                created_at=order.created_at,
+                items_count=len(order.items),
+            )
+            for order in orders
+        ],
         total=total,
         page=page,
         page_size=page_size,
-        total_pages=(total + page_size - 1) // page_size
+        total_pages=(total + page_size - 1) // page_size,
     )
 
 
@@ -196,7 +189,7 @@ async def get_my_orders(
 async def get_my_order(
     order_id: uuid.UUID,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrderRead:
     """
     Get specific order details for current user
@@ -206,15 +199,14 @@ async def get_my_order(
     order = await order_service.get_order_by_id(order_id)
     if not order:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
         )
 
     # Check if order belongs to current user
     if order.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this order"
+            detail="Not authorized to view this order",
         )
 
     return OrderRead.from_orm(order)
@@ -226,41 +218,40 @@ async def get_all_orders(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: list[OrderStatus] | None = Query(None, description="Filter by status"),
-    payment_status: list[PaymentStatus] | None = Query(None, description="Filter by payment status"),
+    payment_status: list[PaymentStatus] | None = Query(
+        None, description="Filter by payment status"
+    ),
     search: str | None = Query(None, description="Search orders"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> OrderList:
     """
     Get all orders (admin only) with pagination and filters
     """
     order_service = OrderService(session)
 
-    filters = OrderFilters(
-        status=status,
-        payment_status=payment_status,
-        search=search
-    )
+    filters = OrderFilters(status=status, payment_status=payment_status, search=search)
 
     orders, total = await order_service.get_all_orders(
-        page=page,
-        page_size=page_size,
-        filters=filters
+        page=page, page_size=page_size, filters=filters
     )
 
     return OrderList(
-        orders=[OrderSummary(
-            order_id=order.order_id,
-            status=order.status,
-            payment_status=order.payment_status,
-            total_amount=order.total_amount,
-            created_at=order.created_at,
-            items_count=len(order.items)
-        ) for order in orders],
+        orders=[
+            OrderSummary(
+                order_id=order.order_id,
+                status=order.status,
+                payment_status=order.payment_status,
+                total_amount=order.total_amount,
+                created_at=order.created_at,
+                items_count=len(order.items),
+            )
+            for order in orders
+        ],
         total=total,
         page=page,
         page_size=page_size,
-        total_pages=(total + page_size - 1) // page_size
+        total_pages=(total + page_size - 1) // page_size,
     )
 
 
@@ -268,7 +259,7 @@ async def get_all_orders(
 async def get_order_admin(
     order_id: uuid.UUID,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> OrderRead:
     """
     Get specific order details (admin only)
@@ -278,8 +269,7 @@ async def get_order_admin(
     order = await order_service.get_order_by_id(order_id)
     if not order:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
         )
 
     return OrderRead.from_orm(order)
@@ -290,7 +280,7 @@ async def update_order(
     order_id: uuid.UUID,
     order_update: OrderUpdate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> OrderRead:
     """
     Update order (admin only)
@@ -300,8 +290,7 @@ async def update_order(
     order = await order_service.get_order_by_id(order_id)
     if not order:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
         )
 
     try:
@@ -310,7 +299,7 @@ async def update_order(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update order: {str(e)}"
+            detail=f"Failed to update order: {str(e)}",
         )
 
 
@@ -319,7 +308,7 @@ async def cancel_order(
     order_id: uuid.UUID,
     reason: str = Query(..., description="Cancellation reason"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrderRead:
     """
     Cancel order (user can cancel their own pending orders, admin can cancel any)
@@ -329,8 +318,7 @@ async def cancel_order(
     order = await order_service.get_order_by_id(order_id)
     if not order:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Order not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
         )
 
     # Check permissions
@@ -340,14 +328,14 @@ async def cancel_order(
     if not (is_admin or is_owner):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to cancel this order"
+            detail="Not authorized to cancel this order",
         )
 
     # Only allow cancellation of pending/confirmed orders
     if order.status not in [OrderStatus.PENDING, OrderStatus.CONFIRMED]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot cancel order with status: {order.status}"
+            detail=f"Cannot cancel order with status: {order.status}",
         )
 
     try:
@@ -356,14 +344,14 @@ async def cancel_order(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to cancel order: {str(e)}"
+            detail=f"Failed to cancel order: {str(e)}",
         )
 
 
 @router.get("/stats/overview", response_model=OrderStats)
 async def get_order_stats(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> OrderStats:
     """
     Get order statistics (admin only)

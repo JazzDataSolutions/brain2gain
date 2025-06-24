@@ -18,7 +18,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType")
 class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """
     Abstract base repository implementing common CRUD operations.
-    
+
     This class follows the Repository Pattern and SOLID principles:
     - Single Responsibility: Only handles data access
     - Open/Closed: Extensible through inheritance, closed for modification
@@ -38,10 +38,7 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
 
     @abstractmethod
     async def get_multi(
-        self,
-        skip: int = 0,
-        limit: int = 100,
-        filters: dict[str, Any] | None = None
+        self, skip: int = 0, limit: int = 100, filters: dict[str, Any] | None = None
     ) -> list[ModelType]:
         """Get multiple entities with pagination and filtering"""
         pass
@@ -52,11 +49,7 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         pass
 
     @abstractmethod
-    async def update(
-        self,
-        db_obj: ModelType,
-        obj_in: UpdateSchemaType
-    ) -> ModelType:
+    async def update(self, db_obj: ModelType, obj_in: UpdateSchemaType) -> ModelType:
         """Update existing entity"""
         pass
 
@@ -76,10 +69,12 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         pass
 
 
-class SearchableRepository(BaseRepository[ModelType, CreateSchemaType, UpdateSchemaType]):
+class SearchableRepository(
+    BaseRepository[ModelType, CreateSchemaType, UpdateSchemaType]
+):
     """
     Repository interface for entities that support search functionality.
-    
+
     Extends base repository with search capabilities following
     Interface Segregation Principle - only entities that need search
     should implement this interface.
@@ -91,16 +86,14 @@ class SearchableRepository(BaseRepository[ModelType, CreateSchemaType, UpdateSch
         query: str,
         skip: int = 0,
         limit: int = 100,
-        filters: dict[str, Any] | None = None
+        filters: dict[str, Any] | None = None,
     ) -> list[ModelType]:
         """Search entities by text query"""
         pass
 
     @abstractmethod
     async def search_count(
-        self,
-        query: str,
-        filters: dict[str, Any] | None = None
+        self, query: str, filters: dict[str, Any] | None = None
     ) -> int:
         """Count search results"""
         pass
@@ -110,13 +103,15 @@ class SearchableRepository(BaseRepository[ModelType, CreateSchemaType, UpdateSch
 class BusinessRuleStrategy(ABC):
     """
     Abstract strategy for business rules validation.
-    
+
     Implements Strategy Pattern following Open/Closed Principle:
     - Allows different validation strategies without modifying core logic
     """
 
     @abstractmethod
-    async def validate(self, entity: Any, context: dict[str, Any] | None = None) -> bool:
+    async def validate(
+        self, entity: Any, context: dict[str, Any] | None = None
+    ) -> bool:
         """Validate business rule"""
         pass
 
@@ -138,7 +133,9 @@ class BusinessRuleEngine:
         """Add business rule"""
         self.rules.append(rule)
 
-    async def validate_all(self, entity: Any, context: dict[str, Any] | None = None) -> None:
+    async def validate_all(
+        self, entity: Any, context: dict[str, Any] | None = None
+    ) -> None:
         """Validate all business rules"""
         for rule in self.rules:
             if not await rule.validate(entity, context):
@@ -151,6 +148,7 @@ class BusinessRuleEngine:
 
 # Legacy compatibility
 T = TypeVar("T")
+
 
 class IRepository(ABC, Generic[T]):
     @abstractmethod

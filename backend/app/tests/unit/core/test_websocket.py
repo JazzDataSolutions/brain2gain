@@ -1,6 +1,7 @@
 """
 Unit tests for WebSocket ConnectionManager
 """
+
 import json
 from datetime import datetime
 from unittest.mock import AsyncMock
@@ -41,7 +42,9 @@ class TestConnectionManager:
         mock_websocket.accept.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_connect_existing_user_closes_old_connection(self, manager, mock_websocket):
+    async def test_connect_existing_user_closes_old_connection(
+        self, manager, mock_websocket
+    ):
         """Test that connecting existing user closes old connection"""
         user_id = "user123"
         old_websocket = AsyncMock()
@@ -203,7 +206,9 @@ class TestConnectionManager:
 
         assert isinstance(timestamp, str)
         # Should be valid ISO format
-        datetime.fromisoformat(timestamp.replace('Z', '+00:00') if timestamp.endswith('Z') else timestamp)
+        datetime.fromisoformat(
+            timestamp.replace("Z", "+00:00") if timestamp.endswith("Z") else timestamp
+        )
 
     @pytest.mark.asyncio
     async def test_multiple_roles_for_same_user(self, manager, mock_websocket):

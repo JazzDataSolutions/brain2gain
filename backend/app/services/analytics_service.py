@@ -20,10 +20,12 @@ from sqlmodel import Session, and_, func, select
 
 from app.models import (
     Cart,
+    Customer,
     OrderStatus,
     Product,
     SalesItem,
     SalesOrder,
+    Stock,
     Transaction,
     TransactionType,
 )
@@ -33,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 class MetricType(str, Enum):
     """Analytics metric types"""
+
     REVENUE = "REVENUE"
     ORDERS = "ORDERS"
     CUSTOMERS = "CUSTOMERS"
@@ -45,6 +48,7 @@ class MetricType(str, Enum):
 
 class TimeGranularity(str, Enum):
     """Time granularity for analytics"""
+
     MINUTE = "MINUTE"
     HOUR = "HOUR"
     DAY = "DAY"
@@ -65,14 +69,11 @@ class AnalyticsService:
     # ─── REVENUE METRICS ──────────────────────────────────────────────────────
 
     def get_total_revenue(
-        self,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None
+        self, start_date: datetime | None = None, end_date: datetime | None = None
     ) -> Decimal:
         """Calculate total revenue for a given period"""
         query = select(func.sum(Transaction.amount)).where(
-            Transaction.tx_type == TransactionType.SALE,
-            Transaction.paid == True
+            Transaction.tx_type == TransactionType.SALE, Transaction.paid
         )
 
         if start_date:
@@ -113,7 +114,9 @@ class AnalyticsService:
         if previous_revenue == 0:
             return 0.0
 
-        growth_rate = float((current_revenue - previous_revenue) / previous_revenue * 100)
+        growth_rate = float(
+            (current_revenue - previous_revenue) / previous_revenue * 100
+        )
         return round(growth_rate, 2)
 
     def calculate_mrr(self) -> Decimal:
@@ -127,13 +130,13 @@ class AnalyticsService:
             select(func.sum(Transaction.amount)).where(
                 and_(
                     Transaction.tx_type == TransactionType.SALE,
-                    Transaction.paid == True,
+                    Transaction.paid,
                     Transaction.created_at >= thirty_days_ago,
                     Transaction.customer_id.in_(
                         select(SalesOrder.customer_id)
                         .group_by(SalesOrder.customer_id)
                         .having(func.count(SalesOrder.so_id) > 1)
-                    )
+                    ),
                 )
             )
         ).first() or Decimal(0)
@@ -157,26 +160,29 @@ class AnalyticsService:
         start_date = datetime.utcnow() - timedelta(days=days)
         revenue = self.get_total_revenue(start_date)
 
-        active_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                SalesOrder.order_date >= start_date
-            )
-        ).first() or 1
+        active_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    SalesOrder.order_date >= start_date
+                )
+            ).first()
+            or 1
+        )
 
         return revenue / active_customers if active_customers > 0 else Decimal(0)
 
     # ─── ORDER METRICS ────────────────────────────────────────────────────────
 
     def get_average_order_value(
-        self,
-        start_date: datetime | None = None,
-        end_date: datetime | None = None
+        self, start_date: datetime | None = None, end_date: datetime | None = None
     ) -> Decimal:
         """Calculate Average Order Value (AOV)"""
         # Calculate total revenue from completed orders
-        revenue_query = select(func.sum(SalesItem.qty * SalesItem.unit_price)).join(
-            SalesOrder
-        ).where(SalesOrder.status == OrderStatus.COMPLETED)
+        revenue_query = (
+            select(func.sum(SalesItem.qty * SalesItem.unit_price))
+            .join(SalesOrder)
+            .where(SalesOrder.status == OrderStatus.COMPLETED)
+        )
 
         # Count completed orders
         orders_query = select(func.count(SalesOrder.so_id)).where(
@@ -204,31 +210,40 @@ class AnalyticsService:
         month_start = datetime(today.year, today.month, 1)
 
         # Orders today
-        orders_today = self.db.exec(
-            select(func.count(SalesOrder.so_id)).where(
-                func.date(SalesOrder.order_date) == today
-            )
-        ).first() or 0
+        orders_today = (
+            self.db.exec(
+                select(func.count(SalesOrder.so_id)).where(
+                    func.date(SalesOrder.order_date) == today
+                )
+            ).first()
+            or 0
+        )
 
         # Orders this month
-        orders_month = self.db.exec(
-            select(func.count(SalesOrder.so_id)).where(
-                SalesOrder.order_date >= month_start
-            )
-        ).first() or 0
+        orders_month = (
+            self.db.exec(
+                select(func.count(SalesOrder.so_id)).where(
+                    SalesOrder.order_date >= month_start
+                )
+            ).first()
+            or 0
+        )
 
         # Pending orders
-        pending_orders = self.db.exec(
-            select(func.count(SalesOrder.so_id)).where(
-                SalesOrder.status == OrderStatus.PENDING
-            )
-        ).first() or 0
+        pending_orders = (
+            self.db.exec(
+                select(func.count(SalesOrder.so_id)).where(
+                    SalesOrder.status == OrderStatus.PENDING
+                )
+            ).first()
+            or 0
+        )
 
         return {
             "orders_today": orders_today,
             "orders_month": orders_month,
             "pending_orders": pending_orders,
-            "average_order_value": float(self.get_average_order_value())
+            "average_order_value": float(self.get_average_order_value()),
         }
 
     # ─── CUSTOMER METRICS ─────────────────────────────────────────────────────
@@ -236,35 +251,44 @@ class AnalyticsService:
     def get_customer_metrics(self) -> dict:
         """Get comprehensive customer metrics"""
         # Total customers
-        total_customers = self.db.exec(
-            select(func.count(Customer.customer_id))
-        ).first() or 0
+        total_customers = (
+            self.db.exec(select(func.count(Customer.customer_id))).first() or 0
+        )
 
         # New customers this month
         month_start = datetime(datetime.utcnow().year, datetime.utcnow().month, 1)
-        new_customers_month = self.db.exec(
-            select(func.count(Customer.customer_id)).where(
-                Customer.created_at >= month_start
-            )
-        ).first() or 0
+        new_customers_month = (
+            self.db.exec(
+                select(func.count(Customer.customer_id)).where(
+                    Customer.created_at >= month_start
+                )
+            ).first()
+            or 0
+        )
 
         # Customers with orders
-        customers_with_orders = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                SalesOrder.status == OrderStatus.COMPLETED
-            )
-        ).first() or 0
+        customers_with_orders = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    SalesOrder.status == OrderStatus.COMPLETED
+                )
+            ).first()
+            or 0
+        )
 
         # Active customers (ordered in last 30 days)
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-        active_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                and_(
-                    SalesOrder.order_date >= thirty_days_ago,
-                    SalesOrder.status == OrderStatus.COMPLETED
+        active_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    and_(
+                        SalesOrder.order_date >= thirty_days_ago,
+                        SalesOrder.status == OrderStatus.COMPLETED,
+                    )
                 )
-            )
-        ).first() or 0
+            ).first()
+            or 0
+        )
 
         return {
             "total_customers": total_customers,
@@ -272,8 +296,13 @@ class AnalyticsService:
             "customers_with_orders": customers_with_orders,
             "active_customers_30d": active_customers,
             "customer_conversion_rate": round(
-                (customers_with_orders / total_customers * 100) if total_customers > 0 else 0, 2
-            )
+                (
+                    (customers_with_orders / total_customers * 100)
+                    if total_customers > 0
+                    else 0
+                ),
+                2,
+            ),
         }
 
     def calculate_customer_lifetime_value(self, customer_id: int) -> Decimal:
@@ -284,20 +313,23 @@ class AnalyticsService:
                 and_(
                     Transaction.customer_id == customer_id,
                     Transaction.tx_type == TransactionType.SALE,
-                    Transaction.paid == True
+                    Transaction.paid,
                 )
             )
         ).first() or Decimal(0)
 
         # Number of orders
-        order_count = self.db.exec(
-            select(func.count(SalesOrder.so_id)).where(
-                and_(
-                    SalesOrder.customer_id == customer_id,
-                    SalesOrder.status == OrderStatus.COMPLETED
+        order_count = (
+            self.db.exec(
+                select(func.count(SalesOrder.so_id)).where(
+                    and_(
+                        SalesOrder.customer_id == customer_id,
+                        SalesOrder.status == OrderStatus.COMPLETED,
+                    )
                 )
-            )
-        ).first() or 0
+            ).first()
+            or 0
+        )
 
         # Customer lifespan in days
         customer = self.db.get(Customer, customer_id)
@@ -310,7 +342,9 @@ class AnalyticsService:
 
         # Simple CLV calculation
         avg_order_value = total_spent / order_count if order_count > 0 else Decimal(0)
-        purchase_frequency = order_count / (lifespan_days / 30) if lifespan_days > 0 else 0
+        purchase_frequency = (
+            order_count / (lifespan_days / 30) if lifespan_days > 0 else 0
+        )
 
         # Assume 24 month customer lifespan and 20% profit margin
         clv = avg_order_value * purchase_frequency * 24 * Decimal(0.2)
@@ -327,7 +361,7 @@ class AnalyticsService:
                 Product.name,
                 Product.sku,
                 func.sum(SalesItem.qty).label("total_sold"),
-                func.sum(SalesItem.qty * SalesItem.unit_price).label("total_revenue")
+                func.sum(SalesItem.qty * SalesItem.unit_price).label("total_revenue"),
             )
             .join(SalesItem)
             .join(SalesOrder)
@@ -345,7 +379,7 @@ class AnalyticsService:
                 "name": row.name,
                 "sku": row.sku,
                 "total_sold": row.total_sold,
-                "total_revenue": float(row.total_revenue)
+                "total_revenue": float(row.total_revenue),
             }
             for row in results
         ]
@@ -353,31 +387,36 @@ class AnalyticsService:
     def get_inventory_metrics(self) -> dict:
         """Get inventory-related metrics"""
         # Total products
-        total_products = self.db.exec(
-            select(func.count(Product.product_id))
-        ).first() or 0
+        total_products = (
+            self.db.exec(select(func.count(Product.product_id))).first() or 0
+        )
 
         # Low stock products (quantity < 10)
-        low_stock_products = self.db.exec(
-            select(func.count(Stock.stock_id)).where(Stock.quantity < 10)
-        ).first() or 0
+        low_stock_products = (
+            self.db.exec(
+                select(func.count(Stock.stock_id)).where(Stock.quantity < 10)
+            ).first()
+            or 0
+        )
 
         # Out of stock products
-        out_of_stock = self.db.exec(
-            select(func.count(Stock.stock_id)).where(Stock.quantity == 0)
-        ).first() or 0
+        out_of_stock = (
+            self.db.exec(
+                select(func.count(Stock.stock_id)).where(Stock.quantity == 0)
+            ).first()
+            or 0
+        )
 
         # Total inventory value
         total_inventory_value = self.db.exec(
-            select(func.sum(Stock.quantity * Product.unit_price))
-            .join(Product)
+            select(func.sum(Stock.quantity * Product.unit_price)).join(Product)
         ).first() or Decimal(0)
 
         return {
             "total_products": total_products,
             "low_stock_products": low_stock_products,
             "out_of_stock_products": out_of_stock,
-            "total_inventory_value": float(total_inventory_value)
+            "total_inventory_value": float(total_inventory_value),
         }
 
     # ─── CONVERSION METRICS ───────────────────────────────────────────────────
@@ -387,21 +426,25 @@ class AnalyticsService:
         start_date = datetime.utcnow() - timedelta(days=days)
 
         # Total carts created
-        total_carts = self.db.exec(
-            select(func.count(Cart.cart_id)).where(
-                Cart.created_at >= start_date
-            )
-        ).first() or 0
+        total_carts = (
+            self.db.exec(
+                select(func.count(Cart.cart_id)).where(Cart.created_at >= start_date)
+            ).first()
+            or 0
+        )
 
         # Completed orders (carts that converted)
-        completed_orders = self.db.exec(
-            select(func.count(SalesOrder.so_id)).where(
-                and_(
-                    SalesOrder.order_date >= start_date,
-                    SalesOrder.status == OrderStatus.COMPLETED
+        completed_orders = (
+            self.db.exec(
+                select(func.count(SalesOrder.so_id)).where(
+                    and_(
+                        SalesOrder.order_date >= start_date,
+                        SalesOrder.status == OrderStatus.COMPLETED,
+                    )
                 )
-            )
-        ).first() or 0
+            ).first()
+            or 0
+        )
 
         if total_carts == 0:
             return 0.0
@@ -414,21 +457,27 @@ class AnalyticsService:
         start_date = datetime.utcnow() - timedelta(days=days)
 
         # Total unique customers who visited/interacted
-        total_customers = self.db.exec(
-            select(func.count(func.distinct(Cart.customer_id))).where(
-                Cart.created_at >= start_date
-            )
-        ).first() or 0
+        total_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(Cart.customer_id))).where(
+                    Cart.created_at >= start_date
+                )
+            ).first()
+            or 0
+        )
 
         # Customers who completed orders
-        converting_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                and_(
-                    SalesOrder.order_date >= start_date,
-                    SalesOrder.status == OrderStatus.COMPLETED
+        converting_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    and_(
+                        SalesOrder.order_date >= start_date,
+                        SalesOrder.status == OrderStatus.COMPLETED,
+                    )
                 )
-            )
-        ).first() or 0
+            ).first()
+            or 0
+        )
 
         if total_customers == 0:
             return 0.0
@@ -449,11 +498,14 @@ class AnalyticsService:
         ).all()
 
         # Total customers who made orders
-        total_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                SalesOrder.order_date >= start_date
-            )
-        ).first() or 0
+        total_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    SalesOrder.order_date >= start_date
+                )
+            ).first()
+            or 0
+        )
 
         if total_customers == 0:
             return 0.0
@@ -466,26 +518,32 @@ class AnalyticsService:
         start_period = datetime.utcnow() - timedelta(days=period_days)
 
         # Customers who were active in the period
-        active_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id))).where(
-                SalesOrder.order_date >= start_period
-            )
-        ).first() or 0
+        active_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    SalesOrder.order_date >= start_period
+                )
+            ).first()
+            or 0
+        )
 
         # Customers who haven't ordered in the last 30 days
         recent_cutoff = datetime.utcnow() - timedelta(days=30)
-        churned_customers = self.db.exec(
-            select(func.count(func.distinct(SalesOrder.customer_id)))
-            .where(
-                and_(
-                    SalesOrder.order_date >= start_period,
-                    SalesOrder.customer_id.not_in(
-                        select(func.distinct(SalesOrder.customer_id))
-                        .where(SalesOrder.order_date >= recent_cutoff)
+        churned_customers = (
+            self.db.exec(
+                select(func.count(func.distinct(SalesOrder.customer_id))).where(
+                    and_(
+                        SalesOrder.order_date >= start_period,
+                        SalesOrder.customer_id.not_in(
+                            select(func.distinct(SalesOrder.customer_id)).where(
+                                SalesOrder.order_date >= recent_cutoff
+                            )
+                        ),
                     )
                 )
-            )
-        ).first() or 0
+            ).first()
+            or 0
+        )
 
         if active_customers == 0:
             return 0.0
@@ -509,7 +567,7 @@ class AnalyticsService:
                 "growth_rate": self.get_revenue_growth_rate(),
                 "mrr": float(self.calculate_mrr()),
                 "arr": float(self.calculate_arr()),
-                "revenue_per_visitor": float(self.calculate_revenue_per_visitor())
+                "revenue_per_visitor": float(self.calculate_revenue_per_visitor()),
             },
             "orders": self.get_order_metrics(),
             "customers": self.get_customer_metrics(),
@@ -518,8 +576,8 @@ class AnalyticsService:
                 "cart_abandonment_rate": self.get_cart_abandonment_rate(),
                 "conversion_rate": self.calculate_conversion_rate(),
                 "repeat_customer_rate": self.calculate_repeat_customer_rate(),
-                "churn_rate": self.calculate_churn_rate()
-            }
+                "churn_rate": self.calculate_churn_rate(),
+            },
         }
 
     # ─── REAL-TIME METRICS ────────────────────────────────────────────────────
@@ -527,14 +585,17 @@ class AnalyticsService:
     def get_realtime_metrics(self) -> dict:
         """Get real-time metrics for dashboard"""
         return {
-            "current_revenue_today": float(self.get_daily_revenue(datetime.utcnow().date())),
+            "current_revenue_today": float(
+                self.get_daily_revenue(datetime.utcnow().date())
+            ),
             "orders_today": self.get_order_metrics()["orders_today"],
             "pending_orders": self.get_order_metrics()["pending_orders"],
             "active_carts": self.db.exec(
                 select(func.count(Cart.cart_id)).where(
                     Cart.updated_at >= datetime.utcnow() - timedelta(hours=24)
                 )
-            ).first() or 0,
+            ).first()
+            or 0,
             "low_stock_alerts": self.get_inventory_metrics()["low_stock_products"],
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.utcnow().isoformat(),
         }

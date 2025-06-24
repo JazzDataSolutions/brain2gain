@@ -37,9 +37,9 @@ class Settings(BaseSettings):
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -142,13 +142,22 @@ class Settings(BaseSettings):
         if self.ENVIRONMENT == "production":
             # Ensure strong security in production
             if len(self.SECRET_KEY) < 32:
-                raise ValueError("SECRET_KEY must be at least 32 characters in production")
+                raise ValueError(
+                    "SECRET_KEY must be at least 32 characters in production"
+                )
 
-            if self.FIRST_SUPERUSER_PASSWORD and len(self.FIRST_SUPERUSER_PASSWORD) < 12:
-                raise ValueError("FIRST_SUPERUSER_PASSWORD must be at least 12 characters in production")
+            if (
+                self.FIRST_SUPERUSER_PASSWORD
+                and len(self.FIRST_SUPERUSER_PASSWORD) < 12
+            ):
+                raise ValueError(
+                    "FIRST_SUPERUSER_PASSWORD must be at least 12 characters in production"
+                )
 
             if not self.SENTRY_DSN:
-                warnings.warn("SENTRY_DSN not configured for production environment")
+                warnings.warn(
+                    "SENTRY_DSN not configured for production environment", stacklevel=2
+                )
 
         # Validate rate limiting settings
         if self.RATE_LIMIT_ANONYMOUS <= 0:

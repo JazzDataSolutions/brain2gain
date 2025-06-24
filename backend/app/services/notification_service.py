@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 class NotificationType(str, Enum):
     """Notification type enumeration"""
+
     EMAIL = "EMAIL"
     SMS = "SMS"
     PUSH = "PUSH"
@@ -40,6 +41,7 @@ class NotificationType(str, Enum):
 
 class NotificationPriority(str, Enum):
     """Notification priority levels"""
+
     LOW = "LOW"
     NORMAL = "NORMAL"
     HIGH = "HIGH"
@@ -48,6 +50,7 @@ class NotificationPriority(str, Enum):
 
 class NotificationStatus(str, Enum):
     """Notification delivery status"""
+
     PENDING = "PENDING"
     QUEUED = "QUEUED"
     SENDING = "SENDING"
@@ -61,6 +64,7 @@ class NotificationStatus(str, Enum):
 
 class NotificationTemplate(str, Enum):
     """Predefined notification templates"""
+
     ORDER_CONFIRMATION = "ORDER_CONFIRMATION"
     ORDER_SHIPPED = "ORDER_SHIPPED"
     ORDER_DELIVERED = "ORDER_DELIVERED"
@@ -92,11 +96,11 @@ class NotificationService:
         data: dict[str, Any],
         priority: NotificationPriority = NotificationPriority.NORMAL,
         scheduled_at: datetime | None = None,
-        metadata: dict[str, Any] | None = None
+        metadata: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Send a notification through the specified channel.
-        
+
         Args:
             recipient: Recipient identifier (email, phone, user_id, etc.)
             notification_type: Type of notification channel
@@ -105,7 +109,7 @@ class NotificationService:
             priority: Notification priority
             scheduled_at: When to send (None for immediate)
             metadata: Additional metadata
-            
+
         Returns:
             Notification result with tracking ID
         """
@@ -119,18 +123,22 @@ class NotificationService:
             data=data,
             priority=priority,
             scheduled_at=scheduled_at,
-            metadata=metadata
+            metadata=metadata,
         )
 
         try:
             # Check user preferences
-            if not await self._check_user_preferences(recipient, notification_type, template):
-                await self._update_notification_status(notification_id, NotificationStatus.FAILED, "User opted out")
+            if not await self._check_user_preferences(
+                recipient, notification_type, template
+            ):
+                await self._update_notification_status(
+                    notification_id, NotificationStatus.FAILED, "User opted out"
+                )
                 return {
                     "success": False,
                     "notification_id": notification_id,
                     "status": NotificationStatus.FAILED,
-                    "message": "User has opted out of this notification type"
+                    "message": "User has opted out of this notification type",
                 }
 
             # Handle scheduling
@@ -141,7 +149,7 @@ class NotificationService:
                     "notification_id": notification_id,
                     "status": NotificationStatus.QUEUED,
                     "scheduled_at": scheduled_at.isoformat(),
-                    "message": "Notification scheduled successfully"
+                    "message": "Notification scheduled successfully",
                 }
 
             # Send immediately
@@ -152,11 +160,13 @@ class NotificationService:
                 "notification_id": notification_id,
                 "status": result["status"],
                 "message": result.get("message", "Notification processed"),
-                "sent_at": datetime.now(timezone.utc).isoformat()
+                "sent_at": datetime.now(timezone.utc).isoformat(),
             }
 
         except Exception as e:
-            await self._update_notification_status(notification_id, NotificationStatus.FAILED, str(e))
+            await self._update_notification_status(
+                notification_id, NotificationStatus.FAILED, str(e)
+            )
             logger.error(f"Notification sending failed for {notification_id}: {e}")
             raise ValueError(f"Failed to send notification: {str(e)}")
 
@@ -166,18 +176,18 @@ class NotificationService:
         notification_type: NotificationType,
         template: NotificationTemplate,
         data: dict[str, Any],
-        priority: NotificationPriority = NotificationPriority.NORMAL
+        priority: NotificationPriority = NotificationPriority.NORMAL,
     ) -> dict[str, Any]:
         """
         Send notifications to multiple recipients.
-        
+
         Args:
             recipients: List of recipient identifiers
             notification_type: Type of notification channel
             template: Template to use
             data: Data to populate the template
             priority: Notification priority
-            
+
         Returns:
             Bulk send results
         """
@@ -185,10 +195,10 @@ class NotificationService:
         failed_sends = []
 
         # Process in batches to avoid overwhelming the system
-        batch_size = getattr(settings, 'NOTIFICATION_BATCH_SIZE', 100)
+        batch_size = getattr(settings, "NOTIFICATION_BATCH_SIZE", 100)
 
         for i in range(0, len(recipients), batch_size):
-            batch = recipients[i:i + batch_size]
+            batch = recipients[i : i + batch_size]
             batch_results = await asyncio.gather(
                 *[
                     self.send_notification(
@@ -196,29 +206,30 @@ class NotificationService:
                         notification_type=notification_type,
                         template=template,
                         data=data,
-                        priority=priority
+                        priority=priority,
                     )
                     for recipient in batch
                 ],
-                return_exceptions=True
+                return_exceptions=True,
             )
 
             for recipient, result in zip(batch, batch_results, strict=False):
                 if isinstance(result, Exception):
-                    failed_sends.append({
-                        "recipient": recipient,
-                        "error": str(result)
-                    })
+                    failed_sends.append({"recipient": recipient, "error": str(result)})
                 elif result.get("success"):
-                    successful_sends.append({
-                        "recipient": recipient,
-                        "notification_id": result["notification_id"]
-                    })
+                    successful_sends.append(
+                        {
+                            "recipient": recipient,
+                            "notification_id": result["notification_id"],
+                        }
+                    )
                 else:
-                    failed_sends.append({
-                        "recipient": recipient,
-                        "error": result.get("message", "Unknown error")
-                    })
+                    failed_sends.append(
+                        {
+                            "recipient": recipient,
+                            "error": result.get("message", "Unknown error"),
+                        }
+                    )
 
         return {
             "total_recipients": len(recipients),
@@ -226,16 +237,16 @@ class NotificationService:
             "failed_sends": len(failed_sends),
             "successful_notifications": successful_sends,
             "failed_notifications": failed_sends,
-            "processed_at": datetime.now(timezone.utc).isoformat()
+            "processed_at": datetime.now(timezone.utc).isoformat(),
         }
 
     async def get_notification_status(self, notification_id: str) -> dict[str, Any]:
         """
         Get notification delivery status and analytics.
-        
+
         Args:
             notification_id: Notification ID
-            
+
         Returns:
             Notification status and delivery details
         """
@@ -248,34 +259,40 @@ class NotificationService:
             "opened_at": None,
             "clicked_at": None,
             "delivery_attempts": 1,
-            "error_message": None
+            "error_message": None,
         }
 
     async def track_notification_event(
         self,
         notification_id: str,
         event_type: str,
-        event_data: dict[str, Any] | None = None
+        event_data: dict[str, Any] | None = None,
     ) -> bool:
         """
         Track notification events (opened, clicked, etc.).
-        
+
         Args:
             notification_id: Notification ID
             event_type: Type of event (opened, clicked, bounced)
             event_data: Additional event data
-            
+
         Returns:
             True if event was tracked successfully
         """
         try:
             # Update notification status based on event
             if event_type == "opened":
-                await self._update_notification_status(notification_id, NotificationStatus.OPENED)
+                await self._update_notification_status(
+                    notification_id, NotificationStatus.OPENED
+                )
             elif event_type == "clicked":
-                await self._update_notification_status(notification_id, NotificationStatus.CLICKED)
+                await self._update_notification_status(
+                    notification_id, NotificationStatus.CLICKED
+                )
             elif event_type == "bounced":
-                await self._update_notification_status(notification_id, NotificationStatus.BOUNCED)
+                await self._update_notification_status(
+                    notification_id, NotificationStatus.BOUNCED
+                )
 
             # Log event for analytics
             await self._log_notification_event(notification_id, event_type, event_data)
@@ -288,17 +305,15 @@ class NotificationService:
             return False
 
     async def update_user_preferences(
-        self,
-        user_id: str,
-        preferences: dict[str, Any]
+        self, user_id: str, preferences: dict[str, Any]
     ) -> bool:
         """
         Update user notification preferences.
-        
+
         Args:
             user_id: User ID
             preferences: Notification preferences
-            
+
         Returns:
             True if preferences were updated successfully
         """
@@ -315,21 +330,23 @@ class NotificationService:
             logger.error(f"Failed to update user preferences: {e}")
             return False
 
-    async def notify_order_status(self, order_id: str, status: str, customer_id: str) -> dict[str, Any]:
+    async def notify_order_status(
+        self, order_id: str, status: str, customer_id: str
+    ) -> dict[str, Any]:
         """Notify order status changes via WebSocket and other channels"""
         try:
             # Send WebSocket notification to customer
             await manager.send_personal_message(
                 message=f"Tu pedido #{order_id} está {status}",
                 user_id=customer_id,
-                notification_type="order_update"
+                notification_type="order_update",
             )
 
             # Send WebSocket notification to admin
             await manager.broadcast_to_role(
                 message=f"Pedido #{order_id} actualizado a {status}",
                 role="admin",
-                notification_type="order_admin_update"
+                notification_type="order_admin_update",
             )
 
             # Send email notification asynchronously
@@ -341,26 +358,34 @@ class NotificationService:
                     data={
                         "order_id": order_id,
                         "status": status,
-                        "customer_id": customer_id
-                    }
+                        "customer_id": customer_id,
+                    },
                 )
             )
 
-            logger.info(f"Order status notification sent for order {order_id}: {status}")
+            logger.info(
+                f"Order status notification sent for order {order_id}: {status}"
+            )
             return {"success": True, "message": "Order status notification sent"}
 
         except Exception as e:
             logger.error(f"Failed to send order status notification: {e}")
             return {"success": False, "error": str(e)}
 
-    async def notify_low_stock(self, product_id: str, product_name: str, stock_quantity: int, min_stock: int) -> dict[str, Any]:
+    async def notify_low_stock(
+        self, product_id: str, product_name: str, stock_quantity: int, min_stock: int
+    ) -> dict[str, Any]:
         """Send low stock alerts via WebSocket and email"""
         try:
             message = f"⚠️ Stock bajo: {product_name} - Quedan {stock_quantity} unidades (mínimo: {min_stock})"
 
             # Send WebSocket notification to admin and managers
-            await manager.broadcast_to_role(message, role="admin", notification_type="low_stock")
-            await manager.broadcast_to_role(message, role="manager", notification_type="low_stock")
+            await manager.broadcast_to_role(
+                message, role="admin", notification_type="low_stock"
+            )
+            await manager.broadcast_to_role(
+                message, role="manager", notification_type="low_stock"
+            )
 
             # Send email notification to inventory managers
             asyncio.create_task(
@@ -372,26 +397,36 @@ class NotificationService:
                         "product_id": product_id,
                         "product_name": product_name,
                         "stock_quantity": stock_quantity,
-                        "min_stock": min_stock
-                    }
+                        "min_stock": min_stock,
+                    },
                 )
             )
 
-            logger.info(f"Low stock notification sent for product {product_id}: {stock_quantity} units")
+            logger.info(
+                f"Low stock notification sent for product {product_id}: {stock_quantity} units"
+            )
             return {"success": True, "message": "Low stock notification sent"}
 
         except Exception as e:
             logger.error(f"Failed to send low stock notification: {e}")
             return {"success": False, "error": str(e)}
 
-    async def notify_new_order(self, order_id: str, customer_name: str, total_amount: float) -> dict[str, Any]:
+    async def notify_new_order(
+        self, order_id: str, customer_name: str, total_amount: float
+    ) -> dict[str, Any]:
         """Notify about new orders"""
         try:
-            message = f"🛍️ Nuevo pedido #{order_id} de {customer_name} por ${total_amount:.2f}"
+            message = (
+                f"🛍️ Nuevo pedido #{order_id} de {customer_name} por ${total_amount:.2f}"
+            )
 
             # Send WebSocket notification to admin and sales team
-            await manager.broadcast_to_role(message, role="admin", notification_type="new_order")
-            await manager.broadcast_to_role(message, role="seller", notification_type="new_order")
+            await manager.broadcast_to_role(
+                message, role="admin", notification_type="new_order"
+            )
+            await manager.broadcast_to_role(
+                message, role="seller", notification_type="new_order"
+            )
 
             logger.info(f"New order notification sent: {order_id}")
             return {"success": True, "message": "New order notification sent"}
@@ -400,7 +435,9 @@ class NotificationService:
             logger.error(f"Failed to send new order notification: {e}")
             return {"success": False, "error": str(e)}
 
-    async def send_system_alert(self, message: str, alert_type: str = "info", target_roles: list[str] = None) -> dict[str, Any]:
+    async def send_system_alert(
+        self, message: str, alert_type: str = "info", target_roles: list[str] = None
+    ) -> dict[str, Any]:
         """Send system-wide alerts"""
         try:
             if target_roles is None:
@@ -408,9 +445,7 @@ class NotificationService:
 
             for role in target_roles:
                 await manager.broadcast_to_role(
-                    message=f"🔔 {message}",
-                    role=role,
-                    notification_type=alert_type
+                    message=f"🔔 {message}", role=role, notification_type=alert_type
                 )
 
             logger.info(f"System alert sent to roles {target_roles}: {message}")
@@ -426,26 +461,28 @@ class NotificationService:
             "confirmed": NotificationTemplate.ORDER_CONFIRMATION,
             "shipped": NotificationTemplate.ORDER_SHIPPED,
             "delivered": NotificationTemplate.ORDER_DELIVERED,
-            "cancelled": NotificationTemplate.ORDER_CANCELLED
+            "cancelled": NotificationTemplate.ORDER_CANCELLED,
         }
-        return status_mapping.get(status.lower(), NotificationTemplate.ORDER_CONFIRMATION)
+        return status_mapping.get(
+            status.lower(), NotificationTemplate.ORDER_CONFIRMATION
+        )
 
     async def get_notification_analytics(
         self,
         start_date: datetime,
         end_date: datetime,
         notification_type: NotificationType | None = None,
-        template: NotificationTemplate | None = None
+        template: NotificationTemplate | None = None,
     ) -> dict[str, Any]:
         """
         Get notification analytics for a date range.
-        
+
         Args:
             start_date: Start date
             end_date: End date
             notification_type: Filter by notification type
             template: Filter by template
-            
+
         Returns:
             Notification analytics data
         """
@@ -453,7 +490,7 @@ class NotificationService:
         return {
             "period": {
                 "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat()
+                "end_date": end_date.isoformat(),
             },
             "summary": {
                 "total_sent": 1250,
@@ -464,15 +501,15 @@ class NotificationService:
                 "delivery_rate": 95.12,
                 "open_rate": 63.55,
                 "click_rate": 30.95,
-                "bounce_rate": 4.88
+                "bounce_rate": 4.88,
             },
             "by_type": {
                 "EMAIL": {"sent": 800, "delivered": 760, "opened": 480, "clicked": 156},
                 "SMS": {"sent": 300, "delivered": 295, "opened": 200, "clicked": 45},
-                "PUSH": {"sent": 150, "delivered": 134, "opened": 76, "clicked": 33}
+                "PUSH": {"sent": 150, "delivered": 134, "opened": 76, "clicked": 33},
             },
             "by_template": {},
-            "timeline": []
+            "timeline": [],
         }
 
     # Channel-specific sending methods
@@ -483,7 +520,7 @@ class NotificationService:
         subject: str,
         content: str,
         template_data: dict[str, Any],
-        attachments: list[dict[str, Any]] | None = None
+        attachments: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         """Send email notification."""
         try:
@@ -497,7 +534,7 @@ class NotificationService:
                 "success": True,
                 "status": NotificationStatus.SENT,
                 "message_id": f"email_{uuid.uuid4().hex[:8]}",
-                "message": "Email sent successfully (demo mode)"
+                "message": "Email sent successfully (demo mode)",
             }
 
         except Exception as e:
@@ -505,14 +542,11 @@ class NotificationService:
             return {
                 "success": False,
                 "status": NotificationStatus.FAILED,
-                "error": str(e)
+                "error": str(e),
             }
 
     async def _send_sms(
-        self,
-        recipient: str,
-        message: str,
-        template_data: dict[str, Any]
+        self, recipient: str, message: str, template_data: dict[str, Any]
     ) -> dict[str, Any]:
         """Send SMS notification."""
         try:
@@ -526,7 +560,7 @@ class NotificationService:
                 "success": True,
                 "status": NotificationStatus.SENT,
                 "message_id": f"sms_{uuid.uuid4().hex[:8]}",
-                "message": "SMS sent successfully (demo mode)"
+                "message": "SMS sent successfully (demo mode)",
             }
 
         except Exception as e:
@@ -534,7 +568,7 @@ class NotificationService:
             return {
                 "success": False,
                 "status": NotificationStatus.FAILED,
-                "error": str(e)
+                "error": str(e),
             }
 
     async def _send_push_notification(
@@ -543,7 +577,7 @@ class NotificationService:
         title: str,
         body: str,
         template_data: dict[str, Any],
-        action_data: dict[str, Any] | None = None
+        action_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Send push notification."""
         try:
@@ -557,7 +591,7 @@ class NotificationService:
                 "success": True,
                 "status": NotificationStatus.SENT,
                 "message_id": f"push_{uuid.uuid4().hex[:8]}",
-                "message": "Push notification sent successfully (demo mode)"
+                "message": "Push notification sent successfully (demo mode)",
             }
 
         except Exception as e:
@@ -565,7 +599,7 @@ class NotificationService:
             return {
                 "success": False,
                 "status": NotificationStatus.FAILED,
-                "error": str(e)
+                "error": str(e),
             }
 
     # Template management
@@ -574,16 +608,16 @@ class NotificationService:
         self,
         template: NotificationTemplate,
         notification_type: NotificationType,
-        data: dict[str, Any]
+        data: dict[str, Any],
     ) -> dict[str, str]:
         """
         Get template content and populate with data.
-        
+
         Args:
             template: Template identifier
             notification_type: Type of notification
             data: Data to populate template
-            
+
         Returns:
             Template content (subject, body, etc.)
         """
@@ -591,35 +625,35 @@ class NotificationService:
             NotificationTemplate.ORDER_CONFIRMATION: {
                 NotificationType.EMAIL: {
                     "subject": "Order Confirmation - #{order_id}",
-                    "body": "Thank you for your order! Your order #{order_id} has been confirmed."
+                    "body": "Thank you for your order! Your order #{order_id} has been confirmed.",
                 },
                 NotificationType.SMS: {
                     "body": "Order #{order_id} confirmed! Thank you for shopping with us."
                 },
                 NotificationType.PUSH: {
                     "title": "Order Confirmed",
-                    "body": "Your order #{order_id} has been confirmed"
-                }
+                    "body": "Your order #{order_id} has been confirmed",
+                },
             },
             NotificationTemplate.ORDER_SHIPPED: {
                 NotificationType.EMAIL: {
                     "subject": "Your order has shipped - #{order_id}",
-                    "body": "Great news! Your order #{order_id} has shipped. Tracking: {tracking_number}"
+                    "body": "Great news! Your order #{order_id} has shipped. Tracking: {tracking_number}",
                 },
                 NotificationType.SMS: {
                     "body": "Order #{order_id} shipped! Track: {tracking_number}"
                 },
                 NotificationType.PUSH: {
                     "title": "Order Shipped",
-                    "body": "Your order is on its way!"
-                }
+                    "body": "Your order is on its way!",
+                },
             },
             NotificationTemplate.LOW_STOCK_ALERT: {
                 NotificationType.EMAIL: {
                     "subject": "Low Stock Alert - {product_name}",
-                    "body": "Product {product_name} is running low. Current stock: {stock_quantity}"
+                    "body": "Product {product_name} is running low. Current stock: {stock_quantity}",
                 }
-            }
+            },
         }
 
         template_content = templates.get(template, {}).get(notification_type, {})
@@ -640,26 +674,26 @@ class NotificationService:
     def _get_email_config(self) -> dict[str, Any]:
         """Get email service configuration."""
         return {
-            "service": getattr(settings, 'EMAIL_SERVICE', 'sendgrid'),
-            "api_key": getattr(settings, 'EMAIL_API_KEY', 'demo_key'),
-            "from_email": getattr(settings, 'FROM_EMAIL', 'noreply@brain2gain.com'),
-            "from_name": getattr(settings, 'FROM_NAME', 'Brain2Gain')
+            "service": getattr(settings, "EMAIL_SERVICE", "sendgrid"),
+            "api_key": getattr(settings, "EMAIL_API_KEY", "demo_key"),
+            "from_email": getattr(settings, "FROM_EMAIL", "noreply@brain2gain.com"),
+            "from_name": getattr(settings, "FROM_NAME", "Brain2Gain"),
         }
 
     def _get_sms_config(self) -> dict[str, Any]:
         """Get SMS service configuration."""
         return {
-            "service": getattr(settings, 'SMS_SERVICE', 'twilio'),
-            "api_key": getattr(settings, 'SMS_API_KEY', 'demo_key'),
-            "from_number": getattr(settings, 'SMS_FROM_NUMBER', '+1234567890')
+            "service": getattr(settings, "SMS_SERVICE", "twilio"),
+            "api_key": getattr(settings, "SMS_API_KEY", "demo_key"),
+            "from_number": getattr(settings, "SMS_FROM_NUMBER", "+1234567890"),
         }
 
     def _get_push_config(self) -> dict[str, Any]:
         """Get push notification service configuration."""
         return {
-            "service": getattr(settings, 'PUSH_SERVICE', 'firebase'),
-            "api_key": getattr(settings, 'PUSH_API_KEY', 'demo_key'),
-            "project_id": getattr(settings, 'PUSH_PROJECT_ID', 'brain2gain-demo')
+            "service": getattr(settings, "PUSH_SERVICE", "firebase"),
+            "api_key": getattr(settings, "PUSH_API_KEY", "demo_key"),
+            "project_id": getattr(settings, "PUSH_PROJECT_ID", "brain2gain-demo"),
         }
 
     async def _create_notification_record(
@@ -671,7 +705,7 @@ class NotificationService:
         data: dict[str, Any],
         priority: NotificationPriority,
         scheduled_at: datetime | None,
-        metadata: dict[str, Any] | None
+        metadata: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Create notification record in database."""
         notification_record = {
@@ -685,7 +719,7 @@ class NotificationService:
             "scheduled_at": scheduled_at.isoformat() if scheduled_at else None,
             "metadata": metadata or {},
             "created_at": datetime.now(timezone.utc).isoformat(),
-            "updated_at": datetime.now(timezone.utc).isoformat()
+            "updated_at": datetime.now(timezone.utc).isoformat(),
         }
 
         # TODO: Save to database when notification model exists
@@ -696,7 +730,7 @@ class NotificationService:
         self,
         notification_id: str,
         status: NotificationStatus,
-        error_message: str | None = None
+        error_message: str | None = None,
     ) -> None:
         """Update notification status in database."""
         # TODO: Update database when notification model exists
@@ -706,7 +740,7 @@ class NotificationService:
         self,
         recipient: str,
         notification_type: NotificationType,
-        template: NotificationTemplate
+        template: NotificationTemplate,
     ) -> bool:
         """Check if user has opted in for this notification type."""
         # TODO: Query user preferences from database
@@ -718,7 +752,9 @@ class NotificationService:
         # TODO: Add to task queue (Celery, RQ, etc.)
         logger.info(f"Notification scheduled: {notification_record['notification_id']}")
 
-    async def _send_immediate_notification(self, notification_record: dict[str, Any]) -> dict[str, Any]:
+    async def _send_immediate_notification(
+        self, notification_record: dict[str, Any]
+    ) -> dict[str, Any]:
         """Send notification immediately."""
         notification_type = notification_record["notification_type"]
         template = notification_record["template"]
@@ -734,41 +770,35 @@ class NotificationService:
                 recipient=recipient,
                 subject=content.get("subject", "Notification"),
                 content=content.get("body", ""),
-                template_data=data
+                template_data=data,
             )
         elif notification_type == NotificationType.SMS:
             result = await self._send_sms(
-                recipient=recipient,
-                message=content.get("body", ""),
-                template_data=data
+                recipient=recipient, message=content.get("body", ""), template_data=data
             )
         elif notification_type == NotificationType.PUSH:
             result = await self._send_push_notification(
                 recipient=recipient,
                 title=content.get("title", "Notification"),
                 body=content.get("body", ""),
-                template_data=data
+                template_data=data,
             )
         else:
             result = {
                 "success": False,
                 "status": NotificationStatus.FAILED,
-                "error": f"Unsupported notification type: {notification_type}"
+                "error": f"Unsupported notification type: {notification_type}",
             }
 
         # Update notification status
         await self._update_notification_status(
-            notification_record["notification_id"],
-            result["status"]
+            notification_record["notification_id"], result["status"]
         )
 
         return result
 
     async def _log_notification_event(
-        self,
-        notification_id: str,
-        event_type: str,
-        event_data: dict[str, Any] | None
+        self, notification_id: str, event_type: str, event_data: dict[str, Any] | None
     ) -> None:
         """Log notification event for analytics."""
         # TODO: Save to database when notification_events model exists

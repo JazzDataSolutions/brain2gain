@@ -28,9 +28,7 @@ class CartRepository:
         statement = (
             select(Cart)
             .where(Cart.cart_id == cart_id)
-            .options(
-                selectinload(Cart.items).selectinload(CartItem.product)
-            )
+            .options(selectinload(Cart.items).selectinload(CartItem.product))
         )
         result = await self.session.exec(statement)
         return result.first()
@@ -45,8 +43,7 @@ class CartRepository:
     async def get_cart_item(self, cart_id: int, product_id: int) -> CartItem | None:
         """Get specific cart item"""
         statement = select(CartItem).where(
-            CartItem.cart_id == cart_id,
-            CartItem.product_id == product_id
+            CartItem.cart_id == cart_id, CartItem.product_id == product_id
         )
         result = await self.session.exec(statement)
         return result.first()

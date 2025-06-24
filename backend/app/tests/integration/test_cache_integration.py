@@ -29,7 +29,9 @@ class TestCacheIntegration:
         yield
         await cache_service.flush_all()
 
-    async def test_basic_set_get_operations(self, cache_service: CacheService, clean_cache):
+    async def test_basic_set_get_operations(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test basic cache set and get operations."""
         # Test string value
         await cache_service.set("test:string", "hello world", ttl=60)
@@ -60,7 +62,7 @@ class TestCacheIntegration:
             "unit_price": str(product.unit_price),
             "category": product.category,
             "brand": product.brand,
-            "status": product.status
+            "status": product.status,
         }
 
         # Cache the product
@@ -148,6 +150,7 @@ class TestCacheIntegration:
 
     async def test_concurrent_access(self, cache_service: CacheService, clean_cache):
         """Test concurrent cache access."""
+
         async def set_values(prefix: str, count: int):
             tasks = []
             for i in range(count):
@@ -167,14 +170,14 @@ class TestCacheIntegration:
         await asyncio.gather(
             set_values("client1", 10),
             set_values("client2", 10),
-            set_values("client3", 10)
+            set_values("client3", 10),
         )
 
         # Get values concurrently
         results1, results2, results3 = await asyncio.gather(
             get_values("client1", 10),
             get_values("client2", 10),
-            get_values("client3", 10)
+            get_values("client3", 10),
         )
 
         # Verify all values are correct
@@ -195,7 +198,7 @@ class TestCacheIntegration:
                 "unit_price": str(Decimal("45.99")),
                 "category": "proteins",
                 "brand": "Test Brand",
-                "status": "ACTIVE"
+                "status": "ACTIVE",
             }
             large_product_list.append(product_data)
 
@@ -209,7 +212,9 @@ class TestCacheIntegration:
         assert cached_list[0]["sku"] == "LARGE-0000"
         assert cached_list[999]["sku"] == "LARGE-0999"
 
-    async def test_cache_hit_rate_monitoring(self, cache_service: CacheService, clean_cache):
+    async def test_cache_hit_rate_monitoring(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test cache hit rate monitoring."""
         # Set some test data
         await cache_service.set("hit_rate:item1", "value1", ttl=60)
@@ -229,7 +234,9 @@ class TestCacheIntegration:
             assert "hits" in stats or "get_hits" in stats
             assert "misses" in stats or "get_misses" in stats
 
-    async def test_cache_serialization_edge_cases(self, cache_service: CacheService, clean_cache):
+    async def test_cache_serialization_edge_cases(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test cache serialization with edge cases."""
         # Test None values
         await cache_service.set("test:none", None, ttl=60)
@@ -247,12 +254,8 @@ class TestCacheIntegration:
 
         # Test nested structures
         nested_data = {
-            "level1": {
-                "level2": {
-                    "level3": ["item1", "item2", {"nested": True}]
-                }
-            },
-            "numbers": [1, 2, 3.14, Decimal("10.99")]
+            "level1": {"level2": {"level3": ["item1", "item2", {"nested": True}]}},
+            "numbers": [1, 2, 3.14, Decimal("10.99")],
         }
 
         # Convert Decimal to string for JSON serialization
@@ -261,7 +264,9 @@ class TestCacheIntegration:
         result = await cache_service.get("test:nested")
         assert result["level1"]["level2"]["level3"][2]["nested"] is True
 
-    async def test_cache_performance_benchmarks(self, cache_service: CacheService, clean_cache):
+    async def test_cache_performance_benchmarks(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test cache performance with benchmarks."""
         import time
 
@@ -296,7 +301,9 @@ class TestCacheIntegration:
 
         print(f"Performance: SET {set_duration:.3f}s, GET {get_duration:.3f}s")
 
-    async def test_cache_connection_resilience(self, cache_service: CacheService, clean_cache):
+    async def test_cache_connection_resilience(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test cache behavior under connection issues."""
         # This test would need a way to simulate Redis connection issues
         # For now, we'll test the graceful degradation behavior
@@ -317,15 +324,21 @@ class TestCacheIntegration:
             # Should handle gracefully, not crash the application
             pytest.fail(f"Cache service should handle errors gracefully: {e}")
 
-    async def test_multi_tenant_cache_isolation(self, cache_service: CacheService, clean_cache):
+    async def test_multi_tenant_cache_isolation(
+        self, cache_service: CacheService, clean_cache
+    ):
         """Test cache isolation between different tenants/contexts."""
         # Simulate multi-tenant scenario with prefixed keys
         tenant1_prefix = "tenant1"
         tenant2_prefix = "tenant2"
 
         # Set data for different tenants
-        await cache_service.set(f"{tenant1_prefix}:products:list", ["tenant1_product1"], ttl=60)
-        await cache_service.set(f"{tenant2_prefix}:products:list", ["tenant2_product1"], ttl=60)
+        await cache_service.set(
+            f"{tenant1_prefix}:products:list", ["tenant1_product1"], ttl=60
+        )
+        await cache_service.set(
+            f"{tenant2_prefix}:products:list", ["tenant2_product1"], ttl=60
+        )
 
         # Verify isolation
         tenant1_data = await cache_service.get(f"{tenant1_prefix}:products:list")
@@ -339,4 +352,6 @@ class TestCacheIntegration:
 
         # Verify only tenant1's data is gone
         assert await cache_service.get(f"{tenant1_prefix}:products:list") is None
-        assert await cache_service.get(f"{tenant2_prefix}:products:list") == ["tenant2_product1"]
+        assert await cache_service.get(f"{tenant2_prefix}:products:list") == [
+            "tenant2_product1"
+        ]

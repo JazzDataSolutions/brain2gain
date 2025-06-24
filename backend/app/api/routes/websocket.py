@@ -26,9 +26,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
         # Send welcome message
         await manager.send_personal_message(
-            "Conectado a notificaciones en tiempo real",
-            user_id,
-            "connection"
+            "Conectado a notificaciones en tiempo real", user_id, "connection"
         )
 
         # Keep connection alive and handle incoming messages
@@ -40,10 +38,11 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
                 # Handle different message types
                 if message_data.get("type") == "ping":
-                    await websocket.send_text(json.dumps({
-                        "type": "pong",
-                        "timestamp": manager._get_timestamp()
-                    }))
+                    await websocket.send_text(
+                        json.dumps(
+                            {"type": "pong", "timestamp": manager._get_timestamp()}
+                        )
+                    )
                 elif message_data.get("type") == "role_update":
                     # Update user role (for admin/manager connections)
                     new_role = message_data.get("role", "user")
@@ -51,9 +50,7 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                         manager.disconnect(user_id)
                         await manager.connect(websocket, user_id, new_role)
                         await manager.send_personal_message(
-                            f"Rol actualizado a {new_role}",
-                            user_id,
-                            "role_update"
+                            f"Rol actualizado a {new_role}", user_id, "role_update"
                         )
 
             except WebSocketDisconnect:
@@ -78,33 +75,32 @@ async def get_notification_stats():
         "admin_connections": manager.get_role_connections_count("admin"),
         "manager_connections": manager.get_role_connections_count("manager"),
         "user_connections": manager.get_role_connections_count("user"),
-        "seller_connections": manager.get_role_connections_count("seller")
+        "seller_connections": manager.get_role_connections_count("seller"),
     }
 
 
 @router.post("/notifications/test")
-async def test_notification(message: str, target_user: str | None = None, role: str | None = None):
+async def test_notification(
+    message: str, target_user: str | None = None, role: str | None = None
+):
     """Test endpoint for sending notifications"""
     try:
         if target_user:
             await manager.send_personal_message(
-                f"Test message: {message}",
-                target_user,
-                "test"
+                f"Test message: {message}", target_user, "test"
             )
-            return {"success": True, "message": f"Test notification sent to user {target_user}"}
+            return {
+                "success": True,
+                "message": f"Test notification sent to user {target_user}",
+            }
         elif role:
-            await manager.broadcast_to_role(
-                f"Test broadcast: {message}",
-                role,
-                "test"
-            )
-            return {"success": True, "message": f"Test notification broadcast to role {role}"}
+            await manager.broadcast_to_role(f"Test broadcast: {message}", role, "test")
+            return {
+                "success": True,
+                "message": f"Test notification broadcast to role {role}",
+            }
         else:
-            await manager.broadcast_to_all(
-                f"Global test: {message}",
-                "test"
-            )
+            await manager.broadcast_to_all(f"Global test: {message}", "test")
             return {"success": True, "message": "Test notification sent to all users"}
     except Exception as e:
         logger.error(f"Failed to send test notification: {e}")

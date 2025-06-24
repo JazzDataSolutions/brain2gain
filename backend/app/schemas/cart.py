@@ -9,11 +9,14 @@ class CartItemBase(BaseModel):
     product_id: int
     quantity: int = Field(ge=1)
 
+
 class CartItemCreate(CartItemBase):
     pass
 
+
 class CartItemUpdate(BaseModel):
     quantity: int = Field(ge=1)
+
 
 class CartItemRead(CartItemBase):
     product_name: str
@@ -23,12 +26,15 @@ class CartItemRead(CartItemBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class CartBase(BaseModel):
     user_id: UUID | None = None
     session_id: str | None = None
 
+
 class CartCreate(CartBase):
     pass
+
 
 class CartRead(CartBase):
     cart_id: int
@@ -40,9 +46,11 @@ class CartRead(CartBase):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class AddToCartRequest(BaseModel):
     product_id: int
     quantity: int = Field(ge=1, default=1)
+
 
 class UpdateCartItemRequest(BaseModel):
     quantity: int = Field(ge=1)
