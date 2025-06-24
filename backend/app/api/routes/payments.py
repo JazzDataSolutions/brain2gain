@@ -55,27 +55,12 @@ async def process_payment(
                 detail="Not authorized to process this payment"
             )
 
-        # Process payment based on method
-        if payment.payment_method == "stripe":
-            response = await payment_service.process_stripe_payment(
-                payment_id=payment_data.payment_id,
-                payment_method_id=payment_data.stripe_payment_method_id,
-                customer_id=payment_data.stripe_customer_id
-            )
-        elif payment.payment_method == "paypal":
-            response = await payment_service.process_paypal_payment(
-                payment_id=payment_data.payment_id,
-                paypal_order_id=payment_data.paypal_order_id
-            )
-        elif payment.payment_method == "bank_transfer":
-            response = await payment_service.process_bank_transfer(
-                payment_id=payment_data.payment_id
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unsupported payment method: {payment.payment_method}"
-            )
+        response = await payment_service.process_payment(
+            payment_id=payment_data.payment_id,
+            payment_method_id=payment_data.stripe_payment_method_id,
+            customer_id=payment_data.stripe_customer_id,
+            paypal_order_id=payment_data.paypal_order_id,
+        )
 
         return response
 

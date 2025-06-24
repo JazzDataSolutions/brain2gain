@@ -19,6 +19,12 @@ from app.schemas.payment import (
     StripePaymentResponse,
 )
 from app.services.paypal_service import PayPalService
+from app.services.payment_gateway import (
+    BankTransferGateway,
+    PayPalGateway,
+    PaymentGateway,
+    StripeGateway,
+)
 from app.services.stripe_service import StripeService
 
 logger = logging.getLogger(__name__)
@@ -31,6 +37,13 @@ class PaymentService:
         self.session = session
         self.stripe_service = StripeService(session)
         self.paypal_service = PayPalService(session)
+
+        # Payment gateways following the Strategy pattern
+        self.gateways: dict[str, PaymentGateway] = {
+            "stripe": StripeGateway(session, self.stripe_service),
+            "paypal": PayPalGateway(session, self.paypal_service),
+            "bank_transfer": BankTransferGateway(session),
+        }
 
     # ─── PAYMENT INITIATION ──────────────────────────────────────────────
     async def initiate_payment(
@@ -55,17 +68,36 @@ class PaymentService:
         self.session.commit()
         self.session.refresh(payment)
 
-        # Initialize payment based on method
-        if payment_method == "stripe":
-            return await self._initiate_stripe_payment(payment)
-        elif payment_method == "paypal":
-            return await self._initiate_paypal_payment(payment)
-        elif payment_method == "bank_transfer":
-            return await self._initiate_bank_transfer(payment)
-        else:
+        gateway = self.gateways.get(payment_method)
+        if not gateway:
             raise ValueError(f"Unsupported payment method: {payment_method}")
 
+        init_data = await gateway.initiate_payment(payment)
+
+        self.session.add(payment)
+        self.session.commit()
+        self.session.refresh(payment)
+        return init_data
+
     # ─── PAYMENT PROCESSING ──────────────────────────────────────────────
+    async def process_payment(self, payment_id: uuid.UUID, **kwargs: Any) -> PaymentProcessResponse:
+        """Process payment using the configured gateway."""
+        payment = await self.get_payment_by_id(payment_id)
+        if not payment:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found")
+
+        gateway = self.gateways.get(payment.payment_method)
+        if not gateway:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported payment method")
+
+        result = await gateway.process_payment(payment, **kwargs)
+
+        payment.status = PaymentStatus.CAPTURED if result.get("status") in {"succeeded", "completed"} else PaymentStatus.PENDING
+        payment.captured_at = datetime.utcnow()
+        self.session.add(payment)
+        self.session.commit()
+
+        return PaymentProcessResponse(success=result.get("success", True), payment_id=payment_id, status=payment.status)
     async def process_stripe_payment(
         self,
         payment_id: uuid.UUID,
