@@ -9,6 +9,7 @@ Handles:
 - Search and filtering
 - Category management
 """
+
 import builtins
 import logging
 from datetime import datetime
@@ -45,11 +46,11 @@ class ProductService:
     async def list(self, skip: int = 0, limit: int = 100) -> list[Product]:
         """
         List products with pagination.
-        
+
         Args:
             skip: Number of records to skip
             limit: Maximum number of records to return
-            
+
         Returns:
             List of products
         """
@@ -65,13 +66,13 @@ class ProductService:
     async def create(self, payload: ProductCreate) -> Product:
         """
         Create a new product with business validation.
-        
+
         Args:
             payload: Product creation data
-            
+
         Returns:
             Created product
-            
+
         Raises:
             ValueError: If business validation fails
         """
@@ -116,14 +117,14 @@ class ProductService:
     async def update(self, product_id: int, payload: ProductUpdate) -> Product | None:
         """
         Update a product with business validation.
-        
+
         Args:
             product_id: ID of product to update
             payload: Update data
-            
+
         Returns:
             Updated product or None if not found
-            
+
         Raises:
             ValueError: If business validation fails
         """
@@ -164,10 +165,10 @@ class ProductService:
     async def delete(self, product_id: int) -> bool:
         """
         Delete a product.
-        
+
         Args:
             product_id: ID of product to delete
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -196,14 +197,14 @@ class ProductService:
     async def update_stock(self, product_id: int, new_quantity: int) -> Product | None:
         """
         Update product stock quantity.
-        
+
         Args:
             product_id: ID of product to update
             new_quantity: New stock quantity
-            
+
         Returns:
             Updated product or None if not found
-            
+
         Raises:
             ValueError: If quantity is invalid
         """
@@ -252,14 +253,16 @@ class ProductService:
             raise ValueError(f"SKU cannot exceed {settings.MAX_SKU_LENGTH} characters")
 
         # Stock validation
-        if hasattr(payload, 'stock_quantity') and payload.stock_quantity < 0:
+        if hasattr(payload, "stock_quantity") and payload.stock_quantity < 0:
             raise ValueError("Stock quantity cannot be negative")
 
         # Name validation
         if not payload.name or len(payload.name.strip()) == 0:
             raise ValueError("Product name is required")
 
-    async def _validate_product_update(self, product: Product, payload: ProductUpdate) -> None:
+    async def _validate_product_update(
+        self, product: Product, payload: ProductUpdate
+    ) -> None:
         """Validate business rules for product update."""
         # Price validation
         if payload.unit_price is not None:
@@ -278,15 +281,19 @@ class ProductService:
                 raise ValueError("Product SKU cannot be empty")
 
             if len(payload.sku) > settings.MAX_SKU_LENGTH:
-                raise ValueError(f"SKU cannot exceed {settings.MAX_SKU_LENGTH} characters")
+                raise ValueError(
+                    f"SKU cannot exceed {settings.MAX_SKU_LENGTH} characters"
+                )
 
         # Stock validation
-        if hasattr(payload, 'stock_quantity') and payload.stock_quantity is not None:
+        if hasattr(payload, "stock_quantity") and payload.stock_quantity is not None:
             if payload.stock_quantity < 0:
                 raise ValueError("Stock quantity cannot be negative")
 
         # Name validation
-        if payload.name is not None and (not payload.name or len(payload.name.strip()) == 0):
+        if payload.name is not None and (
+            not payload.name or len(payload.name.strip()) == 0
+        ):
             raise ValueError("Product name cannot be empty")
 
     async def _validate_product_deletion(self, product: Product) -> None:
@@ -304,7 +311,7 @@ class ProductService:
     async def _invalidate_product_caches(self, product_id: int | None = None) -> None:
         """
         Invalidate product-related cache entries.
-        
+
         Args:
             product_id: Specific product ID to invalidate (if None, invalidates all)
         """
@@ -332,27 +339,28 @@ class ProductService:
             # Don't fail the operation if cache invalidation fails
             logger.warning(f"Failed to invalidate product cache: {e}")
 
-    async def get_active_products(self, skip: int = 0, limit: int = 100) -> builtins.list[Product]:
+    async def get_active_products(
+        self, skip: int = 0, limit: int = 100
+    ) -> builtins.list[Product]:
         """
         Get active products only with caching.
-        
+
         Args:
             skip: Number of records to skip
             limit: Maximum number of records to return
-            
+
         Returns:
             List of active products
         """
         return await self._get_active_products_cached(skip, limit)
 
     @cache_key_wrapper("products:active", ttl=300)  # 5 minutes cache
-    async def _get_active_products_cached(self, skip: int = 0, limit: int = 100) -> builtins.list[Product]:
+    async def _get_active_products_cached(
+        self, skip: int = 0, limit: int = 100
+    ) -> builtins.list[Product]:
         """Internal cached method for active products."""
         statement = (
-            select(Product)
-            .where(Product.status == "ACTIVE")
-            .offset(skip)
-            .limit(limit)
+            select(Product).where(Product.status == "ACTIVE").offset(skip).limit(limit)
         )
         result = await self.session.exec(statement)
         return result.all()
@@ -366,11 +374,11 @@ class ProductService:
         min_price: Decimal | None = None,
         max_price: Decimal | None = None,
         skip: int = 0,
-        limit: int = 50
+        limit: int = 50,
     ) -> dict[str, Any]:
         """
         Advanced product search with filtering capabilities.
-        
+
         Args:
             query: Search query for product name/description
             category: Filter by category
@@ -378,7 +386,7 @@ class ProductService:
             max_price: Maximum price filter
             skip: Pagination offset
             limit: Maximum results
-            
+
         Returns:
             Dict with products, total count, and filters applied
         """
@@ -389,7 +397,7 @@ class ProductService:
             text_condition = or_(
                 Product.name.ilike(f"%{query}%"),
                 Product.description.ilike(f"%{query}%"),
-                Product.sku.ilike(f"%{query}%")
+                Product.sku.ilike(f"%{query}%"),
             )
             conditions.append(text_condition)
 
@@ -424,14 +432,16 @@ class ProductService:
                 "query": query,
                 "category": category,
                 "min_price": min_price,
-                "max_price": max_price
-            }
+                "max_price": max_price,
+            },
         }
 
     @cache_key_wrapper("products:categories", ttl=3600)  # 1 hour cache
     async def get_categories(self) -> builtins.list[str]:
         """Get list of available product categories."""
-        statement = select(Product.category).distinct().where(Product.status == "ACTIVE")
+        statement = (
+            select(Product.category).distinct().where(Product.status == "ACTIVE")
+        )
         result = await self.session.exec(statement)
         categories = [cat for cat in result.all() if cat]
         return sorted(categories)
@@ -443,7 +453,9 @@ class ProductService:
         return await self._get_featured_products_cached(limit)
 
     @cache_key_wrapper("products:featured", ttl=1800)  # 30 minutes cache
-    async def _get_featured_products_cached(self, limit: int = 10) -> builtins.list[Product]:
+    async def _get_featured_products_cached(
+        self, limit: int = 10
+    ) -> builtins.list[Product]:
         """Internal cached method for featured products."""
         statement = (
             select(Product)
@@ -455,17 +467,15 @@ class ProductService:
         return result.all()
 
     async def get_product_recommendations(
-        self,
-        product_id: int,
-        limit: int = 5
+        self, product_id: int, limit: int = 5
     ) -> builtins.list[Product]:
         """
         Get product recommendations based on category and price range.
-        
+
         Args:
             product_id: Base product for recommendations
             limit: Number of recommendations
-            
+
         Returns:
             List of recommended products
         """
@@ -474,7 +484,7 @@ class ProductService:
             return []
 
         # Find similar products by category and price range
-        price_range = base_product.unit_price * Decimal('0.3')  # 30% price variance
+        price_range = base_product.unit_price * Decimal("0.3")  # 30% price variance
         min_price = base_product.unit_price - price_range
         max_price = base_product.unit_price + price_range
 
@@ -486,7 +496,7 @@ class ProductService:
                     Product.product_id != product_id,
                     Product.category == base_product.category,
                     Product.unit_price >= min_price,
-                    Product.unit_price <= max_price
+                    Product.unit_price <= max_price,
                 )
             )
             .limit(limit)
@@ -496,15 +506,14 @@ class ProductService:
         return result.all()
 
     async def bulk_update_prices(
-        self,
-        price_updates: builtins.list[dict[str, Any]]
+        self, price_updates: builtins.list[dict[str, Any]]
     ) -> dict[str, Any]:
         """
         Bulk update product prices.
-        
+
         Args:
             price_updates: List of {product_id, new_price} dictionaries
-            
+
         Returns:
             Results summary with successful and failed updates
         """
@@ -513,22 +522,20 @@ class ProductService:
 
         for update in price_updates:
             try:
-                product_id = update.get('product_id')
-                new_price = Decimal(str(update.get('new_price')))
+                product_id = update.get("product_id")
+                new_price = Decimal(str(update.get("new_price")))
 
-                if new_price < Decimal('0'):
-                    failed_updates.append({
-                        'product_id': product_id,
-                        'error': 'Price cannot be negative'
-                    })
+                if new_price < Decimal("0"):
+                    failed_updates.append(
+                        {"product_id": product_id, "error": "Price cannot be negative"}
+                    )
                     continue
 
                 product = await self.get_by_id(product_id)
                 if not product:
-                    failed_updates.append({
-                        'product_id': product_id,
-                        'error': 'Product not found'
-                    })
+                    failed_updates.append(
+                        {"product_id": product_id, "error": "Product not found"}
+                    )
                     continue
 
                 old_price = product.unit_price
@@ -537,49 +544,49 @@ class ProductService:
                 self.session.add(product)
                 await self.session.commit()
 
-                successful_updates.append({
-                    'product_id': product_id,
-                    'old_price': old_price,
-                    'new_price': new_price
-                })
+                successful_updates.append(
+                    {
+                        "product_id": product_id,
+                        "old_price": old_price,
+                        "new_price": new_price,
+                    }
+                )
 
             except Exception as e:
-                failed_updates.append({
-                    'product_id': update.get('product_id'),
-                    'error': str(e)
-                })
+                failed_updates.append(
+                    {"product_id": update.get("product_id"), "error": str(e)}
+                )
                 await self.session.rollback()
 
         # Invalidate price-related caches
         await self._invalidate_product_caches()
 
         return {
-            'successful_updates': successful_updates,
-            'failed_updates': failed_updates,
-            'total_processed': len(price_updates),
-            'successful_count': len(successful_updates),
-            'failed_count': len(failed_updates)
+            "successful_updates": successful_updates,
+            "failed_updates": failed_updates,
+            "total_processed": len(price_updates),
+            "successful_count": len(successful_updates),
+            "failed_count": len(failed_updates),
         }
 
-    async def get_low_stock_products(self, threshold: int = 10) -> builtins.list[Product]:
+    async def get_low_stock_products(
+        self, threshold: int = 10
+    ) -> builtins.list[Product]:
         """
         Get products with low stock (for inventory alerts).
         Note: This reads stock but doesn't modify it (that's Inventory Service's job).
-        
+
         Args:
             threshold: Stock quantity threshold
-            
+
         Returns:
             List of products with stock below threshold
         """
-        statement = (
-            select(Product)
-            .where(
-                and_(
-                    Product.status == "ACTIVE",
-                    Product.stock_quantity < threshold,
-                    Product.stock_quantity >= 0
-                )
+        statement = select(Product).where(
+            and_(
+                Product.status == "ACTIVE",
+                Product.stock_quantity < threshold,
+                Product.stock_quantity >= 0,
             )
         )
         result = await self.session.exec(statement)
@@ -589,10 +596,10 @@ class ProductService:
         """
         Get price history for a product.
         TODO: Implement price history tracking table
-        
+
         Args:
             product_id: Product ID
-            
+
         Returns:
             Price history data (placeholder for now)
         """
@@ -608,27 +615,26 @@ class ProductService:
                 {
                     "price": product.unit_price,
                     "date": datetime.now().isoformat(),
-                    "change_reason": "Current price"
+                    "change_reason": "Current price",
                 }
-            ]
+            ],
         }
 
-    async def validate_product_availability(self, product_ids: builtins.list[int]) -> dict[int, bool]:
+    async def validate_product_availability(
+        self, product_ids: builtins.list[int]
+    ) -> dict[int, bool]:
         """
         Validate if products are available for purchase.
         Used by Order Service to check availability before order creation.
-        
+
         Args:
             product_ids: List of product IDs to check
-            
+
         Returns:
             Dict mapping product_id -> availability status
         """
         statement = select(Product).where(
-            and_(
-                Product.product_id.in_(product_ids),
-                Product.status == "ACTIVE"
-            )
+            and_(Product.product_id.in_(product_ids), Product.status == "ACTIVE")
         )
         result = await self.session.exec(statement)
         available_products = {p.product_id: p.stock_quantity > 0 for p in result.all()}

@@ -86,8 +86,7 @@ class TestAuthenticationSecurity:
 
         # Create token with short expiration
         short_token = create_access_token(
-            data=user_data,
-            expires_delta=timedelta(seconds=1)
+            data=user_data, expires_delta=timedelta(seconds=1)
         )
 
         # Token should be valid immediately
@@ -96,6 +95,7 @@ class TestAuthenticationSecurity:
 
         # Wait for token to expire
         import time
+
         time.sleep(2)
 
         # Expired token should be invalid
@@ -120,7 +120,7 @@ class TestAuthenticationSecurity:
         token = create_access_token(data=user_data)
 
         # Try to decode with wrong secret
-        with patch('app.core.security.settings.SECRET_KEY', 'wrong_secret'):
+        with patch("app.core.security.settings.SECRET_KEY", "wrong_secret"):
             with pytest.raises(jwt.InvalidSignatureError):
                 decode_access_token(token)
 
@@ -136,7 +136,7 @@ class TestAuthenticationSecurity:
             "1234567",
             "letmein",
             "monkey",
-            "dragon"
+            "dragon",
         ]
 
         for weak_password in weak_passwords:
@@ -191,7 +191,7 @@ class TestAuthenticationEndpoints:
         # Test successful login
         response = client.post(
             "/api/v1/login/access-token",
-            data={"username": "test@example.com", "password": "testpassword123"}
+            data={"username": "test@example.com", "password": "testpassword123"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -211,7 +211,10 @@ class TestAuthenticationEndpoints:
         for _ in range(10):
             response = client.post(
                 "/api/v1/login/access-token",
-                data={"username": "bruteforce@example.com", "password": "wrongpassword"}
+                data={
+                    "username": "bruteforce@example.com",
+                    "password": "wrongpassword",
+                },
             )
             if response.status_code == 401:
                 failed_attempts += 1
@@ -229,13 +232,13 @@ class TestAuthenticationEndpoints:
             "admin'; DROP TABLE users; --",
             "admin' UNION SELECT * FROM users --",
             "'; UPDATE users SET password = 'hacked' --",
-            "admin' OR 1=1 --"
+            "admin' OR 1=1 --",
         ]
 
         for injection_attempt in sql_injection_attempts:
             response = client.post(
                 "/api/v1/login/access-token",
-                data={"username": injection_attempt, "password": "anypassword"}
+                data={"username": injection_attempt, "password": "anypassword"},
             )
 
             # Should return 401 or 422, never 200
@@ -252,13 +255,13 @@ class TestAuthenticationEndpoints:
             "javascript:alert('xss')",
             "<img src=x onerror=alert('xss')>",
             "'><script>alert('xss')</script>",
-            "\"><script>alert('xss')</script>"
+            "\"><script>alert('xss')</script>",
         ]
 
         for xss_attempt in xss_attempts:
             response = client.post(
                 "/api/v1/login/access-token",
-                data={"username": xss_attempt, "password": "anypassword"}
+                data={"username": xss_attempt, "password": "anypassword"},
             )
 
             # Response should not contain unescaped XSS payload
@@ -281,17 +284,18 @@ class TestAuthenticationEndpoints:
             "Bearer invalid_token",
             "Bearer ",
             "",
-            "notbearer token_value"
+            "notbearer token_value",
         ]
 
         for invalid_token in invalid_tokens:
             response = client.get(
-                "/api/v1/users/me",
-                headers={"Authorization": invalid_token}
+                "/api/v1/users/me", headers={"Authorization": invalid_token}
             )
             assert response.status_code == 401
 
-    def test_token_replay_attack_prevention(self, client: TestClient, superuser_token_headers: dict):
+    def test_token_replay_attack_prevention(
+        self, client: TestClient, superuser_token_headers: dict
+    ):
         """Test token replay attack prevention."""
         # Use the same token multiple times rapidly
         responses = []
@@ -313,7 +317,7 @@ class TestAuthenticationEndpoints:
         # Request password reset
         response = client.post(
             "/api/v1/password-recovery/reset-password",
-            json={"email": "reset@example.com"}
+            json={"email": "reset@example.com"},
         )
 
         # Should not reveal if email exists or not
@@ -321,7 +325,10 @@ class TestAuthenticationEndpoints:
 
         # Response should be generic
         data = response.json()
-        assert "sent" in data.get("message", "").lower() or "email" in data.get("message", "").lower()
+        assert (
+            "sent" in data.get("message", "").lower()
+            or "email" in data.get("message", "").lower()
+        )
 
     def test_user_enumeration_prevention(self, client: TestClient, db: Session):
         """Test prevention of user enumeration attacks."""
@@ -333,13 +340,13 @@ class TestAuthenticationEndpoints:
         # Test with existing email
         response1 = client.post(
             "/api/v1/login/access-token",
-            data={"username": "existing@example.com", "password": "wrongpassword"}
+            data={"username": "existing@example.com", "password": "wrongpassword"},
         )
 
         # Test with non-existing email
         response2 = client.post(
             "/api/v1/login/access-token",
-            data={"username": "nonexisting@example.com", "password": "wrongpassword"}
+            data={"username": "nonexisting@example.com", "password": "wrongpassword"},
         )
 
         # Both should return same error to prevent enumeration
@@ -377,7 +384,7 @@ class TestAuthenticationEndpoints:
             "X-Content-Type-Options",
             "X-Frame-Options",
             "X-XSS-Protection",
-            "Strict-Transport-Security"
+            "Strict-Transport-Security",
         ]
 
         # Note: These headers should be implemented in your middleware
@@ -402,14 +409,14 @@ class TestAuthorizationSecurity:
         # Get tokens for both users
         admin_response = client.post(
             "/api/v1/login/access-token",
-            data={"username": "admin@example.com", "password": "testpassword123"}
+            data={"username": "admin@example.com", "password": "testpassword123"},
         )
         admin_token = admin_response.json()["access_token"]
         admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
         user_response = client.post(
             "/api/v1/login/access-token",
-            data={"username": "user@example.com", "password": "testpassword123"}
+            data={"username": "user@example.com", "password": "testpassword123"},
         )
         user_token = user_response.json()["access_token"]
         user_headers = {"Authorization": f"Bearer {user_token}"}
@@ -422,26 +429,28 @@ class TestAuthorizationSecurity:
         user_admin_response = client.get("/api/v1/users/", headers=user_headers)
         assert user_admin_response.status_code == 403
 
-    def test_privilege_escalation_prevention(self, client: TestClient, normal_user_token_headers: dict):
+    def test_privilege_escalation_prevention(
+        self, client: TestClient, normal_user_token_headers: dict
+    ):
         """Test prevention of privilege escalation."""
         # Try to create admin user as normal user
         admin_user_data = {
             "email": "malicious@example.com",
             "full_name": "Malicious User",
             "password": "password123",
-            "is_superuser": True  # Try to escalate privileges
+            "is_superuser": True,  # Try to escalate privileges
         }
 
         response = client.post(
-            "/api/v1/users/",
-            headers=normal_user_token_headers,
-            json=admin_user_data
+            "/api/v1/users/", headers=normal_user_token_headers, json=admin_user_data
         )
 
         # Should be forbidden
         assert response.status_code == 403
 
-    def test_horizontal_privilege_escalation_prevention(self, client: TestClient, db: Session):
+    def test_horizontal_privilege_escalation_prevention(
+        self, client: TestClient, db: Session
+    ):
         """Test prevention of horizontal privilege escalation."""
         # Create two normal users
         user1 = UserFactory(email="user1@example.com")
@@ -453,7 +462,7 @@ class TestAuthorizationSecurity:
         # Get token for user1
         response = client.post(
             "/api/v1/login/access-token",
-            data={"username": "user1@example.com", "password": "testpassword123"}
+            data={"username": "user1@example.com", "password": "testpassword123"},
         )
         user1_token = response.json()["access_token"]
         user1_headers = {"Authorization": f"Bearer {user1_token}"}
@@ -470,7 +479,9 @@ class TestAuthorizationSecurity:
         # resource ownership patterns (carts, orders, etc.)
         pass
 
-    def test_api_rate_limiting_by_user(self, client: TestClient, normal_user_token_headers: dict):
+    def test_api_rate_limiting_by_user(
+        self, client: TestClient, normal_user_token_headers: dict
+    ):
         """Test rate limiting per user."""
         # Make rapid requests
         responses = []

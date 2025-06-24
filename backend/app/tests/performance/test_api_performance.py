@@ -26,22 +26,31 @@ class TestAPIPerformance:
     def large_dataset(self, db: Session) -> list:
         """Create a large dataset for performance testing."""
         products = []
-        for i in range(100):
+        for _i in range(100):
             product, _ = create_product_with_stock(db, stock_quantity=100)
             products.append(product)
         return products
 
-    def test_product_list_endpoint_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_product_list_endpoint_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance of product list endpoint."""
         # Warm up
-        response = performance_client.get("/api/v1/products/", headers=superuser_token_headers)
+        response = performance_client.get(
+            "/api/v1/products/", headers=superuser_token_headers
+        )
         assert response.status_code == 200
 
         # Performance test
         times = []
         for _ in range(10):
             start_time = time.time()
-            response = performance_client.get("/api/v1/products/", headers=superuser_token_headers)
+            response = performance_client.get(
+                "/api/v1/products/", headers=superuser_token_headers
+            )
             end_time = time.time()
 
             assert response.status_code == 200
@@ -56,9 +65,16 @@ class TestAPIPerformance:
         assert avg_time < 0.5, f"Average response time too high: {avg_time:.3f}s"
         assert max_time < 1.0, f"Max response time too high: {max_time:.3f}s"
 
-        print(f"Product List Performance - Avg: {avg_time:.3f}s, Min: {min_time:.3f}s, Max: {max_time:.3f}s")
+        print(
+            f"Product List Performance - Avg: {avg_time:.3f}s, Min: {min_time:.3f}s, Max: {max_time:.3f}s"
+        )
 
-    def test_product_search_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_product_search_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance of product search endpoint."""
         search_terms = ["protein", "whey", "creatine", "vitamin", "amino"]
 
@@ -66,8 +82,7 @@ class TestAPIPerformance:
         for term in search_terms:
             start_time = time.time()
             response = performance_client.get(
-                f"/api/v1/products/search?q={term}",
-                headers=superuser_token_headers
+                f"/api/v1/products/search?q={term}", headers=superuser_token_headers
             )
             end_time = time.time()
 
@@ -81,9 +96,16 @@ class TestAPIPerformance:
         assert avg_time < 0.3, f"Average search time too high: {avg_time:.3f}s"
         assert max_time < 0.5, f"Max search time too high: {max_time:.3f}s"
 
-        print(f"Product Search Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s")
+        print(
+            f"Product Search Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s"
+        )
 
-    def test_single_product_retrieval_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_single_product_retrieval_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance of single product retrieval."""
         # Test with multiple products
         test_products = large_dataset[:10]
@@ -93,7 +115,7 @@ class TestAPIPerformance:
             start_time = time.time()
             response = performance_client.get(
                 f"/api/v1/products/{product.product_id}",
-                headers=superuser_token_headers
+                headers=superuser_token_headers,
             )
             end_time = time.time()
 
@@ -104,12 +126,21 @@ class TestAPIPerformance:
         max_time = max(times)
 
         # Single product retrieval should be very fast
-        assert avg_time < 0.2, f"Average single product retrieval too slow: {avg_time:.3f}s"
+        assert (
+            avg_time < 0.2
+        ), f"Average single product retrieval too slow: {avg_time:.3f}s"
         assert max_time < 0.3, f"Max single product retrieval too slow: {max_time:.3f}s"
 
-        print(f"Single Product Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s")
+        print(
+            f"Single Product Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s"
+        )
 
-    def test_concurrent_api_requests_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_concurrent_api_requests_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test API performance under concurrent load."""
 
         def make_request(endpoint: str) -> float:
@@ -154,13 +185,24 @@ class TestAPIPerformance:
         p95_time = statistics.quantiles(times, n=20)[18]  # 95th percentile
 
         # Performance assertions for concurrent load
-        assert avg_time < 0.8, f"Average concurrent response time too high: {avg_time:.3f}s"
+        assert (
+            avg_time < 0.8
+        ), f"Average concurrent response time too high: {avg_time:.3f}s"
         assert max_time < 2.0, f"Max concurrent response time too high: {max_time:.3f}s"
-        assert p95_time < 1.0, f"95th percentile response time too high: {p95_time:.3f}s"
+        assert (
+            p95_time < 1.0
+        ), f"95th percentile response time too high: {p95_time:.3f}s"
 
-        print(f"Concurrent Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s, P95: {p95_time:.3f}s")
+        print(
+            f"Concurrent Performance - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s, P95: {p95_time:.3f}s"
+        )
 
-    def test_pagination_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_pagination_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance of paginated endpoints."""
         page_sizes = [10, 25, 50, 100]
 
@@ -172,7 +214,7 @@ class TestAPIPerformance:
                 start_time = time.time()
                 response = performance_client.get(
                     f"/api/v1/products/?skip={page * page_size}&limit={page_size}",
-                    headers=superuser_token_headers
+                    headers=superuser_token_headers,
                 )
                 end_time = time.time()
 
@@ -187,11 +229,20 @@ class TestAPIPerformance:
 
             # Pagination should scale reasonably
             assert avg_time < 0.5, f"Page size {page_size} too slow: {avg_time:.3f}s"
-            assert max_time < 0.8, f"Page size {page_size} max time too high: {max_time:.3f}s"
+            assert (
+                max_time < 0.8
+            ), f"Page size {page_size} max time too high: {max_time:.3f}s"
 
-            print(f"Pagination Performance (size {page_size}) - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s")
+            print(
+                f"Pagination Performance (size {page_size}) - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s"
+            )
 
-    def test_filtering_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_filtering_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance of filtered queries."""
         filters = [
             {"category": "proteins"},
@@ -209,8 +260,7 @@ class TestAPIPerformance:
 
                 start_time = time.time()
                 response = performance_client.get(
-                    f"/api/v1/products/?{query_string}",
-                    headers=superuser_token_headers
+                    f"/api/v1/products/?{query_string}", headers=superuser_token_headers
                 )
                 end_time = time.time()
 
@@ -222,11 +272,20 @@ class TestAPIPerformance:
 
             # Filtered queries should be optimized
             assert avg_time < 0.4, f"Filter {filter_params} too slow: {avg_time:.3f}s"
-            assert max_time < 0.6, f"Filter {filter_params} max time too high: {max_time:.3f}s"
+            assert (
+                max_time < 0.6
+            ), f"Filter {filter_params} max time too high: {max_time:.3f}s"
 
-            print(f"Filter Performance {filter_params} - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s")
+            print(
+                f"Filter Performance {filter_params} - Avg: {avg_time:.3f}s, Max: {max_time:.3f}s"
+            )
 
-    def test_cache_performance_impact(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_cache_performance_impact(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test performance impact of caching."""
         endpoint = "/api/v1/products/"
 
@@ -255,16 +314,28 @@ class TestAPIPerformance:
 
         # Cache should provide significant performance improvement
         improvement_ratio = avg_cache_miss / avg_cache_hit
-        assert improvement_ratio > 1.5, f"Cache improvement insufficient: {improvement_ratio:.2f}x"
+        assert (
+            improvement_ratio > 1.5
+        ), f"Cache improvement insufficient: {improvement_ratio:.2f}x"
 
-        print(f"Cache Performance - Miss: {avg_cache_miss:.3f}s, Hit: {avg_cache_hit:.3f}s, Improvement: {improvement_ratio:.2f}x")
+        print(
+            f"Cache Performance - Miss: {avg_cache_miss:.3f}s, Hit: {avg_cache_hit:.3f}s, Improvement: {improvement_ratio:.2f}x"
+        )
 
     @pytest.mark.benchmark
-    def test_database_query_performance(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset, benchmark):
+    def test_database_query_performance(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+        benchmark,
+    ):
         """Benchmark database query performance."""
 
         def query_products():
-            response = performance_client.get("/api/v1/products/", headers=superuser_token_headers)
+            response = performance_client.get(
+                "/api/v1/products/", headers=superuser_token_headers
+            )
             assert response.status_code == 200
             return response.json()
 
@@ -277,7 +348,12 @@ class TestAPIPerformance:
 
         print(f"Database Query Benchmark - Mean: {benchmark.stats.mean:.3f}s")
 
-    def test_memory_usage_during_large_requests(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_memory_usage_during_large_requests(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test memory usage during large data requests."""
         import os
 
@@ -290,8 +366,7 @@ class TestAPIPerformance:
 
         # Make large request
         response = performance_client.get(
-            "/api/v1/products/?limit=1000",
-            headers=superuser_token_headers
+            "/api/v1/products/?limit=1000", headers=superuser_token_headers
         )
         assert response.status_code == 200
 
@@ -300,13 +375,24 @@ class TestAPIPerformance:
         memory_increase = peak_memory - baseline_memory
 
         # Memory increase should be reasonable
-        assert memory_increase < 100, f"Memory increase too high: {memory_increase:.2f}MB"
+        assert (
+            memory_increase < 100
+        ), f"Memory increase too high: {memory_increase:.2f}MB"
 
-        print(f"Memory Usage - Baseline: {baseline_memory:.2f}MB, Peak: {peak_memory:.2f}MB, Increase: {memory_increase:.2f}MB")
+        print(
+            f"Memory Usage - Baseline: {baseline_memory:.2f}MB, Peak: {peak_memory:.2f}MB, Increase: {memory_increase:.2f}MB"
+        )
 
-    def test_response_size_optimization(self, performance_client: TestClient, superuser_token_headers: dict, large_dataset):
+    def test_response_size_optimization(
+        self,
+        performance_client: TestClient,
+        superuser_token_headers: dict,
+        large_dataset,
+    ):
         """Test response size optimization."""
-        response = performance_client.get("/api/v1/products/?limit=50", headers=superuser_token_headers)
+        response = performance_client.get(
+            "/api/v1/products/?limit=50", headers=superuser_token_headers
+        )
         assert response.status_code == 200
 
         # Check response size
@@ -323,11 +409,15 @@ class TestAPIPerformance:
 
         print(f"Response Size - {response_size_kb:.2f}KB for 50 products")
 
-    def test_connection_pool_performance(self, performance_client: TestClient, superuser_token_headers: dict):
+    def test_connection_pool_performance(
+        self, performance_client: TestClient, superuser_token_headers: dict
+    ):
         """Test database connection pool performance."""
 
         def make_db_request():
-            response = performance_client.get("/api/v1/products/?limit=10", headers=superuser_token_headers)
+            response = performance_client.get(
+                "/api/v1/products/?limit=10", headers=superuser_token_headers
+            )
             assert response.status_code == 200
             return response
 
@@ -346,14 +436,18 @@ class TestAPIPerformance:
         assert avg_time < 0.3, f"Average connection time too high: {avg_time:.3f}s"
         assert variance < 0.01, f"Performance variance too high: {variance:.6f}"
 
-        print(f"Connection Pool Performance - Avg: {avg_time:.3f}s, Variance: {variance:.6f}")
+        print(
+            f"Connection Pool Performance - Avg: {avg_time:.3f}s, Variance: {variance:.6f}"
+        )
 
 
 @pytest.mark.load_test
 class TestLoadTesting:
     """Load testing scenarios."""
 
-    def test_sustained_load_simulation(self, performance_client: TestClient, superuser_token_headers: dict):
+    def test_sustained_load_simulation(
+        self, performance_client: TestClient, superuser_token_headers: dict
+    ):
         """Simulate sustained load over time."""
         duration_seconds = 30
         requests_per_second = 5
@@ -368,7 +462,9 @@ class TestLoadTesting:
             # Make requests for this second
             for _ in range(requests_per_second):
                 request_start = time.time()
-                response = performance_client.get("/api/v1/products/?limit=10", headers=superuser_token_headers)
+                response = performance_client.get(
+                    "/api/v1/products/?limit=10", headers=superuser_token_headers
+                )
                 request_end = time.time()
 
                 assert response.status_code == 200
@@ -384,7 +480,13 @@ class TestLoadTesting:
         avg_response_time = statistics.mean(request_times)
         max_response_time = max(request_times)
 
-        assert avg_response_time < 0.5, f"Sustained load avg response time too high: {avg_response_time:.3f}s"
-        assert max_response_time < 1.0, f"Sustained load max response time too high: {max_response_time:.3f}s"
+        assert (
+            avg_response_time < 0.5
+        ), f"Sustained load avg response time too high: {avg_response_time:.3f}s"
+        assert (
+            max_response_time < 1.0
+        ), f"Sustained load max response time too high: {max_response_time:.3f}s"
 
-        print(f"Sustained Load Test - {request_count} requests, Avg: {avg_response_time:.3f}s, Max: {max_response_time:.3f}s")
+        print(
+            f"Sustained Load Test - {request_count} requests, Avg: {avg_response_time:.3f}s, Max: {max_response_time:.3f}s"
+        )

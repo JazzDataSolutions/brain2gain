@@ -26,7 +26,9 @@ class TestCartService:
         """Create a CartService instance with mocked dependencies."""
         return CartService(repository=mock_repository)
 
-    def test_add_product_to_cart_new_item(self, service: CartService, mock_repository: Mock):
+    def test_add_product_to_cart_new_item(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test adding a new product to cart."""
         # Setup
         user_id = uuid4()
@@ -34,14 +36,12 @@ class TestCartService:
         quantity = 2
 
         cart = CartFactory(user_id=user_id)
-        product = ProductFactory(product_id=product_id, unit_price=Decimal("45.99"))
+        ProductFactory(product_id=product_id, unit_price=Decimal("45.99"))
 
         mock_repository.get_or_create_cart.return_value = cart
         mock_repository.get_cart_item.return_value = None  # Item doesn't exist
         mock_repository.add_cart_item.return_value = CartItemFactory(
-            cart_id=cart.cart_id,
-            product_id=product_id,
-            quantity=quantity
+            cart_id=cart.cart_id, product_id=product_id, quantity=quantity
         )
 
         # Execute
@@ -51,9 +51,13 @@ class TestCartService:
         assert result is not None
         mock_repository.get_or_create_cart.assert_called_once_with(user_id)
         mock_repository.get_cart_item.assert_called_once_with(cart.cart_id, product_id)
-        mock_repository.add_cart_item.assert_called_once_with(cart.cart_id, product_id, quantity)
+        mock_repository.add_cart_item.assert_called_once_with(
+            cart.cart_id, product_id, quantity
+        )
 
-    def test_add_product_to_cart_existing_item(self, service: CartService, mock_repository: Mock):
+    def test_add_product_to_cart_existing_item(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test adding quantity to existing cart item."""
         # Setup
         user_id = uuid4()
@@ -63,14 +67,12 @@ class TestCartService:
 
         cart = CartFactory(user_id=user_id)
         existing_item = CartItemFactory(
-            cart_id=cart.cart_id,
-            product_id=product_id,
-            quantity=existing_quantity
+            cart_id=cart.cart_id, product_id=product_id, quantity=existing_quantity
         )
         updated_item = CartItemFactory(
             cart_id=cart.cart_id,
             product_id=product_id,
-            quantity=existing_quantity + additional_quantity
+            quantity=existing_quantity + additional_quantity,
         )
 
         mock_repository.get_or_create_cart.return_value = cart
@@ -83,11 +85,12 @@ class TestCartService:
         # Assert
         assert result is not None
         mock_repository.update_cart_item_quantity.assert_called_once_with(
-            existing_item.cart_item_id,
-            existing_quantity + additional_quantity
+            existing_item.cart_item_id, existing_quantity + additional_quantity
         )
 
-    def test_update_cart_item_quantity_valid(self, service: CartService, mock_repository: Mock):
+    def test_update_cart_item_quantity_valid(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test updating cart item quantity with valid quantity."""
         # Setup
         user_id = uuid4()
@@ -106,10 +109,16 @@ class TestCartService:
 
         # Assert
         assert result == updated_item
-        mock_repository.verify_cart_ownership.assert_called_once_with(cart_item.cart_id, user_id)
-        mock_repository.update_cart_item_quantity.assert_called_once_with(cart_item_id, new_quantity)
+        mock_repository.verify_cart_ownership.assert_called_once_with(
+            cart_item.cart_id, user_id
+        )
+        mock_repository.update_cart_item_quantity.assert_called_once_with(
+            cart_item_id, new_quantity
+        )
 
-    def test_update_cart_item_quantity_invalid_quantity(self, service: CartService, mock_repository: Mock):
+    def test_update_cart_item_quantity_invalid_quantity(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test updating cart item with invalid quantity."""
         # Setup
         user_id = uuid4()
@@ -120,7 +129,9 @@ class TestCartService:
         with pytest.raises(ValueError, match="Quantity must be greater than 0"):
             service.update_cart_item_quantity(user_id, cart_item_id, invalid_quantity)
 
-    def test_update_cart_item_quantity_unauthorized(self, service: CartService, mock_repository: Mock):
+    def test_update_cart_item_quantity_unauthorized(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test updating cart item without ownership."""
         # Setup
         user_id = uuid4()
@@ -135,7 +146,9 @@ class TestCartService:
         with pytest.raises(PermissionError, match="User does not own this cart"):
             service.update_cart_item_quantity(user_id, cart_item_id, new_quantity)
 
-    def test_remove_cart_item_success(self, service: CartService, mock_repository: Mock):
+    def test_remove_cart_item_success(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test removing cart item successfully."""
         # Setup
         user_id = uuid4()
@@ -153,7 +166,9 @@ class TestCartService:
         assert result is True
         mock_repository.remove_cart_item.assert_called_once_with(cart_item_id)
 
-    def test_remove_cart_item_not_found(self, service: CartService, mock_repository: Mock):
+    def test_remove_cart_item_not_found(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test removing non-existent cart item."""
         # Setup
         user_id = uuid4()
@@ -168,14 +183,16 @@ class TestCartService:
         assert result is False
         mock_repository.remove_cart_item.assert_not_called()
 
-    def test_get_user_cart_with_items(self, service: CartService, mock_repository: Mock):
+    def test_get_user_cart_with_items(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test getting user cart with items."""
         # Setup
         user_id = uuid4()
         cart = CartFactory(user_id=user_id)
         cart_items = [
             CartItemFactory(cart_id=cart.cart_id, quantity=2),
-            CartItemFactory(cart_id=cart.cart_id, quantity=1)
+            CartItemFactory(cart_id=cart.cart_id, quantity=1),
         ]
 
         mock_repository.get_user_cart.return_value = cart
@@ -218,13 +235,17 @@ class TestCartService:
         product2 = ProductFactory(unit_price=Decimal("29.99"))
 
         cart_items = [
-            CartItemFactory(cart_id=cart_id, product_id=product1.product_id, quantity=2),
-            CartItemFactory(cart_id=cart_id, product_id=product2.product_id, quantity=1)
+            CartItemFactory(
+                cart_id=cart_id, product_id=product1.product_id, quantity=2
+            ),
+            CartItemFactory(
+                cart_id=cart_id, product_id=product2.product_id, quantity=1
+            ),
         ]
 
         mock_repository.get_cart_items_with_products.return_value = [
             (cart_items[0], product1),
-            (cart_items[1], product2)
+            (cart_items[1], product2),
         ]
 
         # Execute
@@ -264,7 +285,9 @@ class TestCartService:
         assert result is False
         mock_repository.clear_cart.assert_not_called()
 
-    def test_merge_session_cart_with_user_cart(self, service: CartService, mock_repository: Mock):
+    def test_merge_session_cart_with_user_cart(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test merging session cart with user cart after login."""
         # Setup
         user_id = uuid4()
@@ -275,7 +298,7 @@ class TestCartService:
 
         session_items = [
             CartItemFactory(cart_id=session_cart.cart_id, quantity=2),
-            CartItemFactory(cart_id=session_cart.cart_id, quantity=1)
+            CartItemFactory(cart_id=session_cart.cart_id, quantity=1),
         ]
 
         mock_repository.get_user_cart.return_value = user_cart
@@ -293,7 +316,9 @@ class TestCartService:
         assert mock_repository.add_cart_item.call_count == 2
         mock_repository.delete_cart.assert_called_once_with(session_cart.cart_id)
 
-    def test_validate_cart_item_stock_availability(self, service: CartService, mock_repository: Mock):
+    def test_validate_cart_item_stock_availability(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test validating cart items against stock availability."""
         # Setup
         cart_id = uuid4()
@@ -302,14 +327,18 @@ class TestCartService:
         product2 = ProductFactory(product_id=uuid4())
 
         cart_items = [
-            CartItemFactory(cart_id=cart_id, product_id=product1.product_id, quantity=5),
-            CartItemFactory(cart_id=cart_id, product_id=product2.product_id, quantity=2)
+            CartItemFactory(
+                cart_id=cart_id, product_id=product1.product_id, quantity=5
+            ),
+            CartItemFactory(
+                cart_id=cart_id, product_id=product2.product_id, quantity=2
+            ),
         ]
 
         mock_repository.get_cart_items.return_value = cart_items
         mock_repository.check_product_stock.side_effect = [
             {"available": True, "stock": 10},  # Product 1 has enough stock
-            {"available": False, "stock": 1}   # Product 2 doesn't have enough stock
+            {"available": False, "stock": 1},  # Product 2 doesn't have enough stock
         ]
 
         # Execute
@@ -333,10 +362,10 @@ class TestCartService:
         mock_repository.validate_discount_code.return_value = {
             "valid": True,
             "discount_type": "percentage",
-            "discount_value": discount_percentage
+            "discount_value": discount_percentage,
         }
 
-        with patch.object(service, 'calculate_cart_total', return_value=cart_total):
+        with patch.object(service, "calculate_cart_total", return_value=cart_total):
             # Execute
             result = service.apply_discount(cart_id, discount_code)
 
@@ -349,7 +378,9 @@ class TestCartService:
             assert result["discount_amount"] == expected_discount
             assert result["final_total"] == expected_final_total
 
-    def test_apply_invalid_discount_code(self, service: CartService, mock_repository: Mock):
+    def test_apply_invalid_discount_code(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test applying invalid discount code."""
         # Setup
         cart_id = uuid4()
@@ -357,7 +388,7 @@ class TestCartService:
 
         mock_repository.validate_discount_code.return_value = {
             "valid": False,
-            "reason": "Code not found"
+            "reason": "Code not found",
         }
 
         # Execute
@@ -367,7 +398,9 @@ class TestCartService:
         assert result["discount_applied"] is False
         assert result["error"] == "Code not found"
 
-    def test_get_cart_summary_with_totals(self, service: CartService, mock_repository: Mock):
+    def test_get_cart_summary_with_totals(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test getting comprehensive cart summary."""
         # Setup
         user_id = uuid4()
@@ -377,14 +410,18 @@ class TestCartService:
         product2 = ProductFactory(unit_price=Decimal("29.99"))
 
         cart_items = [
-            CartItemFactory(cart_id=cart.cart_id, product_id=product1.product_id, quantity=2),
-            CartItemFactory(cart_id=cart.cart_id, product_id=product2.product_id, quantity=1)
+            CartItemFactory(
+                cart_id=cart.cart_id, product_id=product1.product_id, quantity=2
+            ),
+            CartItemFactory(
+                cart_id=cart.cart_id, product_id=product2.product_id, quantity=1
+            ),
         ]
 
         mock_repository.get_user_cart.return_value = cart
         mock_repository.get_cart_items_with_products.return_value = [
             (cart_items[0], product1),
-            (cart_items[1], product2)
+            (cart_items[1], product2),
         ]
 
         # Execute
@@ -398,7 +435,9 @@ class TestCartService:
         assert len(summary["items"]) == 2
 
     @pytest.mark.asyncio
-    async def test_async_cart_operations(self, service: CartService, mock_repository: Mock):
+    async def test_async_cart_operations(
+        self, service: CartService, mock_repository: Mock
+    ):
         """Test asynchronous cart operations."""
         # Setup
         user_id = uuid4()
@@ -406,11 +445,13 @@ class TestCartService:
 
         # Mock async repository methods
         async def mock_async_add_items(cart_id, items):
-            return [CartItemFactory(cart_id=cart_id, product_id=item["product_id"]) for item in items]
+            return [
+                CartItemFactory(cart_id=cart_id, product_id=item["product_id"])
+                for item in items
+            ]
 
         mock_repository.async_add_multiple_items.return_value = mock_async_add_items(
-            uuid4(),
-            [{"product_id": pid, "quantity": 1} for pid in product_ids]
+            uuid4(), [{"product_id": pid, "quantity": 1} for pid in product_ids]
         )
 
         # Execute

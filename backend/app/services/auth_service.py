@@ -37,7 +37,7 @@ class AuthService:
         self,
         subject: str | Any,
         expires_delta: timedelta | None = None,
-        scopes: list[str] | None = None
+        scopes: list[str] | None = None,
     ) -> str:
         """Create JWT access token with optional scopes"""
         if expires_delta:
@@ -52,23 +52,19 @@ class AuthService:
             "sub": str(subject),
             "type": "access",
             "iat": datetime.now(timezone.utc),
-            "jti": str(uuid.uuid4())  # JWT ID for token tracking
+            "jti": str(uuid.uuid4()),  # JWT ID for token tracking
         }
 
         if scopes:
             to_encode["scopes"] = scopes
 
         encoded_jwt = jwt.encode(
-            to_encode,
-            settings.SECRET_KEY,
-            algorithm=self.algorithm
+            to_encode, settings.SECRET_KEY, algorithm=self.algorithm
         )
         return encoded_jwt
 
     def create_refresh_token(
-        self,
-        subject: str | Any,
-        expires_delta: timedelta | None = None
+        self, subject: str | Any, expires_delta: timedelta | None = None
     ) -> str:
         """Create JWT refresh token"""
         if expires_delta:
@@ -81,13 +77,11 @@ class AuthService:
             "sub": str(subject),
             "type": "refresh",
             "iat": datetime.now(timezone.utc),
-            "jti": str(uuid.uuid4())  # JWT ID for token tracking
+            "jti": str(uuid.uuid4()),  # JWT ID for token tracking
         }
 
         encoded_jwt = jwt.encode(
-            to_encode,
-            settings.SECRET_KEY,
-            algorithm=self.algorithm
+            to_encode, settings.SECRET_KEY, algorithm=self.algorithm
         )
         return encoded_jwt
 
@@ -95,9 +89,7 @@ class AuthService:
         """Verify and decode JWT token"""
         try:
             payload = jwt.decode(
-                token,
-                settings.SECRET_KEY,
-                algorithms=[self.algorithm]
+                token, settings.SECRET_KEY, algorithms=[self.algorithm]
             )
             return payload
         except JWTError as e:
@@ -139,7 +131,7 @@ class AuthService:
         if self.get_user_by_email(user_create.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email already registered"
+                detail="Email already registered",
             )
 
         with Session(engine) as session:
@@ -149,7 +141,7 @@ class AuthService:
                 email=user_create.email,
                 full_name=user_create.full_name,
                 hashed_password=hashed_password,
-                is_active=True
+                is_active=True,
             )
 
             session.add(user)
@@ -165,7 +157,7 @@ class AuthService:
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                detail="Could not validate credentials",
             )
 
         try:
@@ -173,20 +165,18 @@ class AuthService:
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid user ID format"
+                detail="Invalid user ID format",
             )
 
         user = self.get_user_by_id(user_uuid)
         if user is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="User not found"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
             )
 
         if not user.is_active:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Inactive user"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive user"
             )
 
         return user
@@ -209,15 +199,14 @@ class AuthService:
 
         if payload.get("type") != "refresh":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type"
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type"
             )
 
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
+                detail="Could not validate credentials",
             )
 
         # Verify user still exists and is active
@@ -227,12 +216,12 @@ class AuthService:
             if not user or not user.is_active:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found or inactive"
+                    detail="User not found or inactive",
                 )
         except ValueError:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid user ID format"
+                detail="Invalid user ID format",
             )
 
         # Create new access token

@@ -19,6 +19,7 @@ from app.core.database import get_db
 
 class EventType(str, Enum):
     """Domain event types for the system"""
+
     # Product Events
     PRODUCT_CREATED = "product.created"
     PRODUCT_UPDATED = "product.updated"
@@ -57,6 +58,7 @@ class EventType(str, Enum):
 @dataclass
 class DomainEvent:
     """Base domain event class"""
+
     id: UUID
     event_type: EventType
     aggregate_id: UUID
@@ -75,7 +77,7 @@ class DomainEvent:
             "data": self.data,
             "metadata": self.metadata,
             "occurred_at": self.occurred_at.isoformat(),
-            "version": self.version
+            "version": self.version,
         }
 
     @classmethod
@@ -88,7 +90,7 @@ class DomainEvent:
             data=data["data"],
             metadata=data["metadata"],
             occurred_at=datetime.fromisoformat(data["occurred_at"]),
-            version=data["version"]
+            version=data["version"],
         )
 
 
@@ -97,6 +99,7 @@ Base = declarative_base()
 
 class EventStore(Base):
     """Event store table for persisting domain events"""
+
     __tablename__ = "event_store"
 
     id = Column(PostgresUUID(as_uuid=True), primary_key=True, default=uuid4)
@@ -175,15 +178,13 @@ class EventRepository:
             data=json.dumps(event.data),
             event_metadata=json.dumps(event.metadata),
             occurred_at=event.occurred_at,
-            version=event.version
+            version=event.version,
         )
         self.db.add(db_event)
         await self.db.commit()
 
     async def get_events_by_aggregate(
-        self,
-        aggregate_id: UUID,
-        aggregate_type: str = None
+        self, aggregate_id: UUID, aggregate_type: str = None
     ) -> list[DomainEvent]:
         """Get all events for a specific aggregate"""
         query = self.db.query(EventStore).filter(
@@ -204,16 +205,20 @@ class EventRepository:
                 data=json.loads(event.data),
                 metadata=json.loads(event.event_metadata),
                 occurred_at=event.occurred_at,
-                version=event.version
+                version=event.version,
             )
             for event in events
         ]
 
     async def get_unprocessed_events(self, limit: int = 100) -> list[DomainEvent]:
         """Get unprocessed events for batch processing"""
-        events = await self.db.query(EventStore).filter(
-            EventStore.processed == False
-        ).order_by(EventStore.occurred_at).limit(limit).all()
+        events = (
+            await self.db.query(EventStore)
+            .filter(not EventStore.processed)
+            .order_by(EventStore.occurred_at)
+            .limit(limit)
+            .all()
+        )
 
         return [
             DomainEvent(
@@ -224,16 +229,16 @@ class EventRepository:
                 data=json.loads(event.data),
                 metadata=json.loads(event.event_metadata),
                 occurred_at=event.occurred_at,
-                version=event.version
+                version=event.version,
             )
             for event in events
         ]
 
     async def mark_event_processed(self, event_id: UUID) -> None:
         """Mark an event as processed"""
-        await self.db.query(EventStore).filter(
-            EventStore.id == event_id
-        ).update({"processed": True})
+        await self.db.query(EventStore).filter(EventStore.id == event_id).update(
+            {"processed": True}
+        )
         await self.db.commit()
 
 
@@ -259,21 +264,22 @@ class EventSourcingMixin:
         self,
         event_type: EventType,
         data: dict[str, Any],
-        metadata: dict[str, Any] = None
+        metadata: dict[str, Any] = None,
     ) -> DomainEvent:
         """Create a new domain event"""
         return DomainEvent(
             id=uuid4(),
             event_type=event_type,
-            aggregate_id=getattr(self, 'id', uuid4()),
+            aggregate_id=getattr(self, "id", uuid4()),
             aggregate_type=self.__class__.__name__,
             data=data,
             metadata=metadata or {},
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
 
 # Specific Event Handlers
+
 
 class InventoryEventHandler(EventHandler):
     """Handler for inventory-related events"""
@@ -291,7 +297,7 @@ class InventoryEventHandler(EventHandler):
             EventType.ORDER_CREATED,
             EventType.ORDER_CANCELLED,
             EventType.INVENTORY_STOCK_DECREASED,
-            EventType.INVENTORY_STOCK_INCREASED
+            EventType.INVENTORY_STOCK_INCREASED,
         ]
 
     async def _decrease_inventory(self, event: DomainEvent):
@@ -320,7 +326,7 @@ class NotificationEventHandler(EventHandler):
             EventType.ORDER_SHIPPED,
             EventType.ORDER_DELIVERED,
             EventType.INVENTORY_LOW_STOCK_ALERT,
-            EventType.USER_REGISTERED
+            EventType.USER_REGISTERED,
         ]
 
     async def _send_order_confirmation(self, event: DomainEvent):
@@ -357,7 +363,9 @@ async def publish_event(event: DomainEvent, persist: bool = True):
     await event_bus.publish(event)
 
 
-async def get_aggregate_events(aggregate_id: UUID, aggregate_type: str = None) -> list[DomainEvent]:
+async def get_aggregate_events(
+    aggregate_id: UUID, aggregate_type: str = None
+) -> list[DomainEvent]:
     """Get all events for an aggregate"""
     async with get_db() as db:
         event_repo = EventRepository(db)

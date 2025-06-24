@@ -21,4 +21,3 @@ class ProductRepository:
 
     async def add(self, product: Product) -> None:
         self.session.add(product)
-

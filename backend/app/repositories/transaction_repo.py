@@ -19,4 +19,3 @@ class TransactionRepository(IRepository[Transaction]):
     async def get_all(self) -> list[Transaction]:
         res = await self.session.execute(select(Transaction))
         return res.scalars().all()
-

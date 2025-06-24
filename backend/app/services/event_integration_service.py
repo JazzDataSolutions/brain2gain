@@ -19,7 +19,9 @@ class ProductEventService:
     """Service to integrate product operations with event sourcing"""
 
     @staticmethod
-    async def create_product_with_events(product_data: ProductCreate, user_id: UUID) -> dict[str, Any]:
+    async def create_product_with_events(
+        product_data: ProductCreate, user_id: UUID
+    ) -> dict[str, Any]:
         """Create product and publish domain event"""
         # Create the product event
         event = DomainEvent(
@@ -34,14 +36,14 @@ class ProductEventService:
                 "stock": product_data.stock,
                 "sku": product_data.sku,
                 "category": product_data.category,
-                "is_active": product_data.is_active
+                "is_active": product_data.is_active,
             },
             metadata={
                 "created_by": str(user_id),
                 "source": "product_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         # Publish the event
@@ -51,14 +53,12 @@ class ProductEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
     @staticmethod
     async def update_product_with_events(
-        product_id: UUID,
-        product_data: ProductUpdate,
-        user_id: UUID
+        product_id: UUID, product_data: ProductUpdate, user_id: UUID
     ) -> dict[str, Any]:
         """Update product and publish domain event"""
         event = DomainEvent(
@@ -70,9 +70,9 @@ class ProductEventService:
             metadata={
                 "updated_by": str(user_id),
                 "source": "product_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -81,15 +81,12 @@ class ProductEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
     @staticmethod
     async def update_stock_with_events(
-        product_id: UUID,
-        new_stock: int,
-        reason: str,
-        user_id: UUID
+        product_id: UUID, new_stock: int, reason: str, user_id: UUID
     ) -> dict[str, Any]:
         """Update product stock and publish domain event"""
         event = DomainEvent(
@@ -100,14 +97,14 @@ class ProductEventService:
             data={
                 "new_stock": new_stock,
                 "reason": reason,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.utcnow().isoformat(),
             },
             metadata={
                 "updated_by": str(user_id),
                 "source": "inventory_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -116,7 +113,7 @@ class ProductEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
 
@@ -124,7 +121,9 @@ class OrderEventService:
     """Service to integrate order operations with event sourcing"""
 
     @staticmethod
-    async def create_order_with_events(order_data: dict[str, Any], user_id: UUID) -> dict[str, Any]:
+    async def create_order_with_events(
+        order_data: dict[str, Any], user_id: UUID
+    ) -> dict[str, Any]:
         """Create order and publish domain events"""
         order_id = uuid4()
 
@@ -138,9 +137,9 @@ class OrderEventService:
             metadata={
                 "created_by": str(user_id),
                 "source": "order_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         # Publish order event (this will trigger inventory updates)
@@ -157,14 +156,14 @@ class OrderEventService:
                     data={
                         "quantity_decreased": item["quantity"],
                         "order_id": str(order_id),
-                        "reason": "order_created"
+                        "reason": "order_created",
                     },
                     metadata={
                         "triggered_by": str(order_event.id),
                         "source": "order_service",
-                        "version": "1.0"
+                        "version": "1.0",
                     },
-                    occurred_at=datetime.utcnow()
+                    occurred_at=datetime.utcnow(),
                 )
 
                 await publish_event(inventory_event)
@@ -173,7 +172,7 @@ class OrderEventService:
             "event_id": str(order_event.id),
             "aggregate_id": str(order_id),
             "event_type": order_event.event_type.value,
-            "occurred_at": order_event.occurred_at
+            "occurred_at": order_event.occurred_at,
         }
 
     @staticmethod
@@ -181,14 +180,14 @@ class OrderEventService:
         order_id: UUID,
         new_status: str,
         user_id: UUID,
-        additional_data: dict[str, Any] = None
+        additional_data: dict[str, Any] = None,
     ) -> dict[str, Any]:
         """Update order status and publish domain event"""
         # Determine event type based on status
         event_type_mapping = {
             "cancelled": EventType.ORDER_CANCELLED,
             "shipped": EventType.ORDER_SHIPPED,
-            "delivered": EventType.ORDER_DELIVERED
+            "delivered": EventType.ORDER_DELIVERED,
         }
 
         event_type = event_type_mapping.get(new_status.lower(), EventType.ORDER_UPDATED)
@@ -200,16 +199,18 @@ class OrderEventService:
             aggregate_type="Order",
             data={
                 "new_status": new_status,
-                "previous_status": additional_data.get("previous_status") if additional_data else None,
+                "previous_status": (
+                    additional_data.get("previous_status") if additional_data else None
+                ),
                 "updated_at": datetime.utcnow().isoformat(),
-                **(additional_data or {})
+                **(additional_data or {}),
             },
             metadata={
                 "updated_by": str(user_id),
                 "source": "order_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -218,7 +219,7 @@ class OrderEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
 
@@ -227,9 +228,7 @@ class CartEventService:
 
     @staticmethod
     async def add_item_to_cart_with_events(
-        cart_id: UUID,
-        item_data: CartItemCreate,
-        user_id: UUID
+        cart_id: UUID, item_data: CartItemCreate, user_id: UUID
     ) -> dict[str, Any]:
         """Add item to cart and publish domain event"""
         event = DomainEvent(
@@ -240,14 +239,16 @@ class CartEventService:
             data={
                 "product_id": str(item_data.product_id),
                 "quantity": item_data.quantity,
-                "price": float(item_data.price) if hasattr(item_data, 'price') else None
+                "price": (
+                    float(item_data.price) if hasattr(item_data, "price") else None
+                ),
             },
             metadata={
                 "user_id": str(user_id),
                 "source": "cart_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -256,14 +257,12 @@ class CartEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
     @staticmethod
     async def remove_item_from_cart_with_events(
-        cart_id: UUID,
-        product_id: UUID,
-        user_id: UUID
+        cart_id: UUID, product_id: UUID, user_id: UUID
     ) -> dict[str, Any]:
         """Remove item from cart and publish domain event"""
         event = DomainEvent(
@@ -273,14 +272,14 @@ class CartEventService:
             aggregate_type="Cart",
             data={
                 "product_id": str(product_id),
-                "removed_at": datetime.utcnow().isoformat()
+                "removed_at": datetime.utcnow().isoformat(),
             },
             metadata={
                 "user_id": str(user_id),
                 "source": "cart_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -289,7 +288,7 @@ class CartEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
 
@@ -310,14 +309,14 @@ class UserEventService:
                 "email": user_data.get("email"),
                 "full_name": user_data.get("full_name"),
                 "is_active": user_data.get("is_active", True),
-                "role": user_data.get("role", "user")
+                "role": user_data.get("role", "user"),
             },
             metadata={
                 "source": "auth_service",
                 "registration_method": user_data.get("registration_method", "email"),
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -326,7 +325,7 @@ class UserEventService:
             "event_id": str(event.id),
             "aggregate_id": str(user_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
 
@@ -335,9 +334,7 @@ class PaymentEventService:
 
     @staticmethod
     async def initiate_payment_with_events(
-        order_id: UUID,
-        payment_data: dict[str, Any],
-        user_id: UUID
+        order_id: UUID, payment_data: dict[str, Any], user_id: UUID
     ) -> dict[str, Any]:
         """Initiate payment and publish domain event"""
         payment_id = uuid4()
@@ -352,14 +349,14 @@ class PaymentEventService:
                 "amount": payment_data.get("amount"),
                 "currency": payment_data.get("currency", "USD"),
                 "payment_method": payment_data.get("payment_method"),
-                "gateway": payment_data.get("gateway", "stripe")
+                "gateway": payment_data.get("gateway", "stripe"),
             },
             metadata={
                 "user_id": str(user_id),
                 "source": "payment_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -368,14 +365,12 @@ class PaymentEventService:
             "event_id": str(event.id),
             "aggregate_id": str(payment_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
     @staticmethod
     async def complete_payment_with_events(
-        payment_id: UUID,
-        transaction_data: dict[str, Any],
-        user_id: UUID
+        payment_id: UUID, transaction_data: dict[str, Any], user_id: UUID
     ) -> dict[str, Any]:
         """Complete payment and publish domain event"""
         event = DomainEvent(
@@ -387,14 +382,14 @@ class PaymentEventService:
                 "transaction_id": transaction_data.get("transaction_id"),
                 "gateway_response": transaction_data.get("gateway_response"),
                 "amount_paid": transaction_data.get("amount_paid"),
-                "completed_at": datetime.utcnow().isoformat()
+                "completed_at": datetime.utcnow().isoformat(),
             },
             metadata={
                 "user_id": str(user_id),
                 "source": "payment_service",
-                "version": "1.0"
+                "version": "1.0",
             },
-            occurred_at=datetime.utcnow()
+            occurred_at=datetime.utcnow(),
         )
 
         await publish_event(event)
@@ -403,7 +398,7 @@ class PaymentEventService:
             "event_id": str(event.id),
             "aggregate_id": str(event.aggregate_id),
             "event_type": event.event_type.value,
-            "occurred_at": event.occurred_at
+            "occurred_at": event.occurred_at,
         }
 
 
@@ -457,7 +452,7 @@ class AggregateReconstructionService:
             "is_active": True,
             "created_at": None,
             "updated_at": None,
-            "events_count": len(events)
+            "events_count": len(events),
         }
 
         # Apply events in chronological order
@@ -487,27 +482,30 @@ class AggregateReconstructionService:
             "created_at": None,
             "updated_at": None,
             "status_history": [],
-            "events_count": len(events)
+            "events_count": len(events),
         }
 
         for event in events:
             if event.event_type == EventType.ORDER_CREATED:
                 state.update(event.data)
                 state["created_at"] = event.occurred_at.isoformat()
-                state["status_history"].append({
-                    "status": "created",
-                    "timestamp": event.occurred_at.isoformat()
-                })
-            elif event.event_type in [EventType.ORDER_UPDATED,
-                                      EventType.ORDER_CANCELLED,
-                                      EventType.ORDER_SHIPPED,
-                                      EventType.ORDER_DELIVERED]:
+                state["status_history"].append(
+                    {"status": "created", "timestamp": event.occurred_at.isoformat()}
+                )
+            elif event.event_type in [
+                EventType.ORDER_UPDATED,
+                EventType.ORDER_CANCELLED,
+                EventType.ORDER_SHIPPED,
+                EventType.ORDER_DELIVERED,
+            ]:
                 if "new_status" in event.data:
                     state["status"] = event.data["new_status"]
-                    state["status_history"].append({
-                        "status": event.data["new_status"],
-                        "timestamp": event.occurred_at.isoformat()
-                    })
+                    state["status_history"].append(
+                        {
+                            "status": event.data["new_status"],
+                            "timestamp": event.occurred_at.isoformat(),
+                        }
+                    )
                 state["updated_at"] = event.occurred_at.isoformat()
 
         return state

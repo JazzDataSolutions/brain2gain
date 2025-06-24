@@ -28,7 +28,7 @@ router = APIRouter()
 async def process_payment(
     payment_data: PaymentProcess,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> PaymentProcessResponse:
     """
     Process payment for an order
@@ -40,19 +40,19 @@ async def process_payment(
         payment = await payment_service.get_payment_by_id(payment_data.payment_id)
         if not payment:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
             )
 
         # Check if user owns the order
         from app.services.order_service import OrderService
+
         order_service = OrderService(session)
         order = await order_service.get_order_by_id(payment.order_id)
 
         if not order or order.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not authorized to process this payment"
+                detail="Not authorized to process this payment",
             )
 
         response = await payment_service.process_payment(
@@ -67,13 +67,13 @@ async def process_payment(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Payment processing failed: {str(e)}"
+            detail=f"Payment processing failed: {str(e)}",
         )
 
 
 @router.get("/methods", response_model=PaymentMethodsList)
 async def get_payment_methods(
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
 ) -> PaymentMethodsList:
     """
     Get available payment methods
@@ -90,7 +90,7 @@ async def get_my_payments(
     page_size: int = Query(10, ge=1, le=100, description="Items per page"),
     status: list[PaymentStatus] | None = Query(None, description="Filter by status"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> list[PaymentSummary]:
     """
     Get current user's payments
@@ -100,10 +100,7 @@ async def get_my_payments(
     filters = PaymentFilters(status=status) if status else None
 
     payments = await payment_service.get_user_payments(
-        user_id=current_user.id,
-        page=page,
-        page_size=page_size,
-        filters=filters
+        user_id=current_user.id, page=page, page_size=page_size, filters=filters
     )
 
     return [PaymentSummary.from_orm(payment) for payment in payments]
@@ -113,7 +110,7 @@ async def get_my_payments(
 async def get_my_payment(
     payment_id: uuid.UUID,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> PaymentRead:
     """
     Get specific payment details for current user
@@ -123,19 +120,19 @@ async def get_my_payment(
     payment = await payment_service.get_payment_by_id(payment_id)
     if not payment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
         )
 
     # Verify ownership through order
     from app.services.order_service import OrderService
+
     order_service = OrderService(session)
     order = await order_service.get_order_by_id(payment.order_id)
 
     if not order or order.user_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not authorized to view this payment"
+            detail="Not authorized to view this payment",
         )
 
     return PaymentRead.from_orm(payment)
@@ -147,10 +144,12 @@ async def get_all_payments(
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
     status: list[PaymentStatus] | None = Query(None, description="Filter by status"),
-    payment_method: list[str] | None = Query(None, description="Filter by payment method"),
+    payment_method: list[str] | None = Query(
+        None, description="Filter by payment method"
+    ),
     order_id: uuid.UUID | None = Query(None, description="Filter by order ID"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> list[PaymentSummary]:
     """
     Get all payments (admin only)
@@ -158,15 +157,11 @@ async def get_all_payments(
     payment_service = PaymentService(session)
 
     filters = PaymentFilters(
-        status=status,
-        payment_method=payment_method,
-        order_id=order_id
+        status=status, payment_method=payment_method, order_id=order_id
     )
 
     payments = await payment_service.get_all_payments(
-        page=page,
-        page_size=page_size,
-        filters=filters
+        page=page, page_size=page_size, filters=filters
     )
 
     return [PaymentSummary.from_orm(payment) for payment in payments]
@@ -176,7 +171,7 @@ async def get_all_payments(
 async def get_payment_admin(
     payment_id: uuid.UUID,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> PaymentRead:
     """
     Get specific payment details (admin only)
@@ -186,8 +181,7 @@ async def get_payment_admin(
     payment = await payment_service.get_payment_by_id(payment_id)
     if not payment:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Payment not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Payment not found"
         )
 
     return PaymentRead.from_orm(payment)
@@ -196,7 +190,7 @@ async def get_payment_admin(
 @router.get("/stats/overview", response_model=PaymentStats)
 async def get_payment_stats(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> PaymentStats:
     """
     Get payment statistics (admin only)
@@ -211,7 +205,7 @@ async def get_payment_stats(
 async def create_refund(
     refund_data: RefundCreate,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> RefundRead:
     """
     Create a refund (admin only)
@@ -222,13 +216,13 @@ async def create_refund(
         refund = await payment_service.create_refund(
             payment_id=refund_data.payment_id,
             amount=refund_data.amount,
-            reason=refund_data.reason
+            reason=refund_data.reason,
         )
         return RefundRead.from_orm(refund)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create refund: {str(e)}"
+            detail=f"Failed to create refund: {str(e)}",
         )
 
 
@@ -236,7 +230,7 @@ async def create_refund(
 async def get_refund(
     refund_id: uuid.UUID,
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_active_superuser)
+    _current_user: User = Depends(get_current_active_superuser),
 ) -> RefundRead:
     """
     Get refund details (admin only)
@@ -246,8 +240,7 @@ async def get_refund(
     refund = await payment_service.get_refund_by_id(refund_id)
     if not refund:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Refund not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="Refund not found"
         )
 
     return RefundRead.from_orm(refund)
@@ -255,10 +248,7 @@ async def get_refund(
 
 # ─── WEBHOOKS ─────────────────────────────────────────────────────────
 @router.post("/webhooks/stripe")
-async def stripe_webhook(
-    request: Request,
-    session: Session = Depends(get_session)
-):
+async def stripe_webhook(request: Request, session: Session = Depends(get_session)):
     """
     Handle Stripe webhook events
     """
@@ -278,15 +268,12 @@ async def stripe_webhook(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Webhook processing failed: {str(e)}"
+            detail=f"Webhook processing failed: {str(e)}",
         )
 
 
 @router.post("/webhooks/paypal")
-async def paypal_webhook(
-    request: Request,
-    session: Session = Depends(get_session)
-):
+async def paypal_webhook(request: Request, session: Session = Depends(get_session)):
     """
     Handle PayPal webhook events
     """
@@ -306,5 +293,5 @@ async def paypal_webhook(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Webhook processing failed: {str(e)}"
+            detail=f"Webhook processing failed: {str(e)}",
         )

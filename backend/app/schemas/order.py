@@ -15,8 +15,10 @@ class OrderItemBase(BaseModel):
     unit_price: Decimal = Field(..., ge=0, description="Unit price at time of order")
     discount_amount: Decimal = Field(0, ge=0, description="Discount applied")
 
+
 class OrderItemCreate(OrderItemBase):
     pass
+
 
 class OrderItemRead(OrderItemBase):
     item_id: uuid.UUID
@@ -39,7 +41,9 @@ class AddressSchema(BaseModel):
     city: str = Field(..., min_length=1, max_length=100)
     state: str = Field(..., min_length=1, max_length=100)
     postal_code: str = Field(..., min_length=1, max_length=20)
-    country: str = Field(..., min_length=2, max_length=2, description="ISO 2-letter country code")
+    country: str = Field(
+        ..., min_length=2, max_length=2, description="ISO 2-letter country code"
+    )
     phone: str | None = Field(None, max_length=20)
 
 
@@ -47,19 +51,28 @@ class AddressSchema(BaseModel):
 class OrderBase(BaseModel):
     notes: str | None = Field(None, max_length=1000, description="Order notes")
 
+
 class OrderCreate(OrderBase):
     """Schema for creating an order from cart"""
-    payment_method: str = Field(..., description="Payment method: stripe, paypal, bank_transfer")
+
+    payment_method: str = Field(
+        ..., description="Payment method: stripe, paypal, bank_transfer"
+    )
     shipping_address: AddressSchema = Field(..., description="Shipping address")
-    billing_address: AddressSchema | None = Field(None, description="Billing address (optional, defaults to shipping)")
+    billing_address: AddressSchema | None = Field(
+        None, description="Billing address (optional, defaults to shipping)"
+    )
+
 
 class OrderUpdate(BaseModel):
     """Schema for updating order status (admin only)"""
+
     status: OrderStatus | None = None
     payment_status: PaymentStatus | None = None
     tracking_number: str | None = Field(None, max_length=100)
     estimated_delivery: datetime | None = None
     notes: str | None = Field(None, max_length=1000)
+
 
 class OrderRead(OrderBase):
     order_id: uuid.UUID
@@ -93,8 +106,10 @@ class OrderRead(OrderBase):
 
     model_config = {"from_attributes": True}
 
+
 class OrderSummary(BaseModel):
     """Simplified order info for lists"""
+
     order_id: uuid.UUID
     status: OrderStatus
     payment_status: PaymentStatus
@@ -104,8 +119,10 @@ class OrderSummary(BaseModel):
 
     model_config = {"from_attributes": True}
 
+
 class OrderList(BaseModel):
     """Paginated order list response"""
+
     orders: list[OrderSummary]
     total: int
     page: int
@@ -116,28 +133,37 @@ class OrderList(BaseModel):
 # ─── CHECKOUT SCHEMAS ─────────────────────────────────────────────────
 class CheckoutInitiate(BaseModel):
     """Schema for initiating checkout process"""
-    payment_method: str = Field(..., description="Payment method: stripe, paypal, bank_transfer")
+
+    payment_method: str = Field(
+        ..., description="Payment method: stripe, paypal, bank_transfer"
+    )
     shipping_address: AddressSchema
     billing_address: AddressSchema | None = None
 
+
 class CheckoutCalculation(BaseModel):
     """Schema for checkout cost calculation"""
+
     subtotal: Decimal
     tax_amount: Decimal
     shipping_cost: Decimal
     total_amount: Decimal
     items: list[OrderItemRead]
 
+
 class CheckoutConfirmation(BaseModel):
     """Schema for final checkout confirmation"""
+
     order_id: uuid.UUID
     payment_required: bool
     payment_intent_id: str | None = None  # For Stripe
     payment_url: str | None = None  # For PayPal
     redirect_url: str | None = None
 
+
 class CheckoutValidation(BaseModel):
     """Schema for checkout validation response"""
+
     valid: bool
     errors: list[str] = []
     warnings: list[str] = []
@@ -147,6 +173,7 @@ class CheckoutValidation(BaseModel):
 # ─── ORDER STATISTICS ─────────────────────────────────────────────────
 class OrderStats(BaseModel):
     """Order statistics for admin dashboard"""
+
     total_orders: int
     pending_orders: int
     processing_orders: int
@@ -165,10 +192,13 @@ class OrderStats(BaseModel):
 # ─── ORDER FILTERS ────────────────────────────────────────────────────
 class OrderFilters(BaseModel):
     """Filters for order listing"""
+
     status: list[OrderStatus] | None = None
     payment_status: list[PaymentStatus] | None = None
     date_from: datetime | None = None
     date_to: datetime | None = None
     min_amount: Decimal | None = None
     max_amount: Decimal | None = None
-    search: str | None = Field(None, description="Search in order ID, customer name, or product names")
+    search: str | None = Field(
+        None, description="Search in order ID, customer name, or product names"
+    )

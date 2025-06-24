@@ -19,7 +19,7 @@ fileConfig(config.config_file_name)
 # target_metadata = None
 
 from app.models import SQLModel  # noqa
-from app.core.config import settings # noqa
+from app.core.config import settings  # noqa
 
 target_metadata = SQLModel.metadata
 
@@ -31,7 +31,7 @@ import sys
 
 # Inserta el directorio que contiene "app" en el PYTHONPATH
 current_dir = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 

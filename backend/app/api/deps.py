@@ -13,22 +13,27 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.models import TokenPayload, User
 
-reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
+reusable_oauth2 = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_STR}/login/access-token"
+)
 
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
-TokenDep   = Annotated[str, Depends(reusable_oauth2)]
+TokenDep = Annotated[str, Depends(reusable_oauth2)]
+
 
 async def get_current_user(
     session: SessionDep,
     token: TokenDep,
 ) -> User:
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[security.ALGORITHM])
+        payload = jwt.decode(
+            token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+        )
         token_data = TokenPayload(**payload)
     except (InvalidTokenError, ValidationError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials"
+            detail="Could not validate credentials",
         )
 
     try:
@@ -37,32 +42,32 @@ async def get_current_user(
         user = await session.get(User, user_id)
     except (ValueError, TypeError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid token format"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid token format"
         )
 
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
     if not user.is_active:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     return user
 
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
 
 def get_current_active_superuser(current_user: CurrentUser) -> User:
     """Allow only superusers."""
     if not current_user.is_superuser:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="The user doesn't have enough privileges"
+            detail="The user doesn't have enough privileges",
         )
     return current_user
+
 
 def get_current_admin_user(current_user: CurrentUser) -> User:
     """Allow only users with ADMIN or MANAGER roles or superuser."""
@@ -77,8 +82,9 @@ def get_current_admin_user(current_user: CurrentUser) -> User:
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="User does not have admin privileges"
+        detail="User does not have admin privileges",
     )
+
 
 def get_current_seller_user(current_user: CurrentUser) -> User:
     """Allow users with ADMIN, MANAGER, or SELLER roles or superuser."""
@@ -93,11 +99,11 @@ def get_current_seller_user(current_user: CurrentUser) -> User:
 
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="User does not have seller privileges"
+        detail="User does not have seller privileges",
     )
+
 
 # Type annotations for dependencies
 AdminUser = Annotated[User, Depends(get_current_admin_user)]
 SellerUser = Annotated[User, Depends(get_current_seller_user)]
 SuperUser = Annotated[User, Depends(get_current_active_superuser)]
-

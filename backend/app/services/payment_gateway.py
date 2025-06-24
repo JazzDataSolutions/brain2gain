@@ -1,10 +1,12 @@
-from abc import ABC, abstractmethod
-from typing import Any
 import uuid
+from abc import ABC, abstractmethod
+from datetime import datetime
+from typing import Any
 
 from sqlmodel import Session
 
-from app.models import Payment
+from app.models import Payment, PaymentStatus
+
 
 
 class PaymentGateway(ABC):
@@ -48,6 +50,7 @@ class StripeGateway(PaymentGateway):
         payment.status = payment.status  # placeholder to keep logic simple
         payment.stripe_payment_intent_id = payment.stripe_payment_intent_id or f"pi_{uuid.uuid4().hex[:16]}"
         payment.captured_at = payment.captured_at or payment.created_at
+
         payment.gateway_response = {
             "payment_method_id": payment_method_id,
             "customer_id": customer_id,
@@ -82,9 +85,13 @@ class PayPalGateway(PaymentGateway):
             "status": order_data["status"],
         }
 
-    async def process_payment(self, payment: Payment, paypal_order_id: str) -> dict[str, Any]:
+
+    async def process_payment(
+        self, payment: Payment, paypal_order_id: str
+    ) -> dict[str, Any]:
         payment.paypal_order_id = paypal_order_id
-        payment.captured_at = payment.captured_at or payment.created_at
+        payment.status = PaymentStatus.CAPTURED
+        payment.captured_at = payment.captured_at or datetime.utcnow()
         payment.gateway_response = {
             "paypal_order_id": paypal_order_id,
             "status": "completed",
@@ -111,4 +118,5 @@ class BankTransferGateway(PaymentGateway):
 
     async def process_payment(self, payment: Payment) -> dict[str, Any]:
         payment.status = payment.status
+        payment.captured_at = None
         return {"success": True, "payment_id": payment.payment_id, "status": "pending"}

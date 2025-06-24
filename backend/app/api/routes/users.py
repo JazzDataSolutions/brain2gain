@@ -37,21 +37,21 @@ router = APIRouter(prefix="/users", tags=["users"])
 def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     """
     Retrieve paginated list of all users.
-    
+
     This endpoint is restricted to superusers only and provides
     comprehensive user management capabilities for administrators.
-    
+
     Args:
         session (SessionDep): Database session dependency
         skip (int): Number of records to skip for pagination (default: 0)
         limit (int): Maximum number of records to return (default: 100)
-        
+
     Returns:
         UsersPublic: Contains list of users and total count
-        
+
     Raises:
         HTTPException: 403 if user doesn't have superuser privileges
-        
+
     Note:
         This endpoint is part of the admin API mode and should not be
         exposed in public/store API configurations.

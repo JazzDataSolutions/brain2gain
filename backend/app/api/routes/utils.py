@@ -37,7 +37,7 @@ async def health_check() -> bool:
 async def get_cache_statistics():
     """
     Get comprehensive cache statistics and performance metrics.
-    
+
     Returns detailed information about cache performance, hit rates,
     memory usage, and optimization recommendations.
     """
@@ -48,7 +48,7 @@ async def get_cache_statistics():
 async def get_cache_health_status():
     """
     Get cache health status for monitoring.
-    
+
     Returns simplified health status suitable for monitoring
     systems and alerting.
     """
@@ -62,7 +62,7 @@ async def get_cache_health_status():
 async def reset_cache_statistics():
     """
     Reset cache metrics counters.
-    
+
     Useful for testing or starting fresh monitoring periods.
     Requires superuser permissions.
     """
@@ -73,7 +73,7 @@ async def reset_cache_statistics():
 async def get_rate_limiting_statistics():
     """
     Get rate limiting statistics and performance metrics.
-    
+
     Returns information about blocked requests, user types,
     and rate limiting configuration.
     """

@@ -21,10 +21,7 @@ class TestAnalyticsAPI:
     """Test cases for Analytics API endpoints."""
 
     def test_get_financial_summary_success(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test successful financial summary retrieval."""
         # Setup
@@ -32,8 +29,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/financial-summary",
-            headers=superuser_token_headers
+            "/api/analytics/financial-summary", headers=superuser_token_headers
         )
 
         # Assert
@@ -64,26 +60,23 @@ class TestAnalyticsAPI:
         assert response.status_code == 401
 
     def test_get_financial_summary_non_admin(
-        self,
-        client: TestClient,
-        normal_user_token_headers: dict[str, str]
+        self, client: TestClient, normal_user_token_headers: dict[str, str]
     ):
         """Test financial summary access with non-admin user."""
         response = client.get(
-            "/api/analytics/financial-summary",
-            headers=normal_user_token_headers
+            "/api/analytics/financial-summary", headers=normal_user_token_headers
         )
         assert response.status_code == 403
 
-    @patch('app.core.cache.CacheService.get')
-    @patch('app.core.cache.CacheService.set')
+    @patch("app.core.cache.CacheService.get")
+    @patch("app.core.cache.CacheService.set")
     def test_get_financial_summary_with_cache(
         self,
         mock_cache_set,
         mock_cache_get,
         client: TestClient,
         superuser_token_headers: dict[str, str],
-        db: Session
+        db: Session,
     ):
         """Test financial summary with cache hit."""
         # Setup cache mock
@@ -92,14 +85,13 @@ class TestAnalyticsAPI:
             "orders": {"orders_today": 10},
             "customers": {"total_customers": 100},
             "inventory": {"total_products": 50},
-            "conversion": {"churn_rate": 5.0}
+            "conversion": {"churn_rate": 5.0},
         }
         mock_cache_get.return_value = cached_data
 
         # Execute
         response = client.get(
-            "/api/analytics/financial-summary",
-            headers=superuser_token_headers
+            "/api/analytics/financial-summary", headers=superuser_token_headers
         )
 
         # Assert
@@ -110,10 +102,7 @@ class TestAnalyticsAPI:
         mock_cache_set.assert_not_called()  # Should not set cache on hit
 
     def test_get_realtime_metrics_success(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test successful realtime metrics retrieval."""
         # Setup
@@ -121,8 +110,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/realtime-metrics",
-            headers=superuser_token_headers
+            "/api/analytics/realtime-metrics", headers=superuser_token_headers
         )
 
         # Assert
@@ -138,10 +126,7 @@ class TestAnalyticsAPI:
         assert "timestamp" in data
 
     def test_get_mrr_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test MRR endpoint."""
         # Setup
@@ -149,8 +134,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/revenue/mrr",
-            headers=superuser_token_headers
+            "/api/analytics/revenue/mrr", headers=superuser_token_headers
         )
 
         # Assert
@@ -164,10 +148,7 @@ class TestAnalyticsAPI:
         assert abs(data["mrr"] - mrr_data["expected_mrr"]) < 0.01
 
     def test_get_arr_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test ARR endpoint."""
         # Setup
@@ -175,8 +156,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/revenue/arr",
-            headers=superuser_token_headers
+            "/api/analytics/revenue/arr", headers=superuser_token_headers
         )
 
         # Assert
@@ -189,10 +169,7 @@ class TestAnalyticsAPI:
         assert abs(data["arr"] - mrr_data["expected_arr"]) < 0.01
 
     def test_get_conversion_rate_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test conversion rate endpoint."""
         # Setup
@@ -200,8 +177,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/conversion/rate?days=30",
-            headers=superuser_token_headers
+            "/api/analytics/conversion/rate?days=30", headers=superuser_token_headers
         )
 
         # Assert
@@ -212,13 +188,16 @@ class TestAnalyticsAPI:
         assert "analysis_period_days" in data
         assert "calculation_date" in data
         assert data["analysis_period_days"] == 30
-        assert abs(data["conversion_rate_percentage"] - conversion_data["expected_conversion_rate"]) < 1.0
+        assert (
+            abs(
+                data["conversion_rate_percentage"]
+                - conversion_data["expected_conversion_rate"]
+            )
+            < 1.0
+        )
 
     def test_get_churn_rate_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test churn rate endpoint."""
         # Setup
@@ -227,7 +206,7 @@ class TestAnalyticsAPI:
         # Execute
         response = client.get(
             "/api/analytics/customers/churn-rate?period_days=90",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -238,14 +217,19 @@ class TestAnalyticsAPI:
         assert "retention_rate_percentage" in data
         assert "analysis_period_days" in data
         assert data["analysis_period_days"] == 90
-        assert abs(data["churn_rate_percentage"] - churn_data["expected_churn_rate"]) < 1.0
-        assert abs(data["retention_rate_percentage"] - (100 - churn_data["expected_churn_rate"])) < 1.0
+        assert (
+            abs(data["churn_rate_percentage"] - churn_data["expected_churn_rate"]) < 1.0
+        )
+        assert (
+            abs(
+                data["retention_rate_percentage"]
+                - (100 - churn_data["expected_churn_rate"])
+            )
+            < 1.0
+        )
 
     def test_get_repeat_customer_rate_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test repeat customer rate endpoint."""
         # Setup
@@ -254,7 +238,7 @@ class TestAnalyticsAPI:
         # Execute
         response = client.get(
             "/api/analytics/customers/repeat-rate?days=30",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -267,10 +251,7 @@ class TestAnalyticsAPI:
         assert data["analysis_period_days"] == 30
 
     def test_get_revenue_per_visitor_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test revenue per visitor endpoint."""
         # Setup
@@ -279,7 +260,7 @@ class TestAnalyticsAPI:
         # Execute
         response = client.get(
             "/api/analytics/revenue/per-visitor?days=30",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -294,16 +275,12 @@ class TestAnalyticsAPI:
         assert data["analysis_period_days"] == 30
 
     def test_get_alert_summary_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test alert summary endpoint."""
         # Execute
         response = client.get(
-            "/api/analytics/alerts/summary",
-            headers=superuser_token_headers
+            "/api/analytics/alerts/summary", headers=superuser_token_headers
         )
 
         # Assert
@@ -319,10 +296,7 @@ class TestAnalyticsAPI:
         assert isinstance(data["alerts"], list)
 
     def test_get_date_range_metrics_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test date range metrics endpoint."""
         # Setup
@@ -334,7 +308,7 @@ class TestAnalyticsAPI:
         # Execute
         response = client.get(
             f"/api/analytics/metrics/date-range?start_date={start_date}&end_date={end_date}",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -354,10 +328,7 @@ class TestAnalyticsAPI:
         assert date_range["days"] == 8  # 7 days + 1 (inclusive)
 
     def test_get_revenue_trends_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test revenue trends endpoint."""
         # Setup
@@ -365,8 +336,7 @@ class TestAnalyticsAPI:
 
         # Execute
         response = client.get(
-            "/api/analytics/trends/revenue?days=7",
-            headers=superuser_token_headers
+            "/api/analytics/trends/revenue?days=7", headers=superuser_token_headers
         )
 
         # Assert
@@ -395,15 +365,13 @@ class TestAnalyticsAPI:
         assert "total_revenue" in statistics
 
     def test_invalidate_cache_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test cache invalidation endpoint."""
         # Execute
         response = client.delete(
             "/api/analytics/cache/invalidate?pattern=analytics:*",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -417,15 +385,12 @@ class TestAnalyticsAPI:
         assert data["pattern"] == "analytics:*"
 
     def test_get_cache_stats_endpoint(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test cache statistics endpoint."""
         # Execute
         response = client.get(
-            "/api/analytics/cache/stats",
-            headers=superuser_token_headers
+            "/api/analytics/cache/stats", headers=superuser_token_headers
         )
 
         # Assert
@@ -442,75 +407,63 @@ class TestAnalyticsAPI:
     # ─── ERROR HANDLING TESTS ──────────────────────────────────────────────────
 
     def test_conversion_rate_invalid_days_parameter(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test conversion rate endpoint with invalid days parameter."""
         # Execute with invalid days parameter
         response = client.get(
-            "/api/analytics/conversion/rate?days=0",
-            headers=superuser_token_headers
+            "/api/analytics/conversion/rate?days=0", headers=superuser_token_headers
         )
 
         # Assert
         assert response.status_code == 422  # Validation error
 
     def test_churn_rate_invalid_period(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test churn rate endpoint with invalid period parameter."""
         # Execute with invalid period
         response = client.get(
             "/api/analytics/customers/churn-rate?period_days=29",  # Below minimum
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
         assert response.status_code == 422  # Validation error
 
     def test_date_range_metrics_missing_parameters(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test date range metrics endpoint with missing required parameters."""
         # Execute without required parameters
         response = client.get(
-            "/api/analytics/metrics/date-range",
-            headers=superuser_token_headers
+            "/api/analytics/metrics/date-range", headers=superuser_token_headers
         )
 
         # Assert
         assert response.status_code == 422  # Validation error
 
     def test_date_range_metrics_invalid_date_format(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test date range metrics endpoint with invalid date format."""
         # Execute with invalid date format
         response = client.get(
             "/api/analytics/metrics/date-range?start_date=invalid&end_date=also-invalid",
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
         assert response.status_code == 422  # Validation error
 
     def test_revenue_trends_out_of_range_days(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str]
+        self, client: TestClient, superuser_token_headers: dict[str, str]
     ):
         """Test revenue trends endpoint with out-of-range days parameter."""
         # Execute with days parameter above maximum
         response = client.get(
             "/api/analytics/trends/revenue?days=400",  # Above maximum of 365
-            headers=superuser_token_headers
+            headers=superuser_token_headers,
         )
 
         # Assert
@@ -520,10 +473,7 @@ class TestAnalyticsAPI:
 
     @pytest.mark.performance
     def test_financial_summary_response_time(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test financial summary endpoint response time."""
         # Setup larger dataset
@@ -534,8 +484,7 @@ class TestAnalyticsAPI:
         # Execute with timing
         start_time = time.time()
         response = client.get(
-            "/api/analytics/financial-summary",
-            headers=superuser_token_headers
+            "/api/analytics/financial-summary", headers=superuser_token_headers
         )
         end_time = time.time()
 
@@ -546,10 +495,7 @@ class TestAnalyticsAPI:
 
     @pytest.mark.performance
     def test_multiple_concurrent_requests(
-        self,
-        client: TestClient,
-        superuser_token_headers: dict[str, str],
-        db: Session
+        self, client: TestClient, superuser_token_headers: dict[str, str], db: Session
     ):
         """Test multiple concurrent analytics requests."""
         # Setup
@@ -569,13 +515,17 @@ class TestAnalyticsAPI:
             "/api/analytics/realtime-metrics",
             "/api/analytics/revenue/mrr",
             "/api/analytics/customers/churn-rate",
-            "/api/analytics/conversion/rate"
+            "/api/analytics/conversion/rate",
         ]
 
         # Execute concurrent requests
         with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-            futures = [executor.submit(make_request, endpoint) for endpoint in endpoints]
-            results = [future.result() for future in concurrent.futures.as_completed(futures)]
+            futures = [
+                executor.submit(make_request, endpoint) for endpoint in endpoints
+            ]
+            results = [
+                future.result() for future in concurrent.futures.as_completed(futures)
+            ]
 
         # Assert all requests succeeded
         for status_code, response_time in results:

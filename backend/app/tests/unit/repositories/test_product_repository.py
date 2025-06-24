@@ -32,7 +32,7 @@ class TestProductRepository:
             "unit_price": Decimal("45.99"),
             "category": "proteins",
             "brand": "Test Brand",
-            "status": "ACTIVE"
+            "status": "ACTIVE",
         }
 
         product = repository.create(**product_data)
@@ -157,9 +157,7 @@ class TestProductRepository:
 
         # Update product
         updated_product = repository.update(
-            product.product_id,
-            name="Updated Name",
-            unit_price=Decimal("55.00")
+            product.product_id, name="Updated Name", unit_price=Decimal("55.00")
         )
 
         assert updated_product.name == "Updated Name"
@@ -170,10 +168,7 @@ class TestProductRepository:
         """Test updating a non-existent product."""
         non_existent_id = uuid4()
 
-        updated_product = repository.update(
-            non_existent_id,
-            name="Updated Name"
-        )
+        updated_product = repository.update(non_existent_id, name="Updated Name")
 
         assert updated_product is None
 
@@ -202,7 +197,9 @@ class TestProductRepository:
 
         assert result is False
 
-    def test_get_products_with_pagination(self, repository: ProductRepository, db: Session):
+    def test_get_products_with_pagination(
+        self, repository: ProductRepository, db: Session
+    ):
         """Test retrieving products with pagination."""
         # Create multiple test products
         products = [ProductFactory() for _ in range(15)]
@@ -222,7 +219,9 @@ class TestProductRepository:
         page2_ids = {p.product_id for p in page2}
         assert page1_ids.isdisjoint(page2_ids)
 
-    def test_get_products_by_price_range(self, repository: ProductRepository, db: Session):
+    def test_get_products_by_price_range(
+        self, repository: ProductRepository, db: Session
+    ):
         """Test retrieving products by price range."""
         # Create test products with different prices
         cheap = ProductFactory(unit_price=Decimal("20.00"))
@@ -234,8 +233,7 @@ class TestProductRepository:
 
         # Get products in price range 30-80
         products_in_range = repository.get_by_price_range(
-            min_price=Decimal("30.00"),
-            max_price=Decimal("80.00")
+            min_price=Decimal("30.00"), max_price=Decimal("80.00")
         )
 
         product_ids = [p.product_id for p in products_in_range]
@@ -247,7 +245,9 @@ class TestProductRepository:
         """Test retrieving products with low stock."""
         # Create products with stock
         low_stock_product, low_stock = create_product_with_stock(db, stock_quantity=5)
-        normal_stock_product, normal_stock = create_product_with_stock(db, stock_quantity=100)
+        normal_stock_product, normal_stock = create_product_with_stock(
+            db, stock_quantity=100
+        )
 
         # Set min stock levels
         low_stock.min_stock_level = 10
@@ -280,7 +280,9 @@ class TestProductRepository:
             product = repository.get_by_id(product_id)
             assert product.status == "INACTIVE"
 
-    def test_get_product_count_by_category(self, repository: ProductRepository, db: Session):
+    def test_get_product_count_by_category(
+        self, repository: ProductRepository, db: Session
+    ):
         """Test getting product count by category."""
         # Create test products
         proteins = [ProductFactory(category="proteins") for _ in range(3)]
