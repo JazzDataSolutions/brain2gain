@@ -27,6 +27,7 @@ from app.schemas.order import (
 )
 from app.services.inventory_service import InventoryService
 from app.services.notification_service import NotificationService
+from app.services.shipping_service import ShippingService
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,7 @@ class OrderService:
         self.session = session
         self.inventory_service = InventoryService(session)
         self.notification_service = NotificationService(session)
+        self.shipping_service = ShippingService()
 
     # ─── ORDER CREATION ──────────────────────────────────────────────────
     async def create_order_from_cart(
@@ -157,11 +159,10 @@ class OrderService:
         tax_rate = Decimal("0.16")
         tax_amount = subtotal * tax_rate
 
-        # Calculate shipping cost
-        shipping_cost = await self._calculate_shipping_cost(
+        # Calculate shipping cost using dedicated service
+        shipping_cost = await self.shipping_service.calculate_shipping_cost(
             subtotal=subtotal,
             shipping_address=shipping_address,
-            payment_method=payment_method
         )
 
         total_amount = subtotal + tax_amount + shipping_cost
@@ -493,29 +494,6 @@ class OrderService:
         result = self.session.exec(statement)
         return result.first()
 
-    async def _calculate_shipping_cost(
-        self,
-        subtotal: Decimal,
-        shipping_address: dict,
-        payment_method: str
-    ) -> Decimal:
-        """Calculate shipping cost based on location and order value"""
-        # Free shipping for orders over $1000 MXN
-        if subtotal >= Decimal("1000"):
-            return Decimal(0)
-
-        # Basic shipping cost calculation
-        # TODO: Implement proper shipping calculator with zones
-        base_shipping = Decimal("150")  # 150 MXN base shipping
-
-        # Adjust based on location (example logic)
-        state = shipping_address.get("state", "").upper()
-        if state in ["CDMX", "MEXICO", "GUADALAJARA"]:
-            # Major cities - standard rate
-            return base_shipping
-        else:
-            # Other states - higher rate
-            return base_shipping * Decimal("1.5")
 
     async def _send_order_notifications(self, order: Order, event_type: str):
         """Send order-related notifications"""
