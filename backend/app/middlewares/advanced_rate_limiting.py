@@ -18,10 +18,16 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Initialize limiter with Redis storage
+# Initialize limiter with appropriate storage for environment
+def _get_storage_uri():
+    """Get storage URI based on environment - use memory for testing."""
+    if settings.ENVIRONMENT == "testing":
+        return "memory://"
+    return settings.REDIS_URL
+
 limiter = Limiter(
     key_func=get_remote_address,
-    storage_uri=settings.REDIS_URL,
+    storage_uri=_get_storage_uri(),
     default_limits=["200/minute", "2000/hour", "10000/day"],
     strategy="moving-window",
 )
@@ -248,12 +254,19 @@ def setup_rate_limiting(app):
     Args:
         app: FastAPI application instance
     """
-    # Add SlowAPI middleware
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
-    app.add_middleware(SlowAPIMiddleware)
+    try:
+        # Add SlowAPI middleware
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
+        app.add_middleware(SlowAPIMiddleware)
 
-    logger.info("Advanced rate limiting with Redis initialized")
+        storage_type = "memory" if settings.ENVIRONMENT == "testing" else "Redis"
+        logger.info(f"Advanced rate limiting with {storage_type} initialized")
+        
+    except Exception as e:
+        logger.warning(f"Rate limiting setup failed: {e}")
+        logger.info("Continuing without rate limiting middleware")
+        # Don't fail app startup if rate limiting fails
 
 
 # Export main components
