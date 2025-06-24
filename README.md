@@ -146,7 +146,9 @@ graph TB
 2. **Set up environment variables**
    ```bash
    cp .env.example .env.local
-   # Copy to .env.production for a production environment
+   cp .env.example .env.development
+   cp .env.example .env.testing
+   cp .env.example .env.production
    ```
 
 3. **Start the complete environment**

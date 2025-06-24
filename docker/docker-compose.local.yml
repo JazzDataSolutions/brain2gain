@@ -16,7 +16,7 @@ services:
     environment:
       POSTGRES_DB: brain2gain_local
       POSTGRES_USER: brain2gain_local
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-LocalPassword123!}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_local_data:/var/lib/postgresql/data
       - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
@@ -26,9 +26,11 @@ services:
       retries: 3
 
   redis:
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-LocalRedisPass123!}
+    env_file:
+      - .env.local
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-LocalRedisPass123!}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     healthcheck:
       interval: 5s
       timeout: 3s
@@ -65,12 +67,12 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=brain2gain_local
       - POSTGRES_USER=brain2gain_local
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-LocalPassword123!}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       
       # Redis (local)
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-LocalRedisPass123!}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       
       # Email (use mailcatcher)
       - SMTP_HOST=mailcatcher
@@ -105,7 +107,7 @@ for i in range(30):
             host='postgres',
             database='brain2gain_local',
             user='brain2gain_local',
-            password=os.getenv('POSTGRES_PASSWORD', 'LocalPassword123!')
+            password=os.getenv('POSTGRES_PASSWORD', '')
         )
         conn.close()
         print('✅ Database connected!')

@@ -11,10 +11,12 @@ services:
   # ═══════════════════════════════════════════════════════════════════
 
   postgres:
+    env_file:
+      - .env.testing
     environment:
       POSTGRES_DB: brain2gain_test
       POSTGRES_USER: brain2gain_test
-      POSTGRES_PASSWORD: TestPassword123!
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
       - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql
@@ -29,9 +31,11 @@ services:
       retries: 5
 
   redis:
-    command: redis-server --appendonly no --requirepass TestRedisPass123! --save ""
+    env_file:
+      - .env.testing
+    command: redis-server --appendonly no --requirepass ${REDIS_PASSWORD} --save ""
     environment:
-      REDIS_PASSWORD: TestRedisPass123!
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes: []  # No persistence for testing
     healthcheck:
       interval: 3s
@@ -55,6 +59,8 @@ services:
         condition: service_healthy
     ports:
       - "8001:8000"
+    env_file:
+      - .env.testing
     environment:
       # Test settings
       - ENVIRONMENT=testing
@@ -67,12 +73,12 @@ services:
       - POSTGRES_PORT=5432
       - POSTGRES_DB=brain2gain_test
       - POSTGRES_USER=brain2gain_test
-      - POSTGRES_PASSWORD=TestPassword123!
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       
       # Redis (test)
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=TestRedisPass123!
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
       
       # Email (mock)
       - SMTP_HOST=mailcatcher
@@ -148,16 +154,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    env_file:
+      - .env.testing
     environment:
       - ENVIRONMENT=testing
       - POSTGRES_SERVER=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=brain2gain_test
       - POSTGRES_USER=brain2gain_test
-      - POSTGRES_PASSWORD=TestPassword123!
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=TestRedisPass123!
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - ./backend:/app:ro
       - test_coverage:/app/htmlcov:rw
@@ -188,6 +196,8 @@ services:
       - backend-test
       - frontend-test
       - mailcatcher
+    env_file:
+      - .env.testing
     environment:
       - VITE_API_URL=http://backend-test:8000
       - MAILCATCHER_HOST=http://mailcatcher:1080
