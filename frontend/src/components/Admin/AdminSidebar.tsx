@@ -14,7 +14,7 @@ import {
   FiPackage,
   FiShoppingCart,
   FiUsers,
-  FiBarChart3,
+  FiBarChart,
   FiSettings,
   FiDollarSign,
   FiTrendingUp,
@@ -55,7 +55,7 @@ const AdminSidebar = () => {
     },
     {
       name: 'Reportes',
-      icon: FiBarChart3,
+      icon: FiBarChart,
       href: '/admin/reports',
       badge: null,
     },

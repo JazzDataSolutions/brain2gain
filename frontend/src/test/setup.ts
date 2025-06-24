@@ -20,11 +20,22 @@ vi.mock('framer-motion', () => {
         ...restProps 
       } = props
       
-      return React.createElement(Component, {
-        ...restProps,
-        ref,
-        style
-      })
+      // If Component is a React component (object with $$typeof), render it directly
+      // If it's a string (like 'div'), create element with it
+      if (typeof Component === 'string') {
+        return React.createElement(Component, {
+          ...restProps,
+          ref,
+          style
+        })
+      } else {
+        // For React components like Chakra Box, render them normally
+        return React.createElement(Component, {
+          ...restProps,
+          ref,
+          style
+        })
+      }
     })
   }
   

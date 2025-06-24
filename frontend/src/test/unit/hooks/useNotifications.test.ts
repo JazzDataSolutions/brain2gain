@@ -1,13 +1,14 @@
 import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { notificationService } from '../../../services/NotificationService';
 
 // Mock the notification service
-jest.mock('../../../services/NotificationService');
-const mockNotificationService = notificationService as jest.Mocked<typeof notificationService>;
+vi.mock('../../../services/NotificationService');
+const mockNotificationService = notificationService as any;
 
 // Mock useAuth hook
-jest.mock('../../../hooks/useAuth', () => ({
+vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({
     user: {
       id: 'user123',
@@ -19,15 +20,15 @@ jest.mock('../../../hooks/useAuth', () => ({
 
 describe('useNotifications', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     
     // Reset notification service mocks
-    mockNotificationService.connect = jest.fn();
-    mockNotificationService.disconnect = jest.fn();
-    mockNotificationService.on = jest.fn();
-    mockNotificationService.off = jest.fn();
-    mockNotificationService.isConnected = jest.fn().mockReturnValue(true);
-    mockNotificationService.getConnectionState = jest.fn().mockReturnValue('connected');
+    mockNotificationService.connect = vi.fn();
+    mockNotificationService.disconnect = vi.fn();
+    mockNotificationService.on = vi.fn();
+    mockNotificationService.off = vi.fn();
+    mockNotificationService.isConnected = vi.fn().mockReturnValue(true);
+    mockNotificationService.getConnectionState = vi.fn().mockReturnValue('connected');
   });
 
   it('should initialize with empty notifications', () => {
@@ -191,7 +192,7 @@ describe('useNotifications', () => {
     const { rerender } = renderHook(() => useNotifications());
 
     // Simulate user logout by mocking useAuth to return null user
-    jest.doMock('../../../hooks/useAuth', () => ({
+    vi.doMock('../../../hooks/useAuth', () => ({
       useAuth: () => ({
         user: null
       })

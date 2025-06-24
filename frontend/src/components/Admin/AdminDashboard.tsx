@@ -329,7 +329,7 @@ const AdminDashboard = () => {
             <Heading size="md">Ventas de los Últimos 7 Días</Heading>
           </CardHeader>
           <CardBody>
-            <Box h="200px" bg="gray.50" rounded="lg" display="flex" align="center" justify="center">
+            <Box h="200px" bg="gray.50" rounded="lg" display="flex" alignItems="center" justifyContent="center">
               <Text color="gray.500">
                 📊 Aquí irá el gráfico de ventas (Chart.js/Recharts)
               </Text>
