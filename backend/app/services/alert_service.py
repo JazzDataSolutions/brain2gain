@@ -65,6 +65,25 @@ class Alert:
         }
 
 
+def create_alert(
+    alert_type: AlertType,
+    severity: AlertSeverity,
+    title: str,
+    description: str,
+    data: dict | None = None,
+    timestamp: datetime | None = None,
+) -> Alert:
+    """Factory helper to build an Alert instance."""
+    return Alert(
+        alert_type=alert_type,
+        severity=severity,
+        title=title,
+        description=description,
+        data=data,
+        timestamp=timestamp,
+    )
+
+
 class AlertService:
     """Service for monitoring business metrics and generating alerts"""
 
@@ -132,11 +151,13 @@ class AlertService:
             ]
 
             alerts.append(
-                Alert(
+                create_alert(
                     alert_type=AlertType.INVENTORY_LOW_STOCK,
                     severity=AlertSeverity.WARNING,
                     title=f"Low Stock Alert - {len(low_stock_products)} Products",
-                    description=f"The following products are running low on stock: {', '.join(product_list[:3])}{'...' if len(product_list) > 3 else ''}",
+                    description=(
+                        f"The following products are running low on stock: {', '.join(product_list[:3])}{'...' if len(product_list) > 3 else ''}"
+                    ),
                     data={
                         "affected_products": len(low_stock_products),
                         "products": [
@@ -160,11 +181,13 @@ class AlertService:
             product_names = [f"{p.name} ({p.sku})" for p in out_of_stock_products]
 
             alerts.append(
-                Alert(
+                create_alert(
                     alert_type=AlertType.INVENTORY_OUT_OF_STOCK,
                     severity=AlertSeverity.CRITICAL,
                     title=f"Out of Stock Alert - {len(out_of_stock_products)} Products",
-                    description=f"The following products are out of stock: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+                    description=(
+                        f"The following products are out of stock: {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}"
+                    ),
                     data={
                         "affected_products": len(out_of_stock_products),
                         "products": [
@@ -203,11 +226,13 @@ class AlertService:
 
                 if change_percentage <= -self.thresholds["revenue_drop_percentage"]:
                     alerts.append(
-                        Alert(
+                        create_alert(
                             alert_type=AlertType.REVENUE_DROP,
                             severity=AlertSeverity.CRITICAL,
                             title=f"Revenue Drop Alert - {abs(change_percentage):.1f}% Decrease",
-                            description=f"Revenue has dropped {abs(change_percentage):.1f}% compared to the previous {period_days} days. Current: ${current_revenue:,.2f}, Previous: ${previous_revenue:,.2f}",
+                            description=(
+                                f"Revenue has dropped {abs(change_percentage):.1f}% compared to the previous {period_days} days. Current: ${current_revenue:,.2f}, Previous: ${previous_revenue:,.2f}"
+                            ),
                             data={
                                 "current_revenue": float(current_revenue),
                                 "previous_revenue": float(previous_revenue),
@@ -241,11 +266,13 @@ class AlertService:
 
         if pending_orders_count > self.thresholds["high_pending_orders"]:
             alerts.append(
-                Alert(
+                create_alert(
                     alert_type=AlertType.HIGH_PENDING_ORDERS,
                     severity=AlertSeverity.WARNING,
                     title=f"High Pending Orders - {pending_orders_count} Orders",
-                    description=f"There are {pending_orders_count} pending orders that need attention. Consider reviewing fulfillment processes.",
+                    description=(
+                        f"There are {pending_orders_count} pending orders that need attention. Consider reviewing fulfillment processes."
+                    ),
                     data={
                         "pending_orders_count": pending_orders_count,
                         "threshold": self.thresholds["high_pending_orders"],
@@ -274,11 +301,13 @@ class AlertService:
 
                 if change >= self.thresholds["conversion_drop_percentage"]:
                     alerts.append(
-                        Alert(
+                        create_alert(
                             alert_type=AlertType.CONVERSION_DROP,
                             severity=AlertSeverity.WARNING,
                             title=f"Conversion Drop Alert - {change:.1f}% Increase in Abandonment",
-                            description=f"Cart abandonment rate has increased by {change:.1f}% to {current_abandonment:.1f}%. Review checkout process for potential issues.",
+                            description=(
+                                f"Cart abandonment rate has increased by {change:.1f}% to {current_abandonment:.1f}%. Review checkout process for potential issues."
+                            ),
                             data={
                                 "current_abandonment_rate": current_abandonment,
                                 "previous_abandonment_rate": previous_abandonment,
@@ -333,11 +362,13 @@ class AlertService:
             churn_rate = self.analytics_service.calculate_churn_rate()
             if churn_rate > self.thresholds["high_churn_threshold"]:
                 alerts.append(
-                    Alert(
+                    create_alert(
                         alert_type=AlertType.HIGH_CHURN_RISK,
                         severity=AlertSeverity.WARNING,
                         title=f"High Churn Risk - {churn_rate:.1f}% Churn Rate",
-                        description=f"Customer churn rate has reached {churn_rate:.1f}%, exceeding the threshold of {self.thresholds['high_churn_threshold']}%. Consider implementing retention strategies.",
+                        description=(
+                            f"Customer churn rate has reached {churn_rate:.1f}%, exceeding the threshold of {self.thresholds['high_churn_threshold']}%. Consider implementing retention strategies."
+                        ),
                         data={
                             "churn_rate": churn_rate,
                             "threshold": self.thresholds["high_churn_threshold"],
@@ -369,11 +400,13 @@ class AlertService:
                         low_clv_customers
                     )
                     alerts.append(
-                        Alert(
+                        create_alert(
                             alert_type=AlertType.LOW_CLV,
                             severity=AlertSeverity.INFO,
                             title=f"Low CLV Alert - {len(low_clv_customers)} Recent Customers",
-                            description=f"Recent customers showing low CLV averaging ${avg_low_clv:.2f}. Consider improving onboarding and engagement strategies.",
+                            description=(
+                                f"Recent customers showing low CLV averaging ${avg_low_clv:.2f}. Consider improving onboarding and engagement strategies."
+                            ),
                             data={
                                 "low_clv_customers_count": len(low_clv_customers),
                                 "average_low_clv": float(avg_low_clv),
@@ -410,11 +443,13 @@ class AlertService:
 
                 if mrr_change <= -self.thresholds["mrr_decline_percentage"]:
                     alerts.append(
-                        Alert(
+                        create_alert(
                             alert_type=AlertType.MRR_DECLINE,
                             severity=AlertSeverity.WARNING,
                             title=f"MRR Decline Alert - {abs(mrr_change):.1f}% Decrease",
-                            description=f"Monthly Recurring Revenue has declined by {abs(mrr_change):.1f}%. Current MRR: ${current_mrr:,.2f}, Previous: ${previous_month_revenue:,.2f}",
+                            description=(
+                                f"Monthly Recurring Revenue has declined by {abs(mrr_change):.1f}%. Current MRR: ${current_mrr:,.2f}, Previous: ${previous_month_revenue:,.2f}"
+                            ),
                             data={
                                 "current_mrr": float(current_mrr),
                                 "previous_mrr": float(previous_month_revenue),
@@ -435,11 +470,13 @@ class AlertService:
 
                 if aov_change <= -self.thresholds["aov_drop_percentage"]:
                     alerts.append(
-                        Alert(
+                        create_alert(
                             alert_type=AlertType.AOV_DROP,
                             severity=AlertSeverity.WARNING,
                             title=f"AOV Drop Alert - {abs(aov_change):.1f}% Decrease",
-                            description=f"Average Order Value has dropped by {abs(aov_change):.1f}%. Current AOV: ${current_aov:.2f}, Previous: ${previous_aov:.2f}",
+                            description=(
+                                f"Average Order Value has dropped by {abs(aov_change):.1f}%. Current AOV: ${current_aov:.2f}, Previous: ${previous_aov:.2f}"
+                            ),
                             data={
                                 "current_aov": float(current_aov),
                                 "previous_aov": float(previous_aov),

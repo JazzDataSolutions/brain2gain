@@ -145,8 +145,8 @@ graph TB
 
 2. **Set up environment variables**
    ```bash
-   cp .env.example .env
-   # Edit .env with your configurations
+   cp .env.example .env.local
+   # Copy to .env.production for a production environment
    ```
 
 3. **Start the complete environment**
@@ -307,12 +307,9 @@ cd frontend && npm run test:coverage   # Coverage report
 
 ### 📋 Implementation
 - [**Phase 1 Completed**](./docs/implementation/phase-1-completed.md) - MVP achievements
-- [**Migration Status**](./MIGRATION_STATUS.md) - Current implementation status
-
 ### 🔧 Operations
-- [**Docker Setup**](./DOCKER_SETUP.md) - Container deployment
 - [**Security Policy**](./SECURITY.md) - Security guidelines
-- [**Claude.md**](./CLAUDE.md) - AI assistant documentation
+
 
 ## 🚢 Deployment
 
