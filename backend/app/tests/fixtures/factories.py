@@ -65,7 +65,7 @@ class ProductFactory(factory.Factory):
     class Meta:
         model = Product
 
-    product_id = factory.LazyFunction(uuid4)
+    product_id = factory.Sequence(lambda n: n + 1)
     sku = factory.Sequence(lambda n: f"WP-{n:03d}")
     name = factory.LazyAttribute(
         lambda _: fake.sentence(nb_words=3)[:-1]
@@ -75,7 +75,7 @@ class ProductFactory(factory.Factory):
         lambda _: Decimal(
             str(
                 fake.pydecimal(
-                    left_digits=2,
+                    left_digits=3,
                     right_digits=2,
                     positive=True,
                     min_value=10,
@@ -168,7 +168,7 @@ class SalesItemFactory(factory.Factory):
         lambda _: Decimal(
             str(
                 fake.pydecimal(
-                    left_digits=2,
+                    left_digits=3,
                     right_digits=2,
                     positive=True,
                     min_value=10,

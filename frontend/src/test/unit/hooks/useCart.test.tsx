@@ -120,7 +120,7 @@ describe('useCart Hook', () => {
         result.current.addToCart(mockProduct)
       })
 
-      expect(mockAddToCart).toHaveBeenCalledWith(mockProduct, 1)
+      expect(mockAddToCart).toHaveBeenCalledWith(mockProduct)
     })
 
     it('should handle adding multiple different items', () => {

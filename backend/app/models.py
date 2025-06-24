@@ -193,7 +193,10 @@ class Product(SQLModel, table=True):
     product_id: int | None = Field(default=None, primary_key=True)
     sku: str = Field(unique=True, index=True, nullable=False)
     name: str = Field(nullable=False)
+    description: str | None = Field(default=None)
     unit_price: Decimal = Field(ge=0, nullable=False)
+    category: str | None = Field(default=None)
+    brand: str | None = Field(default=None)
     status: ProductStatus = Field(default=ProductStatus.ACTIVE, nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -212,6 +215,7 @@ class Stock(SQLModel, table=True):
         foreign_key="product.product_id", unique=True, nullable=False
     )
     quantity: int = Field(ge=0, nullable=False)
+    min_stock_level: int = Field(ge=0, nullable=False, default=0)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     product: "Product" = Relationship(back_populates="stock")

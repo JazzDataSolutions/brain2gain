@@ -4,13 +4,36 @@
 
 import React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import { ChakraProvider } from '@chakra-ui/react'
 import AnalyticsDashboard from '../../../components/Admin/AnalyticsDashboard'
 import AnalyticsService from '../../../services/AnalyticsService'
 
-// Mock the AnalyticsService
-vi.mock('../../../services/AnalyticsService')
+// Mock the AnalyticsService completely to avoid fetch calls
+vi.mock('../../../services/AnalyticsService', () => ({
+  default: {
+    getFinancialSummaryWithFallback: vi.fn(),
+    getRealtimeMetricsWithFallback: vi.fn(),
+    getAlertSummaryWithFallback: vi.fn(),
+    getRFMData: vi.fn(),
+    getCohortData: vi.fn(),
+    getCustomerSegmentData: vi.fn(),
+    getAdvancedMetrics: vi.fn()
+  }
+}))
+
+// Mock fetch globally to prevent network calls
+const mockFetch = vi.fn()
+global.fetch = mockFetch
+
+// Mock localStorage
+const mockLocalStorage = {
+  getItem: vi.fn(() => 'mock-token'),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn()
+}
+Object.defineProperty(window, 'localStorage', { value: mockLocalStorage })
 
 // Mock useToast hook
 const mockToast = vi.fn()
@@ -107,10 +130,33 @@ describe('AnalyticsDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     
-    // Setup default mocks
+    // Setup default mocks for AnalyticsService
     vi.mocked(AnalyticsService.getFinancialSummaryWithFallback).mockResolvedValue(mockFinancialData)
     vi.mocked(AnalyticsService.getRealtimeMetricsWithFallback).mockResolvedValue(mockRealtimeData)
     vi.mocked(AnalyticsService.getAlertSummaryWithFallback).mockResolvedValue(mockAlertsData)
+    
+    // Setup default fetch mocks for direct API calls in component
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('/analytics/segmentation/rfm')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ rfm_segments: [] })
+        })
+      }
+      if (url.includes('/analytics/cohorts/retention')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ cohort_data: [] })
+        })
+      }
+      if (url.includes('/analytics/funnel/conversion')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ funnel_data: [] })
+        })
+      }
+      return Promise.reject(new Error(`Unhandled fetch call to ${url}`))
+    })
   })
 
   afterEach(() => {
@@ -118,18 +164,26 @@ describe('AnalyticsDashboard', () => {
   })
 
   describe('Initial render and loading', () => {
-    it('should show loading spinner initially', () => {
+    it('should show loading spinner initially', async () => {
       // Arrange - make promises never resolve to keep loading state
       vi.mocked(AnalyticsService.getFinancialSummaryWithFallback).mockImplementation(
         () => new Promise(() => {}) // Never resolves
       )
+      vi.mocked(AnalyticsService.getRealtimeMetricsWithFallback).mockImplementation(
+        () => new Promise(() => {}) // Never resolves
+      )
+      vi.mocked(AnalyticsService.getAlertSummaryWithFallback).mockImplementation(
+        () => new Promise(() => {}) // Never resolves
+      )
 
       // Act
-      render(
-        <TestWrapper>
-          <AnalyticsDashboard />
-        </TestWrapper>
-      )
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AnalyticsDashboard />
+          </TestWrapper>
+        )
+      })
 
       // Assert
       expect(screen.getByText('Loading analytics dashboard...')).toBeInTheDocument()
@@ -138,11 +192,13 @@ describe('AnalyticsDashboard', () => {
 
     it('should load and display dashboard data', async () => {
       // Act
-      render(
-        <TestWrapper>
-          <AnalyticsDashboard />
-        </TestWrapper>
-      )
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AnalyticsDashboard />
+          </TestWrapper>
+        )
+      })
 
       // Assert
       await waitFor(() => {

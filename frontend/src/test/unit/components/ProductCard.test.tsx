@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from '../../test-utils'
-import { ProductCard } from '../../../components/Products/ProductCard'
+import ProductCard from '../../../components/Products/ProductCard'
 import { useCartStore } from '../../../stores/cartStore'
 
 // Mock the cart store
@@ -16,6 +16,7 @@ vi.mock('../../../stores/cartStore', () => ({
 
 // Mock product data
 const mockProduct = {
+  id: '1',
   product_id: '1',
   sku: 'WP-001',
   name: 'Whey Protein Gold Standard',

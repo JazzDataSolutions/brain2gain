@@ -2,22 +2,25 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { render } from './test-utils'
-import { CartPage } from '../components/Cart/CartPage'
-import { ProductCard } from '../components/Products/ProductCard'
-import { MiniCart } from '../components/Cart/MiniCart'
+import CartPage from '../components/Cart/CartPage'
+import ProductCard from '../components/Products/ProductCard'
+import MiniCart from '../components/Cart/MiniCart'
 import { useCartStore } from '../stores/cartStore'
 
 // Mock product data
 const mockProduct = {
+  id: '1',
   product_id: '1',
   sku: 'WP-001',
   name: 'Whey Protein Gold Standard',
   description: '100% Whey Protein Isolate - Chocolate',
+  price: 45.99,
   unit_price: 45.99,
   stock_quantity: 100,
-  status: 'available',
+  status: 'ACTIVE',
   category: 'proteins',
   brand: 'Optimum Nutrition',
+  image: '/images/whey-protein.jpg',
   image_url: '/images/whey-protein.jpg',
 }
 
@@ -53,7 +56,7 @@ describe('Cart Flow Integration Tests', () => {
       
       render(<ProductCard product={mockProduct} />)
       
-      const addButton = screen.getByRole('button', { name: /add to cart/i })
+      const addButton = screen.getByRole('button', { name: /agregar al carrito/i })
       expect(addButton).toBeInTheDocument()
       
       await user.click(addButton)
@@ -72,13 +75,13 @@ describe('Cart Flow Integration Tests', () => {
         await user.clear(quantityInput)
         await user.type(quantityInput, '2')
         
-        const addButton = screen.getByRole('button', { name: /add to cart/i })
+        const addButton = screen.getByRole('button', { name: /agregar al carrito/i })
         await user.click(addButton)
         
         expect(mockAddToCart).toHaveBeenCalledWith(mockProduct, 2)
       } else {
         // If no quantity selector, should add 1 by default
-        const addButton = screen.getByRole('button', { name: /add to cart/i })
+        const addButton = screen.getByRole('button', { name: /agregar al carrito/i })
         await user.click(addButton)
         
         expect(mockAddToCart).toHaveBeenCalledWith(mockProduct, 1)
@@ -105,7 +108,7 @@ describe('Cart Flow Integration Tests', () => {
       
       render(<ProductCard product={mockProduct} />)
       
-      const addButton = screen.getByRole('button', { name: /add to cart/i })
+      const addButton = screen.getByRole('button', { name: /agregar al carrito/i })
       await user.click(addButton)
       
       // Should show loading state (this depends on ProductCard implementation)
@@ -123,9 +126,13 @@ describe('Cart Flow Integration Tests', () => {
       ;(useCartStore as any).mockReturnValue({
         items: [
           {
-            product: mockProduct,
+            product_id: mockProduct.id,
+            product_name: mockProduct.name,
+            product_sku: mockProduct.sku,
+            unit_price: mockProduct.price,
+            total_price: 91.98,
             quantity: 2,
-            subtotal: 91.98,
+            image: mockProduct.image,
           },
         ],
         totalItems: 2,
@@ -134,6 +141,8 @@ describe('Cart Flow Integration Tests', () => {
         updateQuantity: mockUpdateQuantity,
         removeFromCart: mockRemoveFromCart,
         clearCart: mockClearCart,
+        getTotalItems: vi.fn(() => 2),
+        getTotalPrice: vi.fn(() => 91.98),
       })
     })
 
@@ -154,12 +163,12 @@ describe('Cart Flow Integration Tests', () => {
       const increaseButton = screen.getByRole('button', { name: /increase quantity/i })
       await user.click(increaseButton)
       
-      expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.product_id, 3)
+      expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.id, 3)
       
       const decreaseButton = screen.getByRole('button', { name: /decrease quantity/i })
       await user.click(decreaseButton)
       
-      expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.product_id, 1)
+      expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.id, 1)
     })
 
     it('should remove item from cart', async () => {
@@ -170,7 +179,7 @@ describe('Cart Flow Integration Tests', () => {
       const removeButton = screen.getByRole('button', { name: /remove/i })
       await user.click(removeButton)
       
-      expect(mockRemoveFromCart).toHaveBeenCalledWith(mockProduct.product_id)
+      expect(mockRemoveFromCart).toHaveBeenCalledWith(mockProduct.id)
     })
 
     it('should proceed to checkout when cart has items', async () => {
@@ -192,8 +201,24 @@ describe('Cart Flow Integration Tests', () => {
     it('should display cart item count', () => {
       ;(useCartStore as any).mockReturnValue({
         items: [
-          { product: mockProduct, quantity: 2, subtotal: 91.98 },
-          { product: { ...mockProduct, product_id: '2' }, quantity: 1, subtotal: 45.99 },
+          {
+            product_id: mockProduct.id,
+            product_name: mockProduct.name,
+            product_sku: mockProduct.sku,
+            unit_price: mockProduct.price,
+            total_price: 91.98,
+            quantity: 2,
+            image: mockProduct.image,
+          },
+          {
+            product_id: '2',
+            product_name: mockProduct.name,
+            product_sku: mockProduct.sku,
+            unit_price: mockProduct.price,
+            total_price: 45.99,
+            quantity: 1,
+            image: mockProduct.image,
+          },
         ],
         totalItems: 3,
         totalPrice: 137.97,
@@ -201,6 +226,8 @@ describe('Cart Flow Integration Tests', () => {
         updateQuantity: mockUpdateQuantity,
         removeFromCart: mockRemoveFromCart,
         clearCart: mockClearCart,
+        getTotalItems: vi.fn(() => 3),
+        getTotalPrice: vi.fn(() => 137.97),
       })
       
       render(<MiniCart />)
@@ -217,6 +244,8 @@ describe('Cart Flow Integration Tests', () => {
         updateQuantity: mockUpdateQuantity,
         removeFromCart: mockRemoveFromCart,
         clearCart: mockClearCart,
+        getTotalItems: vi.fn(() => 0),
+        getTotalPrice: vi.fn(() => 0),
       })
       
       render(<MiniCart />)
@@ -228,7 +257,15 @@ describe('Cart Flow Integration Tests', () => {
   describe('Cart Persistence', () => {
     it('should persist cart data in localStorage', () => {
       const cartData = [
-        { product: mockProduct, quantity: 2, subtotal: 91.98 },
+        {
+          product_id: mockProduct.id,
+          product_name: mockProduct.name,
+          product_sku: mockProduct.sku,
+          unit_price: mockProduct.price,
+          total_price: 91.98,
+          quantity: 2,
+          image: mockProduct.image,
+        },
       ]
       
       // Simulate cart store saving to localStorage
@@ -239,7 +276,15 @@ describe('Cart Flow Integration Tests', () => {
 
     it('should restore cart data from localStorage on page load', () => {
       const cartData = [
-        { product: mockProduct, quantity: 2, subtotal: 91.98 },
+        {
+          product_id: mockProduct.id,
+          product_name: mockProduct.name,
+          product_sku: mockProduct.sku,
+          unit_price: mockProduct.price,
+          total_price: 91.98,
+          quantity: 2,
+          image: mockProduct.image,
+        },
       ]
       
       localStorage.setItem('cart', JSON.stringify(cartData))
@@ -268,7 +313,7 @@ describe('Cart Flow Integration Tests', () => {
       
       render(<ProductCard product={mockProduct} />)
       
-      const addButton = screen.getByRole('button', { name: /add to cart/i })
+      const addButton = screen.getByRole('button', { name: /agregar al carrito/i })
       await user.click(addButton)
       
       expect(errorAddToCart).toHaveBeenCalled()
