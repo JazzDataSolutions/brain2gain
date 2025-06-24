@@ -54,7 +54,7 @@ quick_start:
       - "✅ RESUELTO - Variable ENVIRONMENT ahora acepta 'testing'"
       - "✅ RESUELTO - PaymentProcessResponse schema arreglado con campo message"
       - "✅ RESUELTO - Tests críticos implementados: auth (37), payment (36), cart (24), order (31)"
-      - "❌ Rate limiting decorator requiere 'request' o 'websocket' en función"
+      - "✅ RESUELTO - Rate limiting configurado con memory storage para testing"
       - "❌ Configuración pytest-dotenv con problemas en línea 6"
     
     frontend:
@@ -130,7 +130,7 @@ current_state_testing:
     
     problemas_pendientes:
       configuracion_menor:
-        - rate_limiting: "❌ PENDIENTE - Decorator @apply_endpoint_limits requiere 'request'/'websocket'"
+        - rate_limiting: "✅ RESUELTO - Configurado memory:// storage para testing environment"
         - dotenv_parsing: "❌ PENDIENTE - Python-dotenv error línea 6 del archivo .env"
         - dependencies: "⚠️  MENOR - Algunos conflictos FastAPI dependencies injection"
         
@@ -157,9 +157,10 @@ current_state_testing:
       logros_principales:
         total_tests: "128 tests críticos funcionando (100% servicios principales)"
         coverage_critica: "✅ Autenticación, Pagos, Carrito, Órdenes - 100% funcionalidad de negocio"
-        tiempo_ejecucion: "✅ Suite completa en ~0.2 segundos (muy rápida)"
+        tiempo_ejecucion: "✅ Suite completa en ~46 segundos (estable y completo)"
         estabilidad: "✅ Tests determinísticos con mocking apropiado"
         documentacion: "✅ Tests auto-documentan funcionalidad esperada"
+        rate_limiting: "✅ Rate limiting funciona correctamente con memory storage en testing"
         
       areas_cobertura_completada:
         - jwt_operations: "✅ COMPLETO - Token creation, validation, refresh (37 tests)"
