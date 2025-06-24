@@ -1,476 +1,751 @@
 """
-Unit tests for Cart Service layer.
+Tests for CartService - Shopping Cart Management Service
+Tests cover cart creation, item management, cart operations, and calculations
 """
 
+import uuid
+from datetime import datetime
 from decimal import Decimal
-from unittest.mock import Mock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+from fastapi import HTTPException, status
+from sqlmodel.ext.asyncio.session import AsyncSession
 
-from app.repositories.cart_repository import CartRepository
+from app.models import Cart, CartItem, Product, ProductStatus
+from app.schemas.cart import AddToCartRequest, CartRead, UpdateCartItemRequest
 from app.services.cart_service import CartService
-from app.tests.fixtures.factories import CartFactory, CartItemFactory, ProductFactory
+
+# Mark all async tests in this module
+pytestmark = pytest.mark.asyncio
 
 
-class TestCartService:
-    """Test cases for CartService."""
+class TestCartServiceInitialization:
+    """Test CartService initialization and basic functionality"""
 
-    @pytest.fixture
-    def mock_repository(self) -> Mock:
-        """Create a mock CartRepository."""
-        return Mock(spec=CartRepository)
+    async def test_cart_service_initialization(self):
+        """Test CartService initializes correctly"""
+        mock_session = Mock(spec=AsyncSession)
+        
+        service = CartService(mock_session)
+        
+        assert service.session == mock_session
+        assert service.cart_repo is not None
+        assert service.product_repo is not None
 
-    @pytest.fixture
-    def service(self, mock_repository: Mock) -> CartService:
-        """Create a CartService instance with mocked dependencies."""
-        return CartService(repository=mock_repository)
 
-    def test_add_product_to_cart_new_item(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test adding a new product to cart."""
-        # Setup
-        user_id = uuid4()
-        product_id = uuid4()
+class TestCartCreationAndRetrieval:
+    """Test cart creation and retrieval functionality"""
+
+    async def test_get_or_create_cart_for_user_existing(self):
+        """Test getting existing cart for user"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        existing_cart = Cart(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository method
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=existing_cart)
+        
+        result = await service.get_or_create_cart(user_id=user_id)
+        
+        assert result == existing_cart
+        service.cart_repo.get_cart_by_user.assert_called_once_with(user_id)
+
+    async def test_get_or_create_cart_for_user_new(self):
+        """Test creating new cart for user"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        new_cart = Cart(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=None)
+        service.cart_repo.create_cart = AsyncMock(return_value=new_cart)
+        
+        result = await service.get_or_create_cart(user_id=user_id)
+        
+        assert result == new_cart
+        service.cart_repo.get_cart_by_user.assert_called_once_with(user_id)
+        service.cart_repo.create_cart.assert_called_once()
+
+    async def test_get_or_create_cart_for_session_existing(self):
+        """Test getting existing cart for session"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        session_id = "session_123"
+        existing_cart = Cart(
+            cart_id=2,
+            user_id=None,
+            session_id=session_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository method
+        service.cart_repo.get_cart_by_session = AsyncMock(return_value=existing_cart)
+        
+        result = await service.get_or_create_cart(session_id=session_id)
+        
+        assert result == existing_cart
+        service.cart_repo.get_cart_by_session.assert_called_once_with(session_id)
+
+    async def test_get_or_create_cart_for_session_new(self):
+        """Test creating new cart for session"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        session_id = "session_123"
+        new_cart = Cart(
+            cart_id=2,
+            user_id=None,
+            session_id=session_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_session = AsyncMock(return_value=None)
+        service.cart_repo.create_cart = AsyncMock(return_value=new_cart)
+        
+        result = await service.get_or_create_cart(session_id=session_id)
+        
+        assert result == new_cart
+        service.cart_repo.get_cart_by_session.assert_called_once_with(session_id)
+        service.cart_repo.create_cart.assert_called_once()
+
+
+class TestAddToCart:
+    """Test adding items to cart functionality"""
+
+    async def test_add_to_cart_new_item_success(self):
+        """Test successfully adding new item to cart"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        # Setup test data
+        user_id = uuid.uuid4()
+        product_id = 1
         quantity = 2
-
-        cart = CartFactory(user_id=user_id)
-        ProductFactory(product_id=product_id, unit_price=Decimal("45.99"))
-
-        mock_repository.get_or_create_cart.return_value = cart
-        mock_repository.get_cart_item.return_value = None  # Item doesn't exist
-        mock_repository.add_cart_item.return_value = CartItemFactory(
-            cart_id=cart.cart_id, product_id=product_id, quantity=quantity
+        
+        product = Product(
+            product_id=product_id,
+            name="Test Product",
+            sku="TEST-001",
+            unit_price=Decimal("29.99"),
+            status=ProductStatus.ACTIVE
         )
-
-        # Execute
-        result = service.add_product_to_cart(user_id, product_id, quantity)
-
-        # Assert
-        assert result is not None
-        mock_repository.get_or_create_cart.assert_called_once_with(user_id)
-        mock_repository.get_cart_item.assert_called_once_with(cart.cart_id, product_id)
-        mock_repository.add_cart_item.assert_called_once_with(
-            cart.cart_id, product_id, quantity
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            items=[],
+            total_amount=Decimal("59.98"),
+            item_count=2,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
+        
+        request = AddToCartRequest(product_id=product_id, quantity=quantity)
+        
+        # Mock repository methods
+        service.product_repo.get_by_id = AsyncMock(return_value=product)
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=None)  # No existing item
+        service.cart_repo.add_cart_item = AsyncMock()
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.add_to_cart(request, user_id=user_id)
+        
+        assert result == cart_read
+        service.product_repo.get_by_id.assert_called_once_with(product_id)
+        service.cart_repo.get_cart_item.assert_called_once_with(cart.cart_id, product_id)
+        service.cart_repo.add_cart_item.assert_called_once()
 
-    def test_add_product_to_cart_existing_item(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test adding quantity to existing cart item."""
-        # Setup
-        user_id = uuid4()
-        product_id = uuid4()
+    async def test_add_to_cart_existing_item_updates_quantity(self):
+        """Test adding to existing cart item updates quantity"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        # Setup test data
+        user_id = uuid.uuid4()
+        product_id = 1
         additional_quantity = 2
         existing_quantity = 3
-
-        cart = CartFactory(user_id=user_id)
-        existing_item = CartItemFactory(
-            cart_id=cart.cart_id, product_id=product_id, quantity=existing_quantity
+        
+        product = Product(
+            product_id=product_id,
+            name="Test Product",
+            sku="TEST-001",
+            unit_price=Decimal("29.99"),
+            status=ProductStatus.ACTIVE
         )
-        updated_item = CartItemFactory(
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        existing_item = CartItem(
             cart_id=cart.cart_id,
             product_id=product_id,
-            quantity=existing_quantity + additional_quantity,
+            quantity=existing_quantity
         )
-
-        mock_repository.get_or_create_cart.return_value = cart
-        mock_repository.get_cart_item.return_value = existing_item
-        mock_repository.update_cart_item_quantity.return_value = updated_item
-
-        # Execute
-        result = service.add_product_to_cart(user_id, product_id, additional_quantity)
-
-        # Assert
-        assert result is not None
-        mock_repository.update_cart_item_quantity.assert_called_once_with(
-            existing_item.cart_item_id, existing_quantity + additional_quantity
+        
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            items=[],
+            total_amount=Decimal("149.95"),
+            item_count=5,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
+        
+        request = AddToCartRequest(product_id=product_id, quantity=additional_quantity)
+        
+        # Mock repository methods
+        service.product_repo.get_by_id = AsyncMock(return_value=product)
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=existing_item)
+        service.cart_repo.update_cart_item = AsyncMock()
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.add_to_cart(request, user_id=user_id)
+        
+        assert result == cart_read
+        assert existing_item.quantity == existing_quantity + additional_quantity
+        service.cart_repo.update_cart_item.assert_called_once_with(existing_item)
 
-    def test_update_cart_item_quantity_valid(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test updating cart item quantity with valid quantity."""
-        # Setup
-        user_id = uuid4()
-        cart_item_id = uuid4()
+    async def test_add_to_cart_product_not_found(self):
+        """Test adding non-existent product to cart raises error"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 999  # Non-existent product
+        request = AddToCartRequest(product_id=product_id, quantity=1)
+        
+        # Mock repository method
+        service.product_repo.get_by_id = AsyncMock(return_value=None)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await service.add_to_cart(request, user_id=user_id)
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Product not found" in exc_info.value.detail
+
+    async def test_add_to_cart_inactive_product(self):
+        """Test adding inactive product to cart raises error"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 1
+        
+        inactive_product = Product(
+            product_id=product_id,
+            name="Inactive Product",
+            sku="INACTIVE-001",
+            unit_price=Decimal("29.99"),
+            status=ProductStatus.DISCONTINUED
+        )
+        
+        request = AddToCartRequest(product_id=product_id, quantity=1)
+        
+        # Mock repository method
+        service.product_repo.get_by_id = AsyncMock(return_value=inactive_product)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await service.add_to_cart(request, user_id=user_id)
+        
+        assert exc_info.value.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Product is not available" in exc_info.value.detail
+
+
+class TestUpdateCartItem:
+    """Test updating cart item functionality"""
+
+    async def test_update_cart_item_success(self):
+        """Test successfully updating cart item quantity"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 1
         new_quantity = 5
-
-        cart_item = CartItemFactory(cart_item_id=cart_item_id, quantity=3)
-        updated_item = CartItemFactory(cart_item_id=cart_item_id, quantity=new_quantity)
-
-        mock_repository.get_cart_item_by_id.return_value = cart_item
-        mock_repository.verify_cart_ownership.return_value = True
-        mock_repository.update_cart_item_quantity.return_value = updated_item
-
-        # Execute
-        result = service.update_cart_item_quantity(user_id, cart_item_id, new_quantity)
-
-        # Assert
-        assert result == updated_item
-        mock_repository.verify_cart_ownership.assert_called_once_with(
-            cart_item.cart_id, user_id
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        cart_item = CartItem(cart_id=cart.cart_id, product_id=product_id, quantity=2)
+        
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            items=[],
+            total_amount=Decimal("149.95"),
+            item_count=5,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-        mock_repository.update_cart_item_quantity.assert_called_once_with(
-            cart_item_id, new_quantity
+        
+        request = UpdateCartItemRequest(quantity=new_quantity)
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=cart_item)
+        service.cart_repo.update_cart_item = AsyncMock()
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.update_cart_item(product_id, request, user_id=user_id)
+        
+        assert result == cart_read
+        assert cart_item.quantity == new_quantity
+        service.cart_repo.update_cart_item.assert_called_once_with(cart_item)
+
+    async def test_update_cart_item_not_found(self):
+        """Test updating non-existent cart item raises error"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 999
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        request = UpdateCartItemRequest(quantity=3)
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=None)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await service.update_cart_item(product_id, request, user_id=user_id)
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Item not found in cart" in exc_info.value.detail
+
+
+class TestRemoveFromCart:
+    """Test removing items from cart functionality"""
+
+    async def test_remove_from_cart_success(self):
+        """Test successfully removing item from cart"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 1
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        cart_item = CartItem(cart_id=cart.cart_id, product_id=product_id, quantity=2)
+        
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            items=[],
+            total_amount=Decimal("0.00"),
+            item_count=0,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-
-    def test_update_cart_item_quantity_invalid_quantity(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test updating cart item with invalid quantity."""
-        # Setup
-        user_id = uuid4()
-        cart_item_id = uuid4()
-        invalid_quantity = 0
-
-        # Execute & Assert
-        with pytest.raises(ValueError, match="Quantity must be greater than 0"):
-            service.update_cart_item_quantity(user_id, cart_item_id, invalid_quantity)
-
-    def test_update_cart_item_quantity_unauthorized(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test updating cart item without ownership."""
-        # Setup
-        user_id = uuid4()
-        cart_item_id = uuid4()
-        new_quantity = 2
-
-        cart_item = CartItemFactory(cart_item_id=cart_item_id)
-        mock_repository.get_cart_item_by_id.return_value = cart_item
-        mock_repository.verify_cart_ownership.return_value = False
-
-        # Execute & Assert
-        with pytest.raises(PermissionError, match="User does not own this cart"):
-            service.update_cart_item_quantity(user_id, cart_item_id, new_quantity)
-
-    def test_remove_cart_item_success(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test removing cart item successfully."""
-        # Setup
-        user_id = uuid4()
-        cart_item_id = uuid4()
-
-        cart_item = CartItemFactory(cart_item_id=cart_item_id)
-        mock_repository.get_cart_item_by_id.return_value = cart_item
-        mock_repository.verify_cart_ownership.return_value = True
-        mock_repository.remove_cart_item.return_value = True
-
-        # Execute
-        result = service.remove_cart_item(user_id, cart_item_id)
-
-        # Assert
-        assert result is True
-        mock_repository.remove_cart_item.assert_called_once_with(cart_item_id)
-
-    def test_remove_cart_item_not_found(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test removing non-existent cart item."""
-        # Setup
-        user_id = uuid4()
-        cart_item_id = uuid4()
-
-        mock_repository.get_cart_item_by_id.return_value = None
-
-        # Execute
-        result = service.remove_cart_item(user_id, cart_item_id)
-
-        # Assert
-        assert result is False
-        mock_repository.remove_cart_item.assert_not_called()
-
-    def test_get_user_cart_with_items(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test getting user cart with items."""
-        # Setup
-        user_id = uuid4()
-        cart = CartFactory(user_id=user_id)
-        cart_items = [
-            CartItemFactory(cart_id=cart.cart_id, quantity=2),
-            CartItemFactory(cart_id=cart.cart_id, quantity=1),
-        ]
-
-        mock_repository.get_user_cart.return_value = cart
-        mock_repository.get_cart_items.return_value = cart_items
-
-        # Execute
-        result = service.get_user_cart(user_id)
-
-        # Assert
-        assert result is not None
-        assert result["cart"] == cart
-        assert result["items"] == cart_items
-        assert result["total_items"] == 3  # 2 + 1
-
-        mock_repository.get_user_cart.assert_called_once_with(user_id)
-        mock_repository.get_cart_items.assert_called_once_with(cart.cart_id)
-
-    def test_get_user_cart_empty(self, service: CartService, mock_repository: Mock):
-        """Test getting empty user cart."""
-        # Setup
-        user_id = uuid4()
-
-        mock_repository.get_user_cart.return_value = None
-
-        # Execute
-        result = service.get_user_cart(user_id)
-
-        # Assert
-        assert result is not None
-        assert result["cart"] is None
-        assert result["items"] == []
-        assert result["total_items"] == 0
-        assert result["total_price"] == Decimal("0.00")
-
-    def test_calculate_cart_total(self, service: CartService, mock_repository: Mock):
-        """Test calculating cart total with multiple items."""
-        # Setup
-        cart_id = uuid4()
-        product1 = ProductFactory(unit_price=Decimal("45.99"))
-        product2 = ProductFactory(unit_price=Decimal("29.99"))
-
-        cart_items = [
-            CartItemFactory(
-                cart_id=cart_id, product_id=product1.product_id, quantity=2
-            ),
-            CartItemFactory(
-                cart_id=cart_id, product_id=product2.product_id, quantity=1
-            ),
-        ]
-
-        mock_repository.get_cart_items_with_products.return_value = [
-            (cart_items[0], product1),
-            (cart_items[1], product2),
-        ]
-
-        # Execute
-        total = service.calculate_cart_total(cart_id)
-
-        # Assert
-        expected_total = (Decimal("45.99") * 2) + (Decimal("29.99") * 1)
-        assert total == expected_total
-
-    def test_clear_cart_success(self, service: CartService, mock_repository: Mock):
-        """Test clearing cart successfully."""
-        # Setup
-        user_id = uuid4()
-        cart = CartFactory(user_id=user_id)
-
-        mock_repository.get_user_cart.return_value = cart
-        mock_repository.clear_cart.return_value = True
-
-        # Execute
-        result = service.clear_cart(user_id)
-
-        # Assert
-        assert result is True
-        mock_repository.clear_cart.assert_called_once_with(cart.cart_id)
-
-    def test_clear_cart_not_found(self, service: CartService, mock_repository: Mock):
-        """Test clearing non-existent cart."""
-        # Setup
-        user_id = uuid4()
-
-        mock_repository.get_user_cart.return_value = None
-
-        # Execute
-        result = service.clear_cart(user_id)
-
-        # Assert
-        assert result is False
-        mock_repository.clear_cart.assert_not_called()
-
-    def test_merge_session_cart_with_user_cart(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test merging session cart with user cart after login."""
-        # Setup
-        user_id = uuid4()
-        session_id = "session123"
-
-        user_cart = CartFactory(user_id=user_id)
-        session_cart = CartFactory(session_id=session_id)
-
-        session_items = [
-            CartItemFactory(cart_id=session_cart.cart_id, quantity=2),
-            CartItemFactory(cart_id=session_cart.cart_id, quantity=1),
-        ]
-
-        mock_repository.get_user_cart.return_value = user_cart
-        mock_repository.get_session_cart.return_value = session_cart
-        mock_repository.get_cart_items.return_value = session_items
-        mock_repository.get_cart_item.side_effect = [None, None]  # No existing items
-        mock_repository.add_cart_item.return_value = True
-        mock_repository.delete_cart.return_value = True
-
-        # Execute
-        result = service.merge_session_cart(user_id, session_id)
-
-        # Assert
-        assert result is True
-        assert mock_repository.add_cart_item.call_count == 2
-        mock_repository.delete_cart.assert_called_once_with(session_cart.cart_id)
-
-    def test_validate_cart_item_stock_availability(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test validating cart items against stock availability."""
-        # Setup
-        cart_id = uuid4()
-
-        product1 = ProductFactory(product_id=uuid4())
-        product2 = ProductFactory(product_id=uuid4())
-
-        cart_items = [
-            CartItemFactory(
-                cart_id=cart_id, product_id=product1.product_id, quantity=5
-            ),
-            CartItemFactory(
-                cart_id=cart_id, product_id=product2.product_id, quantity=2
-            ),
-        ]
-
-        mock_repository.get_cart_items.return_value = cart_items
-        mock_repository.check_product_stock.side_effect = [
-            {"available": True, "stock": 10},  # Product 1 has enough stock
-            {"available": False, "stock": 1},  # Product 2 doesn't have enough stock
-        ]
-
-        # Execute
-        validation_result = service.validate_cart_stock(cart_id)
-
-        # Assert
-        assert validation_result["valid"] is False
-        assert len(validation_result["issues"]) == 1
-        assert validation_result["issues"][0]["product_id"] == product2.product_id
-        assert validation_result["issues"][0]["requested"] == 2
-        assert validation_result["issues"][0]["available"] == 1
-
-    def test_apply_discount_to_cart(self, service: CartService, mock_repository: Mock):
-        """Test applying discount to cart."""
-        # Setup
-        cart_id = uuid4()
-        discount_code = "SAVE10"
-        discount_percentage = Decimal("10.00")
-        cart_total = Decimal("100.00")
-
-        mock_repository.validate_discount_code.return_value = {
-            "valid": True,
-            "discount_type": "percentage",
-            "discount_value": discount_percentage,
-        }
-
-        with patch.object(service, "calculate_cart_total", return_value=cart_total):
-            # Execute
-            result = service.apply_discount(cart_id, discount_code)
-
-            # Assert
-            expected_discount = cart_total * (discount_percentage / 100)
-            expected_final_total = cart_total - expected_discount
-
-            assert result["discount_applied"] is True
-            assert result["original_total"] == cart_total
-            assert result["discount_amount"] == expected_discount
-            assert result["final_total"] == expected_final_total
-
-    def test_apply_invalid_discount_code(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test applying invalid discount code."""
-        # Setup
-        cart_id = uuid4()
-        invalid_code = "INVALID"
-
-        mock_repository.validate_discount_code.return_value = {
-            "valid": False,
-            "reason": "Code not found",
-        }
-
-        # Execute
-        result = service.apply_discount(cart_id, invalid_code)
-
-        # Assert
-        assert result["discount_applied"] is False
-        assert result["error"] == "Code not found"
-
-    def test_get_cart_summary_with_totals(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test getting comprehensive cart summary."""
-        # Setup
-        user_id = uuid4()
-        cart = CartFactory(user_id=user_id)
-
-        product1 = ProductFactory(unit_price=Decimal("45.99"))
-        product2 = ProductFactory(unit_price=Decimal("29.99"))
-
-        cart_items = [
-            CartItemFactory(
-                cart_id=cart.cart_id, product_id=product1.product_id, quantity=2
-            ),
-            CartItemFactory(
-                cart_id=cart.cart_id, product_id=product2.product_id, quantity=1
-            ),
-        ]
-
-        mock_repository.get_user_cart.return_value = cart
-        mock_repository.get_cart_items_with_products.return_value = [
-            (cart_items[0], product1),
-            (cart_items[1], product2),
-        ]
-
-        # Execute
-        summary = service.get_cart_summary(user_id)
-
-        # Assert
-        assert summary["cart_id"] == cart.cart_id
-        assert summary["total_items"] == 3  # 2 + 1
-        assert summary["unique_items"] == 2
-        assert summary["subtotal"] == Decimal("121.97")  # (45.99 * 2) + (29.99 * 1)
-        assert len(summary["items"]) == 2
-
-    @pytest.mark.asyncio
-    async def test_async_cart_operations(
-        self, service: CartService, mock_repository: Mock
-    ):
-        """Test asynchronous cart operations."""
-        # Setup
-        user_id = uuid4()
-        product_ids = [uuid4() for _ in range(5)]
-
-        # Mock async repository methods
-        async def mock_async_add_items(cart_id, items):
-            return [
-                CartItemFactory(cart_id=cart_id, product_id=item["product_id"])
-                for item in items
-            ]
-
-        mock_repository.async_add_multiple_items.return_value = mock_async_add_items(
-            uuid4(), [{"product_id": pid, "quantity": 1} for pid in product_ids]
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=cart_item)
+        service.cart_repo.remove_cart_item = AsyncMock()
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.remove_from_cart(product_id, user_id=user_id)
+        
+        assert result == cart_read
+        service.cart_repo.remove_cart_item.assert_called_once_with(cart_item)
+
+    async def test_remove_from_cart_item_not_found(self):
+        """Test removing non-existent cart item raises error"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        product_id = 999
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=None)
+        
+        with pytest.raises(HTTPException) as exc_info:
+            await service.remove_from_cart(product_id, user_id=user_id)
+        
+        assert exc_info.value.status_code == status.HTTP_404_NOT_FOUND
+        assert "Item not found in cart" in exc_info.value.detail
+
+
+class TestCartOperations:
+    """Test cart-level operations"""
+
+    async def test_get_cart_success(self):
+        """Test getting cart details"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        cart = Cart(cart_id=1, user_id=user_id)
+        
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=user_id,
+            session_id=None,
+            items=[],
+            total_amount=Decimal("59.98"),
+            item_count=2,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
+        
+        # Mock repository method
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.get_cart(user_id=user_id)
+        
+        assert result == cart_read
 
-        # Execute
-        items_to_add = [{"product_id": pid, "quantity": 1} for pid in product_ids]
-        result = await service.async_bulk_add_to_cart(user_id, items_to_add)
+    async def test_clear_cart_success(self):
+        """Test clearing cart successfully"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        cart = Cart(cart_id=1, user_id=user_id)
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.clear_cart = AsyncMock()
+        
+        await service.clear_cart(user_id=user_id)
+        
+        service.cart_repo.clear_cart.assert_called_once_with(cart.cart_id)
 
-        # Assert
-        assert len(result) == 5
-        mock_repository.async_add_multiple_items.assert_called_once()
 
-    def test_cart_expiry_cleanup(self, service: CartService, mock_repository: Mock):
-        """Test cleaning up expired carts."""
-        # Setup
-        expired_days = 30
-        mock_repository.cleanup_expired_carts.return_value = 15  # 15 carts cleaned up
+class TestCartDetails:
+    """Test cart details calculation"""
 
-        # Execute
-        cleaned_count = service.cleanup_expired_carts(expired_days)
+    async def test_get_cart_details_with_items(self):
+        """Test getting detailed cart information with items"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.get = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        cart_id = 1
+        cart = Cart(
+            cart_id=cart_id,
+            user_id=uuid.uuid4(),
+            session_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock cart items with products
+        class MockCartItemWithProduct:
+            def __init__(self, product_id, quantity, product):
+                self.product_id = product_id
+                self.quantity = quantity
+                self.product = product
+        
+        product1 = Product(
+            product_id=1,
+            name="Product 1",
+            sku="PROD-001",
+            unit_price=Decimal("29.99")
+        )
+        product2 = Product(
+            product_id=2,
+            name="Product 2",
+            sku="PROD-002",
+            unit_price=Decimal("19.99")
+        )
+        
+        items = [
+            MockCartItemWithProduct(1, 2, product1),
+            MockCartItemWithProduct(2, 1, product2)
+        ]
+        
+        # Mock repository method and session.get
+        service.cart_repo.get_cart_items_with_products = AsyncMock(return_value=items)
+        mock_session.get.return_value = cart
+        
+        result = await service.get_cart_details(cart_id)
+        
+        assert result.cart_id == cart_id
+        assert result.user_id == cart.user_id
+        assert len(result.items) == 2
+        assert result.total_amount == Decimal("79.97")  # (29.99 * 2) + (19.99 * 1)
+        assert result.item_count == 3  # 2 + 1
 
-        # Assert
-        assert cleaned_count == 15
-        mock_repository.cleanup_expired_carts.assert_called_once_with(expired_days)
+    async def test_get_cart_details_empty_cart(self):
+        """Test getting details for empty cart"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.get = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        cart_id = 1
+        cart = Cart(
+            cart_id=cart_id,
+            user_id=uuid.uuid4(),
+            session_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository method and session.get
+        service.cart_repo.get_cart_items_with_products = AsyncMock(return_value=[])
+        mock_session.get.return_value = cart
+        
+        result = await service.get_cart_details(cart_id)
+        
+        assert result.cart_id == cart_id
+        assert result.user_id == cart.user_id
+        assert len(result.items) == 0
+        assert result.total_amount == Decimal("0.00")
+        assert result.item_count == 0
+
+
+class TestCartSessionHandling:
+    """Test cart session handling functionality"""
+
+    async def test_session_cart_creation(self):
+        """Test creating cart for session ID"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        session_id = "session_abc123"
+        new_cart = Cart(
+            cart_id=1,
+            user_id=None,
+            session_id=session_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_session = AsyncMock(return_value=None)
+        service.cart_repo.create_cart = AsyncMock(return_value=new_cart)
+        
+        result = await service.get_or_create_cart(session_id=session_id)
+        
+        assert result == new_cart
+        assert result.session_id == session_id
+        assert result.user_id is None
+
+    async def test_session_cart_add_item(self):
+        """Test adding item to session cart"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        session_id = "session_abc123"
+        product_id = 1
+        
+        product = Product(
+            product_id=product_id,
+            name="Test Product",
+            sku="TEST-001",
+            unit_price=Decimal("29.99"),
+            status=ProductStatus.ACTIVE
+        )
+        
+        cart = Cart(cart_id=1, user_id=None, session_id=session_id)
+        cart_read = CartRead(
+            cart_id=1,
+            user_id=None,
+            session_id=session_id,
+            items=[],
+            total_amount=Decimal("29.99"),
+            item_count=1,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        request = AddToCartRequest(product_id=product_id, quantity=1)
+        
+        # Mock repository methods
+        service.product_repo.get_by_id = AsyncMock(return_value=product)
+        service.cart_repo.get_cart_by_session = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=None)
+        service.cart_repo.add_cart_item = AsyncMock()
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_read):
+            result = await service.add_to_cart(request, session_id=session_id)
+        
+        assert result == cart_read
+        assert result.session_id == session_id
+
+
+class TestEdgeCases:
+    """Test edge cases and error conditions"""
+
+    async def test_add_to_cart_zero_quantity(self):
+        """Test adding zero quantity to cart (should be validated by schema)"""
+        # This would be caught by Pydantic validation before reaching the service
+        with pytest.raises(ValueError):
+            AddToCartRequest(product_id=1, quantity=0)
+
+    async def test_update_cart_item_zero_quantity(self):
+        """Test updating cart item with zero quantity (should be validated by schema)"""
+        # This would be caught by Pydantic validation before reaching the service
+        with pytest.raises(ValueError):
+            UpdateCartItemRequest(quantity=0)
+
+    async def test_get_cart_details_decimal_precision(self):
+        """Test cart details calculation with high decimal precision"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.get = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        cart_id = 1
+        cart = Cart(cart_id=cart_id, user_id=uuid.uuid4())
+        
+        # Mock cart item with high precision price
+        class MockCartItemWithProduct:
+            def __init__(self, product_id, quantity, product):
+                self.product_id = product_id
+                self.quantity = quantity
+                self.product = product
+        
+        product = Product(
+            product_id=1,
+            name="High Precision Product",
+            sku="PREC-001",
+            unit_price=Decimal("33.333")
+        )
+        
+        items = [MockCartItemWithProduct(1, 3, product)]
+        
+        # Mock repository method and session.get
+        service.cart_repo.get_cart_items_with_products = AsyncMock(return_value=items)
+        mock_session.get.return_value = cart
+        
+        result = await service.get_cart_details(cart_id)
+        
+        # 33.333 * 3 = 99.999
+        assert result.total_amount == Decimal("99.999")
+        assert result.item_count == 3
+
+    async def test_cart_operations_without_user_or_session(self):
+        """Test cart operations when neither user_id nor session_id provided"""
+        mock_session = Mock(spec=AsyncSession)
+        service = CartService(mock_session)
+        
+        # This should create a cart but may not be practical in real usage
+        # The service should handle this gracefully
+        
+        # Mock repository methods
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=None)
+        service.cart_repo.get_cart_by_session = AsyncMock(return_value=None)
+        
+        new_cart = Cart(
+            cart_id=1,
+            user_id=None,
+            session_id=None,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        service.cart_repo.create_cart = AsyncMock(return_value=new_cart)
+        
+        result = await service.get_or_create_cart()
+        
+        assert result == new_cart
+        assert result.user_id is None
+        assert result.session_id is None
+
+
+class TestCartIntegrationScenarios:
+    """Test realistic cart usage scenarios"""
+
+    async def test_typical_shopping_flow(self):
+        """Test a typical shopping flow: add items, update quantities, remove item"""
+        mock_session = Mock(spec=AsyncSession)
+        mock_session.add = Mock()
+        mock_session.commit = AsyncMock()
+        
+        service = CartService(mock_session)
+        
+        user_id = uuid.uuid4()
+        
+        # Setup products
+        product1 = Product(product_id=1, name="Product 1", sku="PROD-001", unit_price=Decimal("29.99"), status=ProductStatus.ACTIVE)
+        product2 = Product(product_id=2, name="Product 2", sku="PROD-002", unit_price=Decimal("19.99"), status=ProductStatus.ACTIVE)
+        
+        cart = Cart(cart_id=1, user_id=user_id)
+        
+        # Mock repository methods
+        service.product_repo.get_by_id = AsyncMock(side_effect=lambda pid: product1 if pid == 1 else product2)
+        service.cart_repo.get_cart_by_user = AsyncMock(return_value=cart)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=None)  # No existing items initially
+        service.cart_repo.add_cart_item = AsyncMock()
+        service.cart_repo.update_cart_item = AsyncMock()
+        service.cart_repo.remove_cart_item = AsyncMock()
+        
+        # Mock get_cart_details to return appropriate responses
+        cart_reads = [
+            CartRead(cart_id=1, user_id=user_id, session_id=None, items=[], total_amount=Decimal("29.99"), item_count=1, created_at=datetime.utcnow(), updated_at=datetime.utcnow()),
+            CartRead(cart_id=1, user_id=user_id, session_id=None, items=[], total_amount=Decimal("49.98"), item_count=2, created_at=datetime.utcnow(), updated_at=datetime.utcnow()),
+            CartRead(cart_id=1, user_id=user_id, session_id=None, items=[], total_amount=Decimal("89.97"), item_count=3, created_at=datetime.utcnow(), updated_at=datetime.utcnow()),
+            CartRead(cart_id=1, user_id=user_id, session_id=None, items=[], total_amount=Decimal("19.99"), item_count=1, created_at=datetime.utcnow(), updated_at=datetime.utcnow())
+        ]
+        
+        # 1. Add first product
+        with patch.object(service, 'get_cart_details', return_value=cart_reads[0]):
+            result1 = await service.add_to_cart(AddToCartRequest(product_id=1, quantity=1), user_id=user_id)
+            assert result1.total_amount == Decimal("29.99")
+        
+        # 2. Add second product
+        with patch.object(service, 'get_cart_details', return_value=cart_reads[1]):
+            result2 = await service.add_to_cart(AddToCartRequest(product_id=2, quantity=1), user_id=user_id)
+            assert result2.total_amount == Decimal("49.98")
+        
+        # 3. Update first product quantity
+        item1 = CartItem(cart_id=1, product_id=1, quantity=1)
+        service.cart_repo.get_cart_item = AsyncMock(return_value=item1)
+        
+        with patch.object(service, 'get_cart_details', return_value=cart_reads[2]):
+            result3 = await service.update_cart_item(1, UpdateCartItemRequest(quantity=3), user_id=user_id)
+            assert result3.total_amount == Decimal("89.97")
+        
+        # 4. Remove first product
+        with patch.object(service, 'get_cart_details', return_value=cart_reads[3]):
+            result4 = await service.remove_from_cart(1, user_id=user_id)
+            assert result4.total_amount == Decimal("19.99")

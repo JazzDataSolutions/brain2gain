@@ -15,8 +15,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database import engine
-from app.models import User
-from app.schemas.user import UserCreate
+from app.models import User, UserCreate
 
 
 class AuthService:

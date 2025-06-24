@@ -101,7 +101,12 @@ class PaymentService:
         self.session.add(payment)
         self.session.commit()
 
-        return PaymentProcessResponse(success=result.get("success", True), payment_id=payment_id, status=payment.status)
+        return PaymentProcessResponse(
+            success=result.get("success", True), 
+            payment_id=payment_id, 
+            status=payment.status,
+            message="Payment processed successfully" if result.get("success", True) else "Payment processing failed"
+        )
 
     async def process_stripe_payment(
         self,
