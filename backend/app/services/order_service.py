@@ -43,10 +43,7 @@ class OrderService:
 
     # ─── ORDER CREATION ──────────────────────────────────────────────────
     async def create_order_from_cart(
-        self,
-        user_id: uuid.UUID,
-        cart: Cart,
-        checkout_data: CheckoutInitiate
+        self, user_id: uuid.UUID, cart: Cart, checkout_data: CheckoutInitiate
     ) -> Order:
         """
         Create order from user's cart
@@ -56,7 +53,7 @@ class OrderService:
             calculation = await self.calculate_order_totals(
                 cart_items=cart.items,
                 shipping_address=checkout_data.shipping_address,
-                payment_method=checkout_data.payment_method
+                payment_method=checkout_data.payment_method,
             )
 
             # Create order
@@ -70,10 +67,12 @@ class OrderService:
                 shipping_cost=calculation.shipping_cost,
                 total_amount=calculation.total_amount,
                 shipping_address=checkout_data.shipping_address.dict(),
-                billing_address=(checkout_data.billing_address.dict()
-                                if checkout_data.billing_address
-                                else checkout_data.shipping_address.dict()),
-                notes=getattr(checkout_data, 'notes', None)
+                billing_address=(
+                    checkout_data.billing_address.dict()
+                    if checkout_data.billing_address
+                    else checkout_data.shipping_address.dict()
+                ),
+                notes=getattr(checkout_data, "notes", None),
             )
 
             self.session.add(order)
@@ -89,7 +88,7 @@ class OrderService:
                 await self.inventory_service.reserve_stock(
                     product_id=cart_item.product_id,
                     quantity=cart_item.quantity,
-                    reservation_id=str(order.order_id)
+                    reservation_id=str(order.order_id),
                 )
 
                 # Calculate line total
@@ -103,7 +102,7 @@ class OrderService:
                     quantity=cart_item.quantity,
                     unit_price=product.unit_price,
                     line_total=line_total,
-                    discount_amount=Decimal(0)  # TODO: Implement discounts
+                    discount_amount=Decimal(0),  # TODO: Implement discounts
                 )
 
                 self.session.add(order_item)
@@ -122,10 +121,7 @@ class OrderService:
             raise
 
     async def calculate_order_totals(
-        self,
-        cart_items: list[CartItem],
-        shipping_address: dict,
-        payment_method: str
+        self, cart_items: list[CartItem], shipping_address: dict, payment_method: str
     ) -> CheckoutCalculation:
         """
         Calculate order totals including tax and shipping
@@ -146,14 +142,16 @@ class OrderService:
             line_total = cart_item.quantity * product.unit_price
             subtotal += line_total
 
-            order_items.append({
-                "product_id": cart_item.product_id,
-                "product_name": product.name,
-                "product_sku": product.sku,
-                "quantity": cart_item.quantity,
-                "unit_price": product.unit_price,
-                "line_total": line_total
-            })
+            order_items.append(
+                {
+                    "product_id": cart_item.product_id,
+                    "product_name": product.name,
+                    "product_sku": product.sku,
+                    "quantity": cart_item.quantity,
+                    "unit_price": product.unit_price,
+                    "line_total": line_total,
+                }
+            )
 
         # Calculate tax (16% IVA in Mexico)
         tax_rate = Decimal("0.16")
@@ -172,13 +170,11 @@ class OrderService:
             tax_amount=tax_amount,
             shipping_cost=shipping_cost,
             total_amount=total_amount,
-            items=order_items
+            items=order_items,
         )
 
     async def validate_checkout(
-        self,
-        cart: Cart,
-        checkout_data: CheckoutInitiate
+        self, cart: Cart, checkout_data: CheckoutInitiate
     ) -> CheckoutValidation:
         """
         Validate checkout data before processing
@@ -223,7 +219,15 @@ class OrderService:
 
         # Validate shipping address
         address = checkout_data.shipping_address
-        required_fields = ["first_name", "last_name", "address_line_1", "city", "state", "postal_code", "country"]
+        required_fields = [
+            "first_name",
+            "last_name",
+            "address_line_1",
+            "city",
+            "state",
+            "postal_code",
+            "country",
+        ]
         for field in required_fields:
             if not getattr(address, field, None):
                 errors.append(f"Missing required shipping address field: {field}")
@@ -235,7 +239,7 @@ class OrderService:
                 calculation = await self.calculate_order_totals(
                     cart_items=cart.items,
                     shipping_address=checkout_data.shipping_address.dict(),
-                    payment_method=checkout_data.payment_method
+                    payment_method=checkout_data.payment_method,
                 )
             except Exception as e:
                 errors.append(f"Failed to calculate totals: {str(e)}")
@@ -244,16 +248,13 @@ class OrderService:
             valid=len(errors) == 0,
             errors=errors,
             warnings=warnings,
-            calculation=calculation
+            calculation=calculation,
         )
 
     # ─── ORDER RETRIEVAL ─────────────────────────────────────────────────
     async def get_order_by_id(self, order_id: uuid.UUID) -> Order | None:
         """Get order by ID with items"""
-        statement = (
-            select(Order)
-            .where(Order.order_id == order_id)
-        )
+        statement = select(Order).where(Order.order_id == order_id)
         result = self.session.exec(statement)
         order = result.first()
 
@@ -270,7 +271,7 @@ class OrderService:
         user_id: uuid.UUID,
         page: int = 1,
         page_size: int = 10,
-        filters: OrderFilters | None = None
+        filters: OrderFilters | None = None,
     ) -> tuple[list[Order], int]:
         """Get user's orders with pagination"""
         # Build query
@@ -281,7 +282,9 @@ class OrderService:
             if filters.status:
                 statement = statement.where(Order.status.in_(filters.status))
             if filters.payment_status:
-                statement = statement.where(Order.payment_status.in_(filters.payment_status))
+                statement = statement.where(
+                    Order.payment_status.in_(filters.payment_status)
+                )
             if filters.date_from:
                 statement = statement.where(Order.created_at >= filters.date_from)
             if filters.date_to:
@@ -292,12 +295,18 @@ class OrderService:
                 statement = statement.where(Order.total_amount <= filters.max_amount)
 
         # Count total
-        count_statement = select(func.count(Order.order_id)).where(Order.user_id == user_id)
+        count_statement = select(func.count(Order.order_id)).where(
+            Order.user_id == user_id
+        )
         if filters:
             if filters.status:
-                count_statement = count_statement.where(Order.status.in_(filters.status))
+                count_statement = count_statement.where(
+                    Order.status.in_(filters.status)
+                )
             if filters.payment_status:
-                count_statement = count_statement.where(Order.payment_status.in_(filters.payment_status))
+                count_statement = count_statement.where(
+                    Order.payment_status.in_(filters.payment_status)
+                )
 
         total = self.session.exec(count_statement).first()
 
@@ -310,17 +319,16 @@ class OrderService:
 
         # Load order items for each order
         for order in orders:
-            items_statement = select(OrderItem).where(OrderItem.order_id == order.order_id)
+            items_statement = select(OrderItem).where(
+                OrderItem.order_id == order.order_id
+            )
             items_result = self.session.exec(items_statement)
             order.items = list(items_result)
 
         return orders, total
 
     async def get_all_orders(
-        self,
-        page: int = 1,
-        page_size: int = 20,
-        filters: OrderFilters | None = None
+        self, page: int = 1, page_size: int = 20, filters: OrderFilters | None = None
     ) -> tuple[list[Order], int]:
         """Get all orders (admin) with pagination"""
         # Build query
@@ -331,7 +339,9 @@ class OrderService:
             if filters.status:
                 statement = statement.where(Order.status.in_(filters.status))
             if filters.payment_status:
-                statement = statement.where(Order.payment_status.in_(filters.payment_status))
+                statement = statement.where(
+                    Order.payment_status.in_(filters.payment_status)
+                )
             if filters.date_from:
                 statement = statement.where(Order.created_at >= filters.date_from)
             if filters.date_to:
@@ -347,7 +357,7 @@ class OrderService:
                     or_(
                         Order.order_id.cast(String).like(search_term),
                         User.full_name.like(search_term),
-                        User.email.like(search_term)
+                        User.email.like(search_term),
                     )
                 )
 
@@ -358,7 +368,7 @@ class OrderService:
                 or_(
                     Order.order_id.cast(String).like(f"%{filters.search}%"),
                     User.full_name.like(f"%{filters.search}%"),
-                    User.email.like(f"%{filters.search}%")
+                    User.email.like(f"%{filters.search}%"),
                 )
             )
 
@@ -373,20 +383,23 @@ class OrderService:
 
         # Load order items for each order
         for order in orders:
-            items_statement = select(OrderItem).where(OrderItem.order_id == order.order_id)
+            items_statement = select(OrderItem).where(
+                OrderItem.order_id == order.order_id
+            )
             items_result = self.session.exec(items_statement)
             order.items = list(items_result)
 
         return orders, total
 
     # ─── ORDER MANAGEMENT ────────────────────────────────────────────────
-    async def update_order(self, order_id: uuid.UUID, order_update: OrderUpdate) -> Order:
+    async def update_order(
+        self, order_id: uuid.UUID, order_update: OrderUpdate
+    ) -> Order:
         """Update order (admin only)"""
         order = await self.get_order_by_id(order_id)
         if not order:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
             )
 
         # Update fields
@@ -401,7 +414,7 @@ class OrderService:
         self.session.refresh(order)
 
         # Send notifications for status changes
-        if 'status' in update_data:
+        if "status" in update_data:
             await self._send_order_notifications(order, "status_updated")
 
         logger.info(f"Order {order_id} updated")
@@ -412,8 +425,7 @@ class OrderService:
         order = await self.get_order_by_id(order_id)
         if not order:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Order not found"
             )
 
         # Update order status
@@ -427,7 +439,7 @@ class OrderService:
             await self.inventory_service.release_stock_reservation(
                 product_id=item.product_id,
                 quantity=item.quantity,
-                reservation_id=str(order_id)
+                reservation_id=str(order_id),
             )
 
         self.session.add(order)
@@ -443,10 +455,12 @@ class OrderService:
         """Get order statistics for admin dashboard"""
         # Order counts by status
         status_counts = {}
-        for status in OrderStatus:
-            count_stmt = select(func.count(Order.order_id)).where(Order.status == status)
+        for order_status in OrderStatus:
+            count_stmt = select(func.count(Order.order_id)).where(
+                Order.status == order_status
+            )
             count = self.session.exec(count_stmt).first()
-            status_counts[status.value] = count
+            status_counts[order_status.value] = count
 
         # Revenue calculations
         revenue_stmt = select(func.sum(Order.total_amount)).where(
@@ -494,7 +508,6 @@ class OrderService:
         result = self.session.exec(statement)
         return result.first()
 
-
     async def _send_order_notifications(self, order: Order, event_type: str):
         """Send order-related notifications"""
         try:
@@ -505,8 +518,8 @@ class OrderService:
                 order_data={
                     "status": order.status,
                     "total_amount": float(order.total_amount),
-                    "items_count": len(order.items)
-                }
+                    "items_count": len(order.items),
+                },
             )
         except Exception as e:
             logger.error(f"Failed to send order notification: {str(e)}")

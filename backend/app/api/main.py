@@ -31,18 +31,26 @@ api_router.include_router(utils.router)
 # Store/Public routes
 if API_MODE in ["public", "store", "full"] and ENABLE_STORE_ROUTES:
     api_router.include_router(products.router)  # Product catalog
-    api_router.include_router(cart.router)      # Shopping cart
-    api_router.include_router(orders.router, prefix="/orders", tags=["orders"])  # Order management
-    api_router.include_router(payments.router, prefix="/payments", tags=["payments"])  # Payment processing
-    api_router.include_router(login.router)     # Basic auth for customers
+    api_router.include_router(cart.router)  # Shopping cart
+    api_router.include_router(
+        orders.router, prefix="/orders", tags=["orders"]
+    )  # Order management
+    api_router.include_router(
+        payments.router, prefix="/payments", tags=["payments"]
+    )  # Payment processing
+    api_router.include_router(login.router)  # Basic auth for customers
 
 # Admin routes
 if API_MODE in ["admin", "full"] and ENABLE_ADMIN_ROUTES:
-    api_router.include_router(users.router)     # User management
-    api_router.include_router(items.router)     # Admin item management
-    api_router.include_router(login.router)     # Admin authentication
-    api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])  # Analytics
-    api_router.include_router(events.router, prefix="/events", tags=["events"])  # Event Sourcing
+    api_router.include_router(users.router)  # User management
+    api_router.include_router(items.router)  # Admin item management
+    api_router.include_router(login.router)  # Admin authentication
+    api_router.include_router(
+        analytics.router, prefix="/analytics", tags=["analytics"]
+    )  # Analytics
+    api_router.include_router(
+        events.router, prefix="/events", tags=["events"]
+    )  # Event Sourcing
 
     # Debug routes only for local admin
     if settings.ENVIRONMENT == "local":

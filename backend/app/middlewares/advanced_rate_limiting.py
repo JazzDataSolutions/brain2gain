@@ -23,14 +23,14 @@ limiter = Limiter(
     key_func=get_remote_address,
     storage_uri=settings.REDIS_URL,
     default_limits=["200/minute", "2000/hour", "10000/day"],
-    strategy="moving-window"
+    strategy="moving-window",
 )
 
 
 def get_rate_limit_key(request: Request) -> str:
     """
     Generate rate limit key based on user authentication and role.
-    
+
     This function determines the appropriate rate limiting based on:
     - User authentication status
     - User role (admin, user, anonymous)
@@ -41,9 +41,9 @@ def get_rate_limit_key(request: Request) -> str:
 
     if user:
         # Authenticated user - use user ID and role
-        if hasattr(user, 'role') and user.role == "admin":
+        if hasattr(user, "role") and user.role == "admin":
             return f"admin:{user.id}"
-        elif hasattr(user, 'is_superuser') and user.is_superuser:
+        elif hasattr(user, "is_superuser") and user.is_superuser:
             return f"admin:{user.id}"
         else:
             return f"user:{user.id}"
@@ -57,9 +57,9 @@ def get_user_role_from_request(request: Request) -> str:
     user = getattr(request.state, "user", None)
 
     if user:
-        if hasattr(user, 'role') and user.role == "admin":
+        if hasattr(user, "role") and user.role == "admin":
             return "admin"
-        elif hasattr(user, 'is_superuser') and user.is_superuser:
+        elif hasattr(user, "is_superuser") and user.is_superuser:
             return "admin"
         else:
             return "user"
@@ -71,16 +71,16 @@ def get_user_role_from_request(request: Request) -> str:
 def apply_endpoint_limits(endpoint_type: str = "default"):
     """
     Apply rate limits based on endpoint type and user role.
-    
+
     Args:
         endpoint_type: Type of endpoint (auth, products, orders, etc.)
     """
     limits = {
-        "auth": "5/minute",        # Login attempts - strict
-        "products": "100/minute",   # Product browsing - generous
-        "orders": "10/hour",       # Order creation - prevent spam
-        "cart": "50/minute",       # Cart operations - moderate
-        "default": "60/minute"     # Default limit
+        "auth": "5/minute",  # Login attempts - strict
+        "products": "100/minute",  # Product browsing - generous
+        "orders": "10/hour",  # Order creation - prevent spam
+        "cart": "50/minute",  # Cart operations - moderate
+        "default": "60/minute",  # Default limit
     }
 
     limit_str = limits.get(endpoint_type, limits["default"])
@@ -95,7 +95,7 @@ def apply_endpoint_limits(endpoint_type: str = "default"):
 async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
     """
     Custom handler for rate limit exceeded responses.
-    
+
     Provides detailed information about the rate limit and retry timing.
     """
     user_role = get_user_role_from_request(request)
@@ -108,8 +108,8 @@ async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
             "path": request.url.path,
             "method": request.method,
             "limit": str(exc.detail),
-            "retry_after": exc.retry_after
-        }
+            "retry_after": exc.retry_after,
+        },
     )
 
     # Calculate retry after seconds
@@ -123,12 +123,9 @@ async def custom_rate_limit_handler(request: Request, exc: RateLimitExceeded):
             "retry_after": retry_after,
             "limit": str(exc.detail),
             "user_type": user_role,
-            "recommendation": _get_rate_limit_recommendation(user_role)
+            "recommendation": _get_rate_limit_recommendation(user_role),
         },
-        headers={
-            "Retry-After": str(retry_after),
-            "X-RateLimit-Scope": user_role
-        }
+        headers={"Retry-After": str(retry_after), "X-RateLimit-Scope": user_role},
     )
 
 
@@ -137,7 +134,7 @@ def _get_rate_limit_recommendation(user_role: str) -> str:
     recommendations = {
         "anonymous": "Consider creating an account for higher rate limits",
         "user": "Your rate limit will reset soon. For unlimited access, contact support",
-        "admin": "Admin rate limit exceeded - this may indicate an issue"
+        "admin": "Admin rate limit exceeded - this may indicate an issue",
     }
     return recommendations.get(user_role, "Please wait before making more requests")
 
@@ -149,11 +146,7 @@ class RateLimitMetrics:
     def __init__(self):
         self.blocked_requests = 0
         self.total_requests = 0
-        self.blocked_by_role = {
-            "anonymous": 0,
-            "user": 0,
-            "admin": 0
-        }
+        self.blocked_by_role = {"anonymous": 0, "user": 0, "admin": 0}
 
     def record_request(self, user_role: str, blocked: bool = False):
         """Record a request for metrics."""
@@ -164,14 +157,22 @@ class RateLimitMetrics:
 
     def get_stats(self) -> dict:
         """Get rate limiting statistics."""
-        block_rate = (self.blocked_requests / self.total_requests * 100) if self.total_requests > 0 else 0
+        block_rate = (
+            (self.blocked_requests / self.total_requests * 100)
+            if self.total_requests > 0
+            else 0
+        )
 
         return {
             "total_requests": self.total_requests,
             "blocked_requests": self.blocked_requests,
             "block_rate_percentage": round(block_rate, 2),
             "blocked_by_role": self.blocked_by_role.copy(),
-            "status": "healthy" if block_rate < 5 else "warning" if block_rate < 15 else "critical"
+            "status": (
+                "healthy"
+                if block_rate < 5
+                else "warning" if block_rate < 15 else "critical"
+            ),
         }
 
     def reset(self):
@@ -192,7 +193,7 @@ async def get_rate_limit_stats() -> dict:
 
         # Get Redis rate limiting stats if available
         redis_stats = {}
-        if hasattr(redis_client, 'info'):
+        if hasattr(redis_client, "info"):
             try:
                 info = await redis_client.info()
                 redis_stats = {
@@ -212,20 +213,19 @@ async def get_rate_limit_stats() -> dict:
                 "anonymous_limit": settings.RATE_LIMIT_ANONYMOUS,
                 "authenticated_limit": settings.RATE_LIMIT_AUTHENTICATED,
                 "period_seconds": settings.RATE_LIMIT_PERIOD,
-                "storage": "redis" if redis_stats else "memory"
+                "storage": "redis" if redis_stats else "memory",
             },
             "health": {
                 "status": app_stats["status"],
-                "recommendation": _get_system_recommendation(app_stats["block_rate_percentage"])
-            }
+                "recommendation": _get_system_recommendation(
+                    app_stats["block_rate_percentage"]
+                ),
+            },
         }
 
     except Exception as e:
         logger.error(f"Error getting rate limit stats: {e}")
-        return {
-            "error": str(e),
-            "rate_limiting": rate_limit_metrics.get_stats()
-        }
+        return {"error": str(e), "rate_limiting": rate_limit_metrics.get_stats()}
 
 
 def _get_system_recommendation(block_rate: float) -> str:
@@ -244,7 +244,7 @@ def _get_system_recommendation(block_rate: float) -> str:
 def setup_rate_limiting(app):
     """
     Setup rate limiting for FastAPI application.
-    
+
     Args:
         app: FastAPI application instance
     """
@@ -258,10 +258,10 @@ def setup_rate_limiting(app):
 
 # Export main components
 __all__ = [
-    'limiter',
-    'get_rate_limit_key',
-    'apply_endpoint_limits',
-    'setup_rate_limiting',
-    'get_rate_limit_stats',
-    'rate_limit_metrics'
+    "limiter",
+    "get_rate_limit_key",
+    "apply_endpoint_limits",
+    "setup_rate_limiting",
+    "get_rate_limit_stats",
+    "rate_limit_metrics",
 ]

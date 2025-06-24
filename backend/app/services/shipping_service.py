@@ -1,12 +1,12 @@
 from decimal import Decimal
-from typing import Any, Dict
+from typing import Any
 
 
 class ShippingService:
     """Service responsible for shipping cost calculations."""
 
     async def calculate_shipping_cost(
-        self, subtotal: Decimal, shipping_address: Dict[str, Any]
+        self, subtotal: Decimal, shipping_address: dict[str, Any]
     ) -> Decimal:
         """Calculate shipping cost based on subtotal and address."""
         if subtotal >= Decimal("1000"):

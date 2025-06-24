@@ -18,9 +18,11 @@ class UserRoleEnum(str, Enum):
     SELLER = "SELLER"
     ACCOUNTANT = "ACCOUNTANT"
 
+
 class ProductStatus(str, Enum):
     ACTIVE = "ACTIVE"
     DISCONTINUED = "DISCONTINUED"
+
 
 class OrderStatus(str, Enum):
     PENDING = "PENDING"
@@ -31,6 +33,7 @@ class OrderStatus(str, Enum):
     CANCELLED = "CANCELLED"
     REFUNDED = "REFUNDED"
 
+
 class PaymentStatus(str, Enum):
     PENDING = "PENDING"
     AUTHORIZED = "AUTHORIZED"
@@ -39,18 +42,26 @@ class PaymentStatus(str, Enum):
     REFUNDED = "REFUNDED"
     CANCELLED = "CANCELLED"
 
+
 class TransactionType(str, Enum):
-    SALE     = "SALE"
+    SALE = "SALE"
     PURCHASE = "PURCHASE"
-    CREDIT   = "CREDIT"
-    PAYMENT  = "PAYMENT"
+    CREDIT = "CREDIT"
+    PAYMENT = "PAYMENT"
+
 
 # ─── USERS ────────────────────────────────────────────────────────────────
 # Shared properties
 
+
 class UserRoleLink(SQLModel, table=True):
-    user_id: uuid.UUID | None = Field(default=None, foreign_key="user.id", primary_key=True)
-    role_id: int | None = Field(default=None, foreign_key="role.role_id", primary_key=True)
+    user_id: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", primary_key=True
+    )
+    role_id: int | None = Field(
+        default=None, foreign_key="role.role_id", primary_key=True
+    )
+
 
 class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True)
@@ -58,14 +69,17 @@ class UserBase(SQLModel):
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
 
+
 # Properties to receive via API on creation
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=40)
+
 
 class UserRegister(SQLModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=40)
     full_name: str | None = Field(default=None, max_length=255)
+
 
 # Properties to receive via API on update, all are optional
 class UserUpdate(UserBase):
@@ -77,9 +91,11 @@ class UserUpdateMe(SQLModel):
     full_name: str | None = Field(default=None, max_length=255)
     email: EmailStr | None = Field(default=None)
 
+
 class UpdatePassword(SQLModel):
     current_password: str = Field(min_length=8, max_length=40)
     new_password: str = Field(min_length=8, max_length=40)
+
 
 # Database model, database table inferred from class name
 class User(UserBase, table=True):
@@ -91,13 +107,16 @@ class User(UserBase, table=True):
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     roles: list["Role"] = Relationship(back_populates="users", link_model=UserRoleLink)
 
+
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
     id: uuid.UUID
 
+
 class UsersPublic(SQLModel):
     data: list[UserPublic]
     count: int
+
 
 class Role(SQLModel, table=True):
     role_id: int | None = Field(default=None, primary_key=True)
@@ -106,6 +125,7 @@ class Role(SQLModel, table=True):
 
 
 # ─── ITEMS ────────────────────────────────────────────────────────────────
+
 
 # Shared properties
 class ItemBase(SQLModel):
@@ -144,14 +164,17 @@ class ItemsPublic(SQLModel):
 
 # ─── TOKENS ────────────────────────────────────────────────────────────────
 
+
 # Generic message
 class Message(SQLModel):
     message: str
+
 
 # JSON payload containing access token
 class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
+
 
 # Contents of JWT token
 class TokenPayload(SQLModel):
@@ -165,41 +188,49 @@ class NewPassword(SQLModel):
 
 # ─── PRODUCT & INVENTORY ──────────────────────────────────────────────────
 
+
 class Product(SQLModel, table=True):
     product_id: int | None = Field(default=None, primary_key=True)
-    sku:        str           = Field(unique=True, index=True, nullable=False)
-    name:       str           = Field(nullable=False)
-    unit_price: Decimal       = Field(ge=0, nullable=False)
-    status:     ProductStatus = Field(default=ProductStatus.ACTIVE, nullable=False)
-    created_at: datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at: datetime      = Field(default_factory=datetime.utcnow, nullable=False)
+    sku: str = Field(unique=True, index=True, nullable=False)
+    name: str = Field(nullable=False)
+    unit_price: Decimal = Field(ge=0, nullable=False)
+    status: ProductStatus = Field(default=ProductStatus.ACTIVE, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    stock: "Stock" = Relationship(back_populates="product", sa_relationship_kwargs={"uselist": False})
+    stock: "Stock" = Relationship(
+        back_populates="product", sa_relationship_kwargs={"uselist": False}
+    )
     sales_items: list["SalesItem"] = Relationship(back_populates="product")
     order_items: list["OrderItem"] = Relationship(back_populates="product")
     transactions: list["Transaction"] = Relationship(back_populates="product")
 
+
 class Stock(SQLModel, table=True):
-    stock_id:   int | None = Field(default=None, primary_key=True)
-    product_id: int           = Field(foreign_key="product.product_id", unique=True, nullable=False)
-    quantity:   int           = Field(ge=0, nullable=False)
-    updated_at: datetime      = Field(default_factory=datetime.utcnow, nullable=False)
+    stock_id: int | None = Field(default=None, primary_key=True)
+    product_id: int = Field(
+        foreign_key="product.product_id", unique=True, nullable=False
+    )
+    quantity: int = Field(ge=0, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     product: "Product" = Relationship(back_populates="stock")
 
 
 # ─── SALES ────────────────────────────────────────────────────────────────
 
+
 class Customer(SQLModel, table=True):
     customer_id: int | None = Field(default=None, primary_key=True)
-    first_name:  str           = Field(nullable=False)
-    last_name:   str           = Field(nullable=False)
-    email:       EmailStr      = Field(unique=True, index=True, nullable=False)
-    phone:       str | None = None
-    created_at:  datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at:  datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    orders:       list["SalesOrder"] = Relationship(back_populates="customer")
+    first_name: str = Field(nullable=False)
+    last_name: str = Field(nullable=False)
+    email: EmailStr = Field(unique=True, index=True, nullable=False)
+    phone: str | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    orders: list["SalesOrder"] = Relationship(back_populates="customer")
     transactions: list["Transaction"] = Relationship(back_populates="customer")
+
 
 # ─── ORDERS (New microservices-compatible models) ──────────────────────
 class Order(SQLModel, table=True):
@@ -243,6 +274,7 @@ class Order(SQLModel, table=True):
     payments: list["Payment"] = Relationship(back_populates="order")
     refunds: list["Refund"] = Relationship(back_populates="order")
 
+
 class OrderItem(SQLModel, table=True):
     __tablename__ = "order_items"
 
@@ -270,6 +302,7 @@ class OrderItem(SQLModel, table=True):
     order: "Order" = Relationship(back_populates="items")
     product: "Product" = Relationship(back_populates="order_items")
 
+
 # ─── PAYMENT MODELS ──────────────────────────────────────────────────
 class Payment(SQLModel, table=True):
     __tablename__ = "payments"
@@ -280,7 +313,9 @@ class Payment(SQLModel, table=True):
     # Payment details
     amount: Decimal = Field(ge=0, nullable=False)
     currency: str = Field(default="MXN", max_length=3, nullable=False)
-    payment_method: str = Field(max_length=50, nullable=False)  # stripe, paypal, bank_transfer
+    payment_method: str = Field(
+        max_length=50, nullable=False
+    )  # stripe, paypal, bank_transfer
 
     # Status and processing
     status: PaymentStatus = Field(default=PaymentStatus.PENDING, nullable=False)
@@ -304,6 +339,7 @@ class Payment(SQLModel, table=True):
     order: "Order" = Relationship(back_populates="payments")
     refunds: list["Refund"] = Relationship(back_populates="payment")
 
+
 class Refund(SQLModel, table=True):
     __tablename__ = "refunds"
 
@@ -317,7 +353,9 @@ class Refund(SQLModel, table=True):
 
     # Processing details
     gateway_refund_id: str | None = Field(default=None, max_length=255)
-    status: str = Field(default="PENDING", max_length=20, nullable=False)  # PENDING, COMPLETED, FAILED
+    status: str = Field(
+        default="PENDING", max_length=20, nullable=False
+    )  # PENDING, COMPLETED, FAILED
 
     # Timestamps
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
@@ -327,30 +365,33 @@ class Refund(SQLModel, table=True):
     payment: "Payment" = Relationship(back_populates="refunds")
     order: "Order" = Relationship(back_populates="refunds")
 
+
 # ─── LEGACY SALES MODELS (Keep for backward compatibility) ───────────
 class SalesOrder(SQLModel, table=True):
-    so_id:       int | None = Field(default=None, primary_key=True)
-    customer_id: int           = Field(foreign_key="customer.customer_id", nullable=False)
-    order_date:  datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    status:      OrderStatus   = Field(default=OrderStatus.PENDING, nullable=False)
-    created_at:  datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at:  datetime      = Field(default_factory=datetime.utcnow, nullable=False)
-    customer: "Customer"          = Relationship(back_populates="orders")
-    items:    list["SalesItem"]   = Relationship(back_populates="order")
+    so_id: int | None = Field(default=None, primary_key=True)
+    customer_id: int = Field(foreign_key="customer.customer_id", nullable=False)
+    order_date: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    status: OrderStatus = Field(default=OrderStatus.PENDING, nullable=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    customer: "Customer" = Relationship(back_populates="orders")
+    items: list["SalesItem"] = Relationship(back_populates="order")
+
 
 class SalesItem(SQLModel, table=True):
-    so_id:      int      = Field(foreign_key="salesorder.so_id", primary_key=True)
-    product_id: int      = Field(foreign_key="product.product_id", primary_key=True)
-    qty:        int      = Field(gt=0, nullable=False)
-    unit_price: Decimal  = Field(ge=0, nullable=False)
+    so_id: int = Field(foreign_key="salesorder.so_id", primary_key=True)
+    product_id: int = Field(foreign_key="product.product_id", primary_key=True)
+    qty: int = Field(gt=0, nullable=False)
+    unit_price: Decimal = Field(ge=0, nullable=False)
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
-    order:   "SalesOrder" = Relationship(back_populates="items")
-    product: "Product"    = Relationship(back_populates="sales_items")
+    order: "SalesOrder" = Relationship(back_populates="items")
+    product: "Product" = Relationship(back_populates="sales_items")
 
 
 # ─── SHOPPING CART ────────────────────────────────────────────────────────
+
 
 class Cart(SQLModel, table=True):
     cart_id: int | None = Field(default=None, primary_key=True)
@@ -362,6 +403,7 @@ class Cart(SQLModel, table=True):
     items: list["CartItem"] = Relationship(back_populates="cart")
     user: Optional["User"] = Relationship()
 
+
 class CartItem(SQLModel, table=True):
     cart_id: int = Field(foreign_key="cart.cart_id", primary_key=True)
     product_id: int = Field(foreign_key="product.product_id", primary_key=True)
@@ -372,22 +414,24 @@ class CartItem(SQLModel, table=True):
     cart: "Cart" = Relationship(back_populates="items")
     product: "Product" = Relationship()
 
+
 # ─── TRANSACTIONS ─────────────────────────────────────────────────────────
 class Transaction(SQLModel, table=True):
-    tx_id:       int | None     = Field(default=None, primary_key=True)
-    tx_type:     TransactionType   = Field(nullable=False)
-    amount:      Decimal           = Field(ge=0, nullable=False)
-    description: str | None     = None
-    customer_id: int | None     = Field(default=None, foreign_key="customer.customer_id")
-    product_id:  int | None     = Field(default=None, foreign_key="product.product_id")
-    due_date:    date | None    = None
-    paid:        bool              = Field(default=False)
-    paid_date:   date | None    = None
-    created_at:  datetime          = Field(default_factory=datetime.utcnow, nullable=False)
-    updated_at:  datetime          = Field(default_factory=datetime.utcnow, nullable=False)
+    tx_id: int | None = Field(default=None, primary_key=True)
+    tx_type: TransactionType = Field(nullable=False)
+    amount: Decimal = Field(ge=0, nullable=False)
+    description: str | None = None
+    customer_id: int | None = Field(default=None, foreign_key="customer.customer_id")
+    product_id: int | None = Field(default=None, foreign_key="product.product_id")
+    due_date: date | None = None
+    paid: bool = Field(default=False)
+    paid_date: date | None = None
+    created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
+    updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
 
     customer: Optional["Customer"] = Relationship(back_populates="transactions")
-    product:  Optional["Product"]  = Relationship(back_populates="transactions")
+    product: Optional["Product"] = Relationship(back_populates="transactions")
+
 
 # ─── Ensure all mappers configure after declarations ─────────────────────
 configure_mappers()

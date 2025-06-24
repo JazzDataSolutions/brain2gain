@@ -22,7 +22,9 @@ class CartService:
         self.cart_repo = CartRepository(session)
         self.product_repo = ProductRepository(session)
 
-    async def get_or_create_cart(self, user_id: UUID | None = None, session_id: str | None = None) -> Cart:
+    async def get_or_create_cart(
+        self, user_id: UUID | None = None, session_id: str | None = None
+    ) -> Cart:
         """Get existing cart or create new one"""
         cart = None
 
@@ -36,7 +38,7 @@ class CartService:
                 user_id=user_id,
                 session_id=session_id,
                 created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                updated_at=datetime.utcnow(),
             )
             cart = await self.cart_repo.create_cart(cart_data)
 
@@ -46,28 +48,29 @@ class CartService:
         self,
         request: AddToCartRequest,
         user_id: UUID | None = None,
-        session_id: str | None = None
+        session_id: str | None = None,
     ) -> CartRead:
         """Add product to cart"""
         # Verify product exists and is active
         product = await self.product_repo.get_by_id(request.product_id)
         if not product:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Product not found"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Product not found"
             )
 
         if product.status != "ACTIVE":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Product is not available"
+                detail="Product is not available",
             )
 
         # Get or create cart
         cart = await self.get_or_create_cart(user_id, session_id)
 
         # Check if item already exists in cart
-        existing_item = await self.cart_repo.get_cart_item(cart.cart_id, request.product_id)
+        existing_item = await self.cart_repo.get_cart_item(
+            cart.cart_id, request.product_id
+        )
 
         if existing_item:
             # Update quantity
@@ -81,7 +84,7 @@ class CartService:
                 product_id=request.product_id,
                 quantity=request.quantity,
                 created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow()
+                updated_at=datetime.utcnow(),
             )
             await self.cart_repo.add_cart_item(cart_item)
 
@@ -97,7 +100,7 @@ class CartService:
         product_id: int,
         request: UpdateCartItemRequest,
         user_id: UUID | None = None,
-        session_id: str | None = None
+        session_id: str | None = None,
     ) -> CartRead:
         """Update cart item quantity"""
         cart = await self.get_or_create_cart(user_id, session_id)
@@ -105,8 +108,7 @@ class CartService:
         cart_item = await self.cart_repo.get_cart_item(cart.cart_id, product_id)
         if not cart_item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Item not found in cart"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in cart"
             )
 
         cart_item.quantity = request.quantity
@@ -124,7 +126,7 @@ class CartService:
         self,
         product_id: int,
         user_id: UUID | None = None,
-        session_id: str | None = None
+        session_id: str | None = None,
     ) -> CartRead:
         """Remove item from cart"""
         cart = await self.get_or_create_cart(user_id, session_id)
@@ -132,8 +134,7 @@ class CartService:
         cart_item = await self.cart_repo.get_cart_item(cart.cart_id, product_id)
         if not cart_item:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Item not found in cart"
+                status_code=status.HTTP_404_NOT_FOUND, detail="Item not found in cart"
             )
 
         await self.cart_repo.remove_cart_item(cart_item)
@@ -146,18 +147,14 @@ class CartService:
         return await self.get_cart_details(cart.cart_id)
 
     async def get_cart(
-        self,
-        user_id: UUID | None = None,
-        session_id: str | None = None
+        self, user_id: UUID | None = None, session_id: str | None = None
     ) -> CartRead:
         """Get cart details"""
         cart = await self.get_or_create_cart(user_id, session_id)
         return await self.get_cart_details(cart.cart_id)
 
     async def clear_cart(
-        self,
-        user_id: UUID | None = None,
-        session_id: str | None = None
+        self, user_id: UUID | None = None, session_id: str | None = None
     ) -> None:
         """Clear all items from cart"""
         cart = await self.get_or_create_cart(user_id, session_id)
@@ -168,7 +165,7 @@ class CartService:
         items = await self.cart_repo.get_cart_items_with_products(cart_id)
 
         cart_items = []
-        total_amount = Decimal('0.00')
+        total_amount = Decimal("0.00")
         item_count = 0
 
         for item in items:
@@ -176,14 +173,16 @@ class CartService:
             total_amount += item_total
             item_count += item.quantity
 
-            cart_items.append(CartItemRead(
-                product_id=item.product_id,
-                quantity=item.quantity,
-                product_name=item.product.name,
-                product_sku=item.product.sku,
-                unit_price=item.product.unit_price,
-                total_price=item_total
-            ))
+            cart_items.append(
+                CartItemRead(
+                    product_id=item.product_id,
+                    quantity=item.quantity,
+                    product_name=item.product.name,
+                    product_sku=item.product.sku,
+                    unit_price=item.product.unit_price,
+                    total_price=item_total,
+                )
+            )
 
         # Get cart info
         cart = await self.session.get(Cart, cart_id)
@@ -196,5 +195,5 @@ class CartService:
             total_amount=total_amount,
             item_count=item_count,
             created_at=cart.created_at,
-            updated_at=cart.updated_at
+            updated_at=cart.updated_at,
         )

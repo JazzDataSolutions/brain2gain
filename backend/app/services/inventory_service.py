@@ -16,10 +16,7 @@ class InventoryService:
         self.session = session
 
     async def reserve_stock(
-        self,
-        product_id: int,
-        quantity: int,
-        reservation_id: str
+        self, product_id: int, quantity: int, reservation_id: str
     ) -> bool:
         """
         Reserve stock for an order (simplified implementation)
@@ -34,7 +31,9 @@ class InventoryService:
                 raise ValueError(f"No stock record found for product {product_id}")
 
             if stock.quantity < quantity:
-                raise ValueError(f"Insufficient stock: {stock.quantity} available, {quantity} requested")
+                raise ValueError(
+                    f"Insufficient stock: {stock.quantity} available, {quantity} requested"
+                )
 
             # For now, just reduce the stock immediately
             # TODO: Implement proper reservation system with expiration
@@ -44,7 +43,9 @@ class InventoryService:
             self.session.add(stock)
             self.session.commit()
 
-            logger.info(f"Reserved {quantity} units of product {product_id} for reservation {reservation_id}")
+            logger.info(
+                f"Reserved {quantity} units of product {product_id} for reservation {reservation_id}"
+            )
             return True
 
         except Exception as e:
@@ -53,10 +54,7 @@ class InventoryService:
             raise
 
     async def release_stock_reservation(
-        self,
-        product_id: int,
-        quantity: int,
-        reservation_id: str
+        self, product_id: int, quantity: int, reservation_id: str
     ) -> bool:
         """
         Release stock reservation (simplified implementation)
@@ -78,7 +76,9 @@ class InventoryService:
             self.session.add(stock)
             self.session.commit()
 
-            logger.info(f"Released {quantity} units of product {product_id} from reservation {reservation_id}")
+            logger.info(
+                f"Released {quantity} units of product {product_id} from reservation {reservation_id}"
+            )
             return True
 
         except Exception as e:
@@ -95,10 +95,7 @@ class InventoryService:
         return stock.quantity if stock else None
 
     async def update_stock_level(
-        self,
-        product_id: int,
-        new_quantity: int,
-        reason: str = "Manual adjustment"
+        self, product_id: int, new_quantity: int, reason: str = "Manual adjustment"
     ) -> bool:
         """Update stock level"""
         try:
@@ -108,10 +105,7 @@ class InventoryService:
 
             if not stock:
                 # Create new stock record
-                stock = Stock(
-                    product_id=product_id,
-                    quantity=new_quantity
-                )
+                stock = Stock(product_id=product_id, quantity=new_quantity)
             else:
                 stock.quantity = new_quantity
                 stock.updated_at = datetime.utcnow()
@@ -119,7 +113,9 @@ class InventoryService:
             self.session.add(stock)
             self.session.commit()
 
-            logger.info(f"Updated stock for product {product_id} to {new_quantity}: {reason}")
+            logger.info(
+                f"Updated stock for product {product_id} to {new_quantity}: {reason}"
+            )
             return True
 
         except Exception as e:

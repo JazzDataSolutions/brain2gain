@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 redis_client: Redis | None = None
 
 # Type variable for generic function typing
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 # Cache metrics tracking
 cache_metrics = {
@@ -28,7 +28,7 @@ cache_metrics = {
     "misses": 0,
     "errors": 0,
     "total_requests": 0,
-    "cache_size": 0
+    "cache_size": 0,
 }
 
 
@@ -41,11 +41,11 @@ async def init_redis() -> Redis:
             redis_client = redis.from_url(
                 settings.REDIS_URL,
                 decode_responses=True,
-                encoding='utf-8',
+                encoding="utf-8",
                 socket_connect_timeout=5,
                 socket_timeout=5,
                 retry_on_timeout=True,
-                health_check_interval=30
+                health_check_interval=30,
             )
 
             # Test connection
@@ -98,7 +98,7 @@ class MockRedisClient:
     def scan_iter(self, match: str):
         """Mock scan_iter for pattern matching."""
         for key in self._data.keys():
-            if match.replace('*', '') in key:
+            if match.replace("*", "") in key:
                 yield key
 
 
@@ -112,16 +112,17 @@ async def get_redis_client() -> Redis:
 def cache_key_wrapper(prefix: str, ttl: int = 300):
     """
     Decorator to cache function results in Redis.
-    
+
     Args:
         prefix: Cache key prefix
         ttl: Time to live in seconds (default: 5 minutes)
-    
+
     Usage:
         @cache_key_wrapper("products:list", ttl=300)
         async def get_products():
             return await fetch_products()
     """
+
     def decorator(func: F) -> F:
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -147,11 +148,7 @@ def cache_key_wrapper(prefix: str, ttl: int = 300):
                 result = await func(*args, **kwargs)
 
                 # Cache the result (handle serialization)
-                await client.setex(
-                    cache_key,
-                    ttl,
-                    json.dumps(result, default=str)
-                )
+                await client.setex(cache_key, ttl, json.dumps(result, default=str))
 
                 return result
 
@@ -162,18 +159,18 @@ def cache_key_wrapper(prefix: str, ttl: int = 300):
                 return await func(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
 
 def _generate_cache_key(prefix: str, args: tuple, kwargs: dict) -> str:
     """Generate unique cache key from function arguments."""
     # Convert args to strings
-    args_str = ':'.join(str(arg) for arg in args if arg is not None)
+    args_str = ":".join(str(arg) for arg in args if arg is not None)
 
     # Convert kwargs to sorted key-value pairs
-    kwargs_str = ':'.join(
-        f"{k}={v}" for k, v in sorted(kwargs.items())
-        if v is not None
+    kwargs_str = ":".join(
+        f"{k}={v}" for k, v in sorted(kwargs.items()) if v is not None
     )
 
     # Combine all parts
@@ -183,16 +180,16 @@ def _generate_cache_key(prefix: str, args: tuple, kwargs: dict) -> str:
     if kwargs_str:
         key_parts.append(kwargs_str)
 
-    return ':'.join(key_parts)
+    return ":".join(key_parts)
 
 
 async def invalidate_cache_pattern(pattern: str) -> int:
     """
     Invalidate all cache keys matching a pattern.
-    
+
     Args:
         pattern: Redis key pattern (e.g., "products:*")
-    
+
     Returns:
         Number of keys deleted
     """
@@ -204,7 +201,9 @@ async def invalidate_cache_pattern(pattern: str) -> int:
             await client.delete(key)
             deleted_count += 1
 
-        logger.info(f"Invalidated {deleted_count} cache keys matching pattern: {pattern}")
+        logger.info(
+            f"Invalidated {deleted_count} cache keys matching pattern: {pattern}"
+        )
         return deleted_count
 
     except Exception as e:
@@ -215,10 +214,10 @@ async def invalidate_cache_pattern(pattern: str) -> int:
 async def invalidate_cache_key(key: str) -> bool:
     """
     Invalidate specific cache key.
-    
+
     Args:
         key: Exact cache key to delete
-    
+
     Returns:
         True if key was deleted, False otherwise
     """
@@ -253,9 +252,13 @@ async def get_cache_stats() -> dict:
             "hit_rate": round(hit_rate, 2),
             "metrics": cache_metrics.copy(),
             "performance": {
-                "efficiency": "excellent" if hit_rate > 80 else "good" if hit_rate > 60 else "needs_improvement",
-                "recommendation": _get_cache_recommendation(hit_rate)
-            }
+                "efficiency": (
+                    "excellent"
+                    if hit_rate > 80
+                    else "good" if hit_rate > 60 else "needs_improvement"
+                ),
+                "recommendation": _get_cache_recommendation(hit_rate),
+            },
         }
 
     try:
@@ -286,13 +289,13 @@ async def get_cache_stats() -> dict:
             "performance": {
                 "efficiency": _get_cache_efficiency(hit_rate),
                 "redis_efficiency": _get_cache_efficiency(redis_hit_rate),
-                "recommendation": _get_cache_recommendation(hit_rate)
+                "recommendation": _get_cache_recommendation(hit_rate),
             },
             "redis_info": {
                 "version": info.get("redis_version", "unknown"),
                 "mode": info.get("redis_mode", "standalone"),
-                "role": info.get("role", "master")
-            }
+                "role": info.get("role", "master"),
+            },
         }
     except Exception as e:
         logger.error(f"Error getting cache stats: {e}")
@@ -301,7 +304,7 @@ async def get_cache_stats() -> dict:
             "connected": False,
             "error": str(e),
             "hit_rate": round(hit_rate, 2),
-            "metrics": cache_metrics.copy()
+            "metrics": cache_metrics.copy(),
         }
 
 
@@ -322,9 +325,13 @@ def _get_cache_efficiency(hit_rate: float) -> str:
 def _get_cache_recommendation(hit_rate: float) -> str:
     """Provide cache optimization recommendations."""
     if hit_rate >= 90:
-        return "Cache performance is excellent. Consider monitoring for TTL optimization."
+        return (
+            "Cache performance is excellent. Consider monitoring for TTL optimization."
+        )
     elif hit_rate >= 80:
-        return "Good cache performance. Monitor frequently accessed keys for TTL tuning."
+        return (
+            "Good cache performance. Monitor frequently accessed keys for TTL tuning."
+        )
     elif hit_rate >= 70:
         return "Decent performance. Consider increasing TTL for stable data."
     elif hit_rate >= 60:
@@ -373,18 +380,14 @@ async def reset_cache_metrics() -> dict:
     """Reset cache metrics counters. Useful for testing or fresh monitoring periods."""
     global cache_metrics
     old_metrics = cache_metrics.copy()
-    cache_metrics.update({
-        "hits": 0,
-        "misses": 0,
-        "errors": 0,
-        "total_requests": 0,
-        "cache_size": 0
-    })
+    cache_metrics.update(
+        {"hits": 0, "misses": 0, "errors": 0, "total_requests": 0, "cache_size": 0}
+    )
     logger.info("Cache metrics reset")
     return {
         "action": "reset_complete",
         "previous_metrics": old_metrics,
-        "current_metrics": cache_metrics.copy()
+        "current_metrics": cache_metrics.copy(),
     }
 
 
@@ -421,7 +424,7 @@ async def get_cache_health() -> dict:
             "hit_rate": hit_rate,
             "total_requests": cache_metrics["total_requests"],
             "errors": cache_metrics["errors"],
-            "cache_type": stats.get("type", "unknown")
+            "cache_type": stats.get("type", "unknown"),
         }
 
     except Exception as e:
@@ -433,20 +436,20 @@ async def get_cache_health() -> dict:
             "error": str(e),
             "hit_rate": 0,
             "total_requests": cache_metrics["total_requests"],
-            "errors": cache_metrics.get("errors", 0) + 1
+            "errors": cache_metrics.get("errors", 0) + 1,
         }
 
 
 # Export main components
 __all__ = [
-    'init_redis',
-    'close_redis',
-    'get_redis_client',
-    'cache_key_wrapper',
-    'invalidate_cache_pattern',
-    'invalidate_cache_key',
-    'get_cache_stats',
-    'get_cache_health',
-    'reset_cache_metrics',
-    'CacheService'
+    "init_redis",
+    "close_redis",
+    "get_redis_client",
+    "cache_key_wrapper",
+    "invalidate_cache_pattern",
+    "invalidate_cache_key",
+    "get_cache_stats",
+    "get_cache_health",
+    "reset_cache_metrics",
+    "CacheService",
 ]

@@ -20,8 +20,7 @@ router = APIRouter()
 
 @router.get("/events/product/{product_id}/history")
 async def get_product_event_history(
-    product_id: UUID,
-    current_user: User = Depends(get_current_admin_user)
+    product_id: UUID, _current_user: User = Depends(get_current_admin_user)
 ) -> list[dict[str, Any]]:
     """
     Get complete event history for a product.
@@ -31,13 +30,14 @@ async def get_product_event_history(
         history = await EventQueryService.get_product_history(product_id)
         return history
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving product history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving product history: {str(e)}"
+        )
 
 
 @router.get("/events/order/{order_id}/history")
 async def get_order_event_history(
-    order_id: UUID,
-    current_user: User = Depends(get_current_user)
+    order_id: UUID, current_user: User = Depends(get_current_user)
 ) -> list[dict[str, Any]]:
     """
     Get complete event history for an order.
@@ -50,24 +50,27 @@ async def get_order_event_history(
         if not current_user.is_admin:
             # Check if any event in the history belongs to this user
             user_authorized = any(
-                event.get("metadata", {}).get("user_id") == str(current_user.id) or
-                event.get("metadata", {}).get("created_by") == str(current_user.id)
+                event.get("metadata", {}).get("user_id") == str(current_user.id)
+                or event.get("metadata", {}).get("created_by") == str(current_user.id)
                 for event in history
             )
             if not user_authorized:
-                raise HTTPException(status_code=403, detail="Not authorized to access this order")
+                raise HTTPException(
+                    status_code=403, detail="Not authorized to access this order"
+                )
 
         return history
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving order history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving order history: {str(e)}"
+        )
 
 
 @router.get("/events/user/{user_id}/history")
 async def get_user_event_history(
-    user_id: UUID,
-    current_user: User = Depends(get_current_user)
+    user_id: UUID, current_user: User = Depends(get_current_user)
 ) -> list[dict[str, Any]]:
     """
     Get complete event history for a user.
@@ -75,19 +78,22 @@ async def get_user_event_history(
     """
     # Check authorization
     if not current_user.is_admin and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this user's history")
+        raise HTTPException(
+            status_code=403, detail="Not authorized to access this user's history"
+        )
 
     try:
         history = await EventQueryService.get_user_history(user_id)
         return history
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving user history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving user history: {str(e)}"
+        )
 
 
 @router.get("/events/cart/{cart_id}/history")
 async def get_cart_event_history(
-    cart_id: UUID,
-    current_user: User = Depends(get_current_user)
+    cart_id: UUID, current_user: User = Depends(get_current_user)
 ) -> list[dict[str, Any]]:
     """
     Get complete event history for a cart.
@@ -103,40 +109,46 @@ async def get_cart_event_history(
                 for event in history
             )
             if not user_authorized:
-                raise HTTPException(status_code=403, detail="Not authorized to access this cart")
+                raise HTTPException(
+                    status_code=403, detail="Not authorized to access this cart"
+                )
 
         return history
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving cart history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving cart history: {str(e)}"
+        )
 
 
 @router.get("/events/reconstruct/product/{product_id}")
 async def reconstruct_product_state(
-    product_id: UUID,
-    current_user: User = Depends(get_current_admin_user)
+    product_id: UUID, _current_user: User = Depends(get_current_admin_user)
 ) -> dict[str, Any]:
     """
     Reconstruct current product state from event history.
     Requires admin privileges.
     """
     try:
-        state = await AggregateReconstructionService.reconstruct_product_state(product_id)
+        state = await AggregateReconstructionService.reconstruct_product_state(
+            product_id
+        )
         return {
             "aggregate_id": str(product_id),
             "aggregate_type": "Product",
             "reconstructed_state": state,
-            "reconstructed_at": datetime.utcnow().isoformat()
+            "reconstructed_at": datetime.utcnow().isoformat(),
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reconstructing product state: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error reconstructing product state: {str(e)}"
+        )
 
 
 @router.get("/events/reconstruct/order/{order_id}")
 async def reconstruct_order_state(
-    order_id: UUID,
-    current_user: User = Depends(get_current_user)
+    order_id: UUID, current_user: User = Depends(get_current_user)
 ) -> dict[str, Any]:
     """
     Reconstruct current order state from event history.
@@ -152,30 +164,35 @@ async def reconstruct_order_state(
                 # Get the actual events to check ownership
                 history = await EventQueryService.get_order_history(order_id)
                 user_authorized = any(
-                    event.get("metadata", {}).get("user_id") == str(current_user.id) or
-                    event.get("metadata", {}).get("created_by") == str(current_user.id)
+                    event.get("metadata", {}).get("user_id") == str(current_user.id)
+                    or event.get("metadata", {}).get("created_by")
+                    == str(current_user.id)
                     for event in history
                 )
                 if not user_authorized:
-                    raise HTTPException(status_code=403, detail="Not authorized to access this order")
+                    raise HTTPException(
+                        status_code=403, detail="Not authorized to access this order"
+                    )
 
         return {
             "aggregate_id": str(order_id),
             "aggregate_type": "Order",
             "reconstructed_state": state,
-            "reconstructed_at": datetime.utcnow().isoformat()
+            "reconstructed_at": datetime.utcnow().isoformat(),
         }
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error reconstructing order state: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error reconstructing order state: {str(e)}"
+        )
 
 
 @router.get("/events/statistics")
 async def get_event_statistics(
     days: int = Query(default=7, ge=1, le=90),
-    event_types: list[str] | None = Query(default=None),
-    current_user: User = Depends(get_current_admin_user)
+    _event_types: list[str] | None = Query(default=None),
+    _current_user: User = Depends(get_current_admin_user),
 ) -> dict[str, Any]:
     """
     Get event statistics for the specified time period.
@@ -183,7 +200,7 @@ async def get_event_statistics(
     """
     try:
         async with get_db() as db:
-            event_repo = EventRepository(db)
+            EventRepository(db)
 
             # Calculate date range
             end_date = datetime.utcnow()
@@ -197,31 +214,33 @@ async def get_event_statistics(
                 "period": {
                     "start_date": start_date.isoformat(),
                     "end_date": end_date.isoformat(),
-                    "days": days
+                    "days": days,
                 },
                 "event_counts": {
                     "total": 0,
                     "by_type": {},
                     "by_aggregate_type": {},
-                    "by_day": []
+                    "by_day": [],
                 },
                 "processing_stats": {
                     "processed": 0,
                     "unprocessed": 0,
-                    "error_rate": 0.0
-                }
+                    "error_rate": 0.0,
+                },
             }
 
             return stats
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving event statistics: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving event statistics: {str(e)}"
+        )
 
 
 @router.get("/events/unprocessed")
 async def get_unprocessed_events(
     limit: int = Query(default=50, ge=1, le=1000),
-    current_user: User = Depends(get_current_admin_user)
+    _current_user: User = Depends(get_current_admin_user),
 ) -> list[dict[str, Any]]:
     """
     Get unprocessed events for manual review.
@@ -235,13 +254,14 @@ async def get_unprocessed_events(
             return [event.to_dict() for event in events]
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving unprocessed events: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving unprocessed events: {str(e)}"
+        )
 
 
 @router.post("/events/{event_id}/mark-processed")
 async def mark_event_processed(
-    event_id: UUID,
-    current_user: User = Depends(get_current_admin_user)
+    event_id: UUID, current_user: User = Depends(get_current_admin_user)
 ) -> dict[str, Any]:
     """
     Manually mark an event as processed.
@@ -255,16 +275,18 @@ async def mark_event_processed(
             return {
                 "event_id": str(event_id),
                 "marked_processed_at": datetime.utcnow().isoformat(),
-                "marked_by": str(current_user.id)
+                "marked_by": str(current_user.id),
             }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error marking event as processed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error marking event as processed: {str(e)}"
+        )
 
 
 @router.get("/events/health")
 async def get_event_system_health(
-    current_user: User = Depends(get_current_admin_user)
+    _current_user: User = Depends(get_current_admin_user),
 ) -> dict[str, Any]:
     """
     Get health status of the event sourcing system.
@@ -289,8 +311,7 @@ async def get_event_system_health(
             oldest_unprocessed = None
             if unprocessed_events:
                 oldest_unprocessed = min(
-                    unprocessed_events,
-                    key=lambda e: e.occurred_at
+                    unprocessed_events, key=lambda e: e.occurred_at
                 ).occurred_at.isoformat()
 
             return {
@@ -301,12 +322,14 @@ async def get_event_system_health(
                 "recommendations": {
                     "healthy": [],
                     "warning": ["Consider processing unprocessed events"],
-                    "critical": ["URGENT: Process unprocessed events immediately"]
-                }.get(health_status, [])
+                    "critical": ["URGENT: Process unprocessed events immediately"],
+                }.get(health_status, []),
             }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error checking event system health: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error checking event system health: {str(e)}"
+        )
 
 
 @router.post("/events/replay/aggregate/{aggregate_id}")
@@ -314,7 +337,7 @@ async def replay_aggregate_events(
     aggregate_id: UUID,
     aggregate_type: str,
     from_version: int = Query(default=1, ge=1),
-    current_user: User = Depends(get_current_admin_user)
+    current_user: User = Depends(get_current_admin_user),
 ) -> dict[str, Any]:
     """
     Replay events for a specific aggregate from a given version.
@@ -323,15 +346,23 @@ async def replay_aggregate_events(
     """
     try:
         # Get events for the aggregate
-        events = await EventQueryService.get_order_history(aggregate_id) if aggregate_type == "Order" else \
-                 await EventQueryService.get_product_history(aggregate_id) if aggregate_type == "Product" else \
-                 await EventQueryService.get_user_history(aggregate_id) if aggregate_type == "User" else \
-                 await EventQueryService.get_cart_history(aggregate_id)
+        events = (
+            await EventQueryService.get_order_history(aggregate_id)
+            if aggregate_type == "Order"
+            else (
+                await EventQueryService.get_product_history(aggregate_id)
+                if aggregate_type == "Product"
+                else (
+                    await EventQueryService.get_user_history(aggregate_id)
+                    if aggregate_type == "User"
+                    else await EventQueryService.get_cart_history(aggregate_id)
+                )
+            )
+        )
 
         # Filter events by version
         events_to_replay = [
-            event for event in events
-            if event.get("version", 1) >= from_version
+            event for event in events if event.get("version", 1) >= from_version
         ]
 
         # For safety, we'll just return what would be replayed without actually replaying
@@ -344,8 +375,10 @@ async def replay_aggregate_events(
             "replay_requested_by": str(current_user.id),
             "replay_requested_at": datetime.utcnow().isoformat(),
             "status": "preview_only",
-            "note": "This endpoint currently returns a preview. Implement actual replay logic as needed."
+            "note": "This endpoint currently returns a preview. Implement actual replay logic as needed.",
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error during event replay: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error during event replay: {str(e)}"
+        )

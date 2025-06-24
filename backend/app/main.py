@@ -3,6 +3,7 @@ Brain2Gain FastAPI Application.
 
 Main application setup with middleware, exception handling, and API routes.
 """
+
 import logging
 import os
 from contextlib import asynccontextmanager
@@ -27,8 +28,7 @@ from app.middlewares.exception_handler import setup_exception_handlers
 
 # Setup logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def run_migrations() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """Manage application lifespan events."""
     # Startup
     logger.info("Starting Brain2Gain API...")
@@ -100,7 +100,7 @@ if sentry_sdk and settings.SENTRY_DSN and settings.ENVIRONMENT != "local":
     sentry_sdk.init(
         dsn=str(settings.SENTRY_DSN),
         enable_tracing=True,
-        environment=settings.ENVIRONMENT
+        environment=settings.ENVIRONMENT,
     )
     logger.info("Sentry error tracking initialized")
 
@@ -137,44 +137,42 @@ if API_MODE == "public" or API_MODE == "store":
     # Store/Public API CORS
     cors_origins = ["http://localhost:3000"]  # Store frontend
     if settings.ENVIRONMENT == "production":
-        cors_origins.extend([
-            "https://store.brain2gain.com",
-            "https://www.brain2gain.com",
-            "https://brain2gain.com"
-        ])
+        cors_origins.extend(
+            [
+                "https://store.brain2gain.com",
+                "https://www.brain2gain.com",
+                "https://brain2gain.com",
+            ]
+        )
     elif settings.ENVIRONMENT == "development":
-        cors_origins.extend([
-            "http://localhost:3000",
-            "http://127.0.0.1:3000"
-        ])
+        cors_origins.extend(["http://localhost:3000", "http://127.0.0.1:3000"])
 elif API_MODE == "admin":
     # Admin API CORS
     cors_origins = ["http://localhost:3001"]  # Admin frontend
     if settings.ENVIRONMENT == "production":
-        cors_origins.extend([
-            "https://admin.brain2gain.com"
-        ])
+        cors_origins.extend(["https://admin.brain2gain.com"])
     elif settings.ENVIRONMENT == "development":
-        cors_origins.extend([
-            "http://localhost:3001",
-            "http://127.0.0.1:3001"
-        ])
+        cors_origins.extend(["http://localhost:3001", "http://127.0.0.1:3001"])
 else:
     # Full mode (backward compatibility)
     cors_origins = ["http://localhost:5173"]
     if settings.ENVIRONMENT == "production":
-        cors_origins.extend([
-            "https://brain2gain.com",
-            "https://www.brain2gain.com",
-            "https://frontend.brain2gain.com"
-        ])
+        cors_origins.extend(
+            [
+                "https://brain2gain.com",
+                "https://www.brain2gain.com",
+                "https://frontend.brain2gain.com",
+            ]
+        )
     elif settings.ENVIRONMENT == "development":
-        cors_origins.extend([
-            "http://localhost:3000",
-            "http://localhost:3001",
-            "http://localhost:5173",
-            "http://127.0.0.1:5173"
-        ])
+        cors_origins.extend(
+            [
+                "http://localhost:3000",
+                "http://localhost:3001",
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+            ]
+        )
 
 app.add_middleware(
     CORSMiddleware,
@@ -192,7 +190,7 @@ app.add_middleware(
         "X-Mx-ReqToken",
         "Keep-Alive",
         "X-Requested-With",
-        "If-Modified-Since"
+        "If-Modified-Since",
     ],
     max_age=86400,  # 24 hours
 )
@@ -205,7 +203,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 async def health_check():
     """
     Comprehensive health check endpoint.
-    
+
     Returns overall system health including cache status,
     useful for load balancers and monitoring systems.
     """
@@ -229,21 +227,21 @@ async def health_check():
         "components": {
             "api": {
                 "status": "healthy",
-                "description": "FastAPI application is running"
+                "description": "FastAPI application is running",
             },
             "cache": {
                 "status": cache_health.get("status", "unknown"),
                 "health": cache_health.get("health", "unknown"),
                 "connected": cache_health.get("connected", False),
                 "hit_rate": cache_health.get("hit_rate", 0),
-                "type": cache_health.get("cache_type", "unknown")
-            }
+                "type": cache_health.get("cache_type", "unknown"),
+            },
         },
         "checks": {
             "cache_connectivity": cache_health.get("connected", False),
             "cache_performance": cache_health.get("hit_rate", 0) >= 60,
-            "api_responsive": True
-        }
+            "api_responsive": True,
+        },
     }
 
     # Add error details if cache is unhealthy
@@ -260,5 +258,5 @@ async def root():
         "message": "Welcome to Brain2Gain API",
         "docs": f"{settings.API_V1_STR}/docs",
         "health": "/health",
-        "version": "1.0.0"
+        "version": "1.0.0",
     }

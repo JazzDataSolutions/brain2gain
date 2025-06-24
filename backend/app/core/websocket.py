@@ -21,7 +21,7 @@ class ConnectionManager:
         if user_id in self.active_connections:
             try:
                 await self.active_connections[user_id].close()
-            except:
+            except Exception:
                 pass
 
         self.active_connections[user_id] = websocket
@@ -40,30 +40,38 @@ class ConnectionManager:
             del self.active_connections[user_id]
 
         # Remove from all role groups
-        for role, users in self.role_connections.items():
+        for _role, users in self.role_connections.items():
             if user_id in users:
                 users.remove(user_id)
 
         logger.info(f"User {user_id} disconnected")
 
-    async def send_personal_message(self, message: str, user_id: str, notification_type: str = "info"):
+    async def send_personal_message(
+        self, message: str, user_id: str, notification_type: str = "info"
+    ):
         """Send message to specific user"""
         if user_id in self.active_connections:
             websocket = self.active_connections[user_id]
             try:
-                await websocket.send_text(json.dumps({
-                    "type": notification_type,
-                    "message": message,
-                    "timestamp": self._get_timestamp(),
-                    "user_id": user_id
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": notification_type,
+                            "message": message,
+                            "timestamp": self._get_timestamp(),
+                            "user_id": user_id,
+                        }
+                    )
+                )
             except WebSocketDisconnect:
                 self.disconnect(user_id)
             except Exception as e:
                 logger.error(f"Error sending message to user {user_id}: {e}")
                 self.disconnect(user_id)
 
-    async def broadcast_to_role(self, message: str, role: str, notification_type: str = "info"):
+    async def broadcast_to_role(
+        self, message: str, role: str, notification_type: str = "info"
+    ):
         """Send message to all users with specific role"""
         if role not in self.role_connections:
             return
@@ -73,12 +81,16 @@ class ConnectionManager:
             if user_id in self.active_connections:
                 websocket = self.active_connections[user_id]
                 try:
-                    await websocket.send_text(json.dumps({
-                        "type": notification_type,
-                        "message": message,
-                        "timestamp": self._get_timestamp(),
-                        "role": role
-                    }))
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": notification_type,
+                                "message": message,
+                                "timestamp": self._get_timestamp(),
+                                "role": role,
+                            }
+                        )
+                    )
                 except WebSocketDisconnect:
                     disconnected_users.append(user_id)
                 except Exception as e:
@@ -94,11 +106,15 @@ class ConnectionManager:
         disconnected_users = []
         for user_id, websocket in self.active_connections.items():
             try:
-                await websocket.send_text(json.dumps({
-                    "type": notification_type,
-                    "message": message,
-                    "timestamp": self._get_timestamp()
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": notification_type,
+                            "message": message,
+                            "timestamp": self._get_timestamp(),
+                        }
+                    )
+                )
             except WebSocketDisconnect:
                 disconnected_users.append(user_id)
             except Exception as e:
@@ -120,6 +136,7 @@ class ConnectionManager:
     def _get_timestamp(self) -> str:
         """Get current timestamp in ISO format"""
         from datetime import datetime
+
         return datetime.utcnow().isoformat()
 
 
