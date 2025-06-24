@@ -362,6 +362,14 @@ Production Stack:
 - **Git**: Conventional Commits + pre-commit hooks
 - **Testing**: Minimum 80% coverage
 
+### Git Workflow
+- **Branch naming**: `feature/<task>`, `fix/<bug>`, `docs/<area>` or `chore/<task>`.
+- **Commit messages**: follow [Conventional Commits](https://www.conventionalcommits.org) in imperative English.
+- **Pull Requests**: use the [template](./.github/PULL_REQUEST_TEMPLATE.md), link issues and detail testing.
+- **Reviews**: code owners defined in [CODEOWNERS](./.github/CODEOWNERS) must approve before merge.
+- **Tags & releases**: tag versions as `vMAJOR.MINOR.PATCH` and create GitHub releases.
+- **CI checks**: commit messages are validated with commitlint.
+
 ## 📄 License
 
 This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.
