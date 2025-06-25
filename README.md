@@ -5,7 +5,7 @@
 [![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![Node Version](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.114+-green.svg)](https://fastapi.tiangolo.com/)
 
 **Brain2Gain** is a modern e-commerce platform specialized in sports supplements, built with a **modular monolithic architecture** that combines operational simplicity with enterprise scalability to deliver exceptional shopping experiences and integrated management tools.
 
@@ -71,7 +71,7 @@
 ### Current Technology Stack
 ```yaml
 Backend (Phase 1 MVP Complete):
-  Framework: FastAPI 0.104+
+  Framework: FastAPI 0.114+
   Database: PostgreSQL 17 + SQLModel
   Cache: Redis 7.2+ with strategic caching
   Package Manager: uv (ultra-fast dependency resolution)
