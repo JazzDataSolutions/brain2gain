@@ -459,27 +459,27 @@ class OrderService:
             count_stmt = select(func.count(Order.order_id)).where(
                 Order.status == order_status
             )
-            count = self.session.exec(count_stmt).first()
+            count = self.session.exec(count_stmt).scalar_one()
             status_counts[order_status.value] = count
 
         # Revenue calculations
         revenue_stmt = select(func.sum(Order.total_amount)).where(
             Order.status.in_([OrderStatus.DELIVERED, OrderStatus.SHIPPED])
         )
-        total_revenue = self.session.exec(revenue_stmt).first() or Decimal(0)
+        total_revenue = self.session.exec(revenue_stmt).scalar() or Decimal(0)
 
         # Average order value
         avg_stmt = select(func.avg(Order.total_amount)).where(
             Order.status.in_([OrderStatus.DELIVERED, OrderStatus.SHIPPED])
         )
-        avg_order_value = self.session.exec(avg_stmt).first() or Decimal(0)
+        avg_order_value = self.session.exec(avg_stmt).scalar() or Decimal(0)
 
         # Orders today
         today = datetime.now().date()
         today_stmt = select(func.count(Order.order_id)).where(
             func.date(Order.created_at) == today
         )
-        orders_today = self.session.exec(today_stmt).first()
+        orders_today = self.session.exec(today_stmt).scalar_one()
 
         return {
             "total_orders": sum(status_counts.values()),

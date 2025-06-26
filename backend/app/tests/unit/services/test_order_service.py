@@ -621,19 +621,19 @@ class TestOrderStatistics:
         # Mock database query results
         mock_session.exec.side_effect = [
             # Status counts (7 calls for OrderStatus enum values)
-            Mock(first=Mock(return_value=5)),   # PENDING
-            Mock(first=Mock(return_value=3)),   # CONFIRMED
-            Mock(first=Mock(return_value=8)),   # PROCESSING
-            Mock(first=Mock(return_value=12)),  # SHIPPED
-            Mock(first=Mock(return_value=25)),  # DELIVERED
-            Mock(first=Mock(return_value=2)),   # CANCELLED
-            Mock(first=Mock(return_value=1)),   # REFUNDED
+            Mock(scalar_one=Mock(return_value=5)),   # PENDING
+            Mock(scalar_one=Mock(return_value=3)),   # CONFIRMED
+            Mock(scalar_one=Mock(return_value=8)),   # PROCESSING
+            Mock(scalar_one=Mock(return_value=12)),  # SHIPPED
+            Mock(scalar_one=Mock(return_value=25)),  # DELIVERED
+            Mock(scalar_one=Mock(return_value=2)),   # CANCELLED
+            Mock(scalar_one=Mock(return_value=1)),   # REFUNDED
             # Revenue calculation
-            Mock(first=Mock(return_value=Decimal("15000.00"))),
+            Mock(scalar=Mock(return_value=Decimal("15000.00"))),
             # Average order value
-            Mock(first=Mock(return_value=Decimal("125.50"))),
+            Mock(scalar=Mock(return_value=Decimal("125.50"))),
             # Orders today
-            Mock(first=Mock(return_value=3))
+            Mock(scalar_one=Mock(return_value=3))
         ]
         
         result = await service.get_order_statistics()
@@ -647,6 +647,39 @@ class TestOrderStatistics:
         assert result["total_revenue"] == Decimal("15000.00")
         assert result["average_order_value"] == Decimal("125.50")
         assert result["orders_today"] == 3
+
+    async def test_get_order_statistics_varied_counts(self):
+        """Test statistics with different status counts"""
+        mock_session = Mock(spec=Session)
+        service = OrderService(mock_session)
+
+        mock_session.exec.side_effect = [
+            # Status counts
+            Mock(scalar_one=Mock(return_value=0)),   # PENDING
+            Mock(scalar_one=Mock(return_value=0)),   # CONFIRMED
+            Mock(scalar_one=Mock(return_value=3)),   # PROCESSING
+            Mock(scalar_one=Mock(return_value=2)),   # SHIPPED
+            Mock(scalar_one=Mock(return_value=5)),   # DELIVERED
+            Mock(scalar_one=Mock(return_value=1)),   # CANCELLED
+            Mock(scalar_one=Mock(return_value=0)),   # REFUNDED
+            # Revenue and averages
+            Mock(scalar=Mock(return_value=Decimal("500.00"))),
+            Mock(scalar=Mock(return_value=Decimal("100.00"))),
+            # Orders today
+            Mock(scalar_one=Mock(return_value=1)),
+        ]
+
+        result = await service.get_order_statistics()
+
+        assert result["total_orders"] == 11
+        assert result["pending_orders"] == 0
+        assert result["processing_orders"] == 3
+        assert result["shipped_orders"] == 2
+        assert result["delivered_orders"] == 5
+        assert result["cancelled_orders"] == 1
+        assert result["total_revenue"] == Decimal("500.00")
+        assert result["average_order_value"] == Decimal("100.00")
+        assert result["orders_today"] == 1
 
 
 class TestPrivateHelperMethods:

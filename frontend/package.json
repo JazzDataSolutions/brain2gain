@@ -57,7 +57,7 @@
     "dotenv": "^16.4.5",
     "jsdom": "^26.1.0",
     "lighthouse": "^11.0.0",
-    "lighthouse-ci": "^0.12.0",
+    "lighthouse-ci": "^1.13.1",
     "msw": "^2.0.0",
     "playwright-lighthouse": "^4.0.0",
     "postcss": "^8.5.4",
