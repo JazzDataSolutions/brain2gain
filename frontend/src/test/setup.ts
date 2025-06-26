@@ -1,61 +1,61 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import React from 'react'
 
 // Mock framer-motion FIRST before other imports
 vi.mock('framer-motion', () => {
-  const React = require('react')
-  
+
   // Create a motion factory that works with any component
   const createMotionComponent = (Component: any) => {
     return React.forwardRef((props: any, ref: any) => {
       // Filter out motion-specific props
-      const { 
-        initial, animate, exit, transition, variants, 
+      const {
+        initial, animate, exit, transition, variants,
         whileHover, whileTap, whileFocus, whileInView,
         drag, dragConstraints, onDrag, onDragEnd,
         layout, layoutId, style,
         onHoverStart, onHoverEnd, onAnimationStart, onAnimationComplete,
         onDragStart, onDragTransitionEnd, onTap, onTapStart, onTapCancel,
         onPan, onPanStart, onPanEnd, onViewportEnter, onViewportLeave,
-        ...restProps 
-      } = props
-      
-      // If Component is a React component (object with $$typeof), render it directly
+        ...restProps
+      } = props;
+
+      // If Component is a React component (object with $typeof), render it directly
       // If it's a string (like 'div'), create element with it
       if (typeof Component === 'string') {
         return React.createElement(Component, {
           ...restProps,
           ref,
           style
-        })
+        });
       } else {
         // For React components like Chakra Box, render them normally
         return React.createElement(Component, {
           ...restProps,
           ref,
           style
-        })
+        });
       }
-    })
-  }
-  
+    });
+  };
+
   // Simple motion function that returns wrapped component
-  const motion = (Component: any) => createMotionComponent(Component)
-  
+  const motion = (Component: any) => createMotionComponent(Component);
+
   // Add properties for motion.div, motion.span, etc.
-  motion.div = createMotionComponent('div')
-  motion.span = createMotionComponent('span')
-  motion.img = createMotionComponent('img')
-  motion.button = createMotionComponent('button')
-  motion.a = createMotionComponent('a')
-  motion.section = createMotionComponent('section')
-  
+  motion.div = createMotionComponent('div');
+  motion.span = createMotionComponent('span');
+  motion.img = createMotionComponent('img');
+  motion.button = createMotionComponent('button');
+  motion.a = createMotionComponent('a');
+  motion.section = createMotionComponent('section');
+
   return {
     motion,
     AnimatePresence: ({ children }: { children: React.ReactNode }) => children,
     useAnimation: () => ({
       start: vi.fn(),
-      stop: vi.fn(), 
+      stop: vi.fn(),
       set: vi.fn(),
       mount: vi.fn(),
       unmount: vi.fn()
@@ -74,15 +74,14 @@ vi.mock('framer-motion', () => {
       get: () => initial,
       set: vi.fn()
     })
-  }
-})
+  };
+});
 
 // Import router mocks
 import './setup-router-mocks'
 
 // Mock AuthContext to prevent act() warnings
 vi.mock('../contexts/AuthContext', () => {
-  const React = require('react')
   return {
     useAuth: vi.fn(() => ({
       user: null,

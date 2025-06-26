@@ -30,7 +30,6 @@ import {
   FiDollarSign,
   FiShoppingCart,
   FiUsers,
-  FiTrendingUp,
   FiPackage,
   FiAlertTriangle,
 } from 'react-icons/fi'

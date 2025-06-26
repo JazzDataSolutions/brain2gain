@@ -23,7 +23,7 @@ function AdminLayout() {
   const { isLoading, user } = useAuth()
 
   // Solo permitir acceso a usuarios con rol admin/manager
-  if (user && !["ADMIN", "MANAGER"].includes(user.role)) {
+  if (user && !user.is_superuser) {
     throw redirect({
       to: "/store",
     })

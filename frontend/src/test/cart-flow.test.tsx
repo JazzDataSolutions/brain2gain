@@ -10,18 +10,10 @@ import { useCartStore } from '../stores/cartStore'
 // Mock product data
 const mockProduct = {
   id: '1',
-  product_id: '1',
   sku: 'WP-001',
   name: 'Whey Protein Gold Standard',
-  description: '100% Whey Protein Isolate - Chocolate',
   price: 45.99,
-  unit_price: 45.99,
-  stock_quantity: 100,
-  status: 'ACTIVE',
-  category: 'proteins',
-  brand: 'Optimum Nutrition',
   image: '/images/whey-protein.jpg',
-  image_url: '/images/whey-protein.jpg',
 }
 
 // Mock cart store
@@ -128,11 +120,10 @@ describe('Cart Flow Integration Tests', () => {
       ;(useCartStore as any).mockReturnValue({
         items: [
           {
-            product_id: mockProduct.id,
-            product_name: mockProduct.name,
-            product_sku: mockProduct.sku,
-            unit_price: mockProduct.price,
-            total_price: 91.98,
+            id: mockProduct.id,
+            name: mockProduct.name,
+            sku: mockProduct.sku,
+            price: mockProduct.price,
             quantity: 2,
             image: mockProduct.image,
           },
@@ -204,20 +195,18 @@ describe('Cart Flow Integration Tests', () => {
       ;(useCartStore as any).mockReturnValue({
         items: [
           {
-            product_id: mockProduct.id,
-            product_name: mockProduct.name,
-            product_sku: mockProduct.sku,
-            unit_price: mockProduct.price,
-            total_price: 91.98,
+            id: mockProduct.id,
+            name: mockProduct.name,
+            sku: mockProduct.sku,
+            price: mockProduct.price,
             quantity: 2,
             image: mockProduct.image,
           },
           {
-            product_id: '2',
-            product_name: mockProduct.name,
-            product_sku: mockProduct.sku,
-            unit_price: mockProduct.price,
-            total_price: 45.99,
+            id: '2',
+            name: mockProduct.name,
+            sku: mockProduct.sku,
+            price: mockProduct.price,
             quantity: 1,
             image: mockProduct.image,
           },
@@ -260,11 +249,10 @@ describe('Cart Flow Integration Tests', () => {
     it('should persist cart data in localStorage', () => {
       const cartData = [
         {
-          product_id: mockProduct.id,
-          product_name: mockProduct.name,
-          product_sku: mockProduct.sku,
-          unit_price: mockProduct.price,
-          total_price: 91.98,
+          id: mockProduct.id,
+          name: mockProduct.name,
+          sku: mockProduct.sku,
+          price: mockProduct.price,
           quantity: 2,
           image: mockProduct.image,
         },
@@ -279,11 +267,10 @@ describe('Cart Flow Integration Tests', () => {
     it('should restore cart data from localStorage on page load', () => {
       const cartData = [
         {
-          product_id: mockProduct.id,
-          product_name: mockProduct.name,
-          product_sku: mockProduct.sku,
-          unit_price: mockProduct.price,
-          total_price: 91.98,
+          id: mockProduct.id,
+          name: mockProduct.name,
+          sku: mockProduct.sku,
+          price: mockProduct.price,
           quantity: 2,
           image: mockProduct.image,
         },

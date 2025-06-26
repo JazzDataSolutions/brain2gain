@@ -35,7 +35,6 @@ const ContactInformationStep = ({
     register,
     watch,
     formState: { errors, isValid },
-    trigger,
   } = useForm<ContactInformation>({
     mode: 'onChange',
     defaultValues: data,

@@ -10,6 +10,7 @@ export interface Product {
   image?: string
   created_at?: string
   updated_at?: string
+  rating?: number
 }
 
 export interface ProductsResponse {
@@ -64,9 +65,9 @@ export class ProductsService {
   /**
    * Get product by ID
    */
-  static async readProduct(productId: string): Promise<Product | null> {
+  static async readProduct(productId: number): Promise<Product | null> {
     try {
-      const response = await ItemsService.readItem({ id: parseInt(productId) })
+      const response = await ItemsService.readItem({ id: productId.toString() })
       return transformItemToProduct(response)
     } catch (error) {
       console.error('Error fetching product:', error)

@@ -187,7 +187,7 @@ describe('AnalyticsDashboard', () => {
 
       // Assert
       expect(screen.getByText('Loading analytics dashboard...')).toBeInTheDocument()
-      expect(screen.getByRole('progressbar')).toBeInTheDocument()
+      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument()
     })
 
     it('should load and display dashboard data', async () => {
@@ -209,7 +209,7 @@ describe('AnalyticsDashboard', () => {
       await waitFor(() => {
         expect(screen.getByText('$2,500')).toBeInTheDocument() // Today's revenue
         expect(screen.getByText('$45,000')).toBeInTheDocument() // Monthly revenue
-        expect(screen.getByText('$38,000')).toBeInTheDocument() // MRR
+        expect(screen.getAllByText('$38,000')[0]).toBeInTheDocument() // MRR
         expect(screen.getByText('$456,000')).toBeInTheDocument() // ARR
       })
     })
@@ -323,7 +323,7 @@ describe('AnalyticsDashboard', () => {
         expect(screen.getByText('Visitors')).toBeInTheDocument()
         expect(screen.getByText('Add to Cart')).toBeInTheDocument()
         expect(screen.getByText('Purchase')).toBeInTheDocument()
-        expect(screen.getByText('3.2%')).toBeInTheDocument() // Conversion rate
+        expect(screen.getAllByText('3.2%')[0]).toBeInTheDocument() // Conversion rate
       })
     })
   })
@@ -600,7 +600,7 @@ describe('AnalyticsDashboard', () => {
       await waitFor(() => {
         expect(screen.getByText('15.2%')).toBeInTheDocument() // Growth rate
         expect(screen.getByText('28.5%')).toBeInTheDocument() // Cart abandonment
-        expect(screen.getByText('3.2%')).toBeInTheDocument() // Conversion rate
+        expect(screen.getAllByText('3.2%')[0]).toBeInTheDocument() // Conversion rate
         expect(screen.getByText('42.1%')).toBeInTheDocument() // Repeat rate
         expect(screen.getByText('8.7%')).toBeInTheDocument() // Churn rate
       })

@@ -4,14 +4,8 @@ import React, { useState, useEffect } from 'react'
 import {
   Box,
   Grid,
-  GridItem,
   Card,
   CardBody,
-  Stat,
-  StatLabel,
-  StatNumber,
-  StatHelpText,
-  StatArrow,
   Heading,
   Text,
   VStack,
@@ -24,38 +18,12 @@ import {
   Spinner,
   useToast,
   Button,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
-  Progress,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
-  Flex,
-  Tooltip
 } from '@chakra-ui/react'
 import { Icon } from '@chakra-ui/react'
 import RevenueOverview from './RevenueOverview'
 import { 
-  FiTrendingUp, 
-  FiTrendingDown, 
-  FiDollarSign, 
-  FiShoppingCart, 
-  FiUsers, 
-  FiPackage, 
   FiRefreshCw, 
-  FiAlertTriangle,
-  FiTarget,
-  FiLayers,
-  FiFilter,
-  FiBarChart,
-  FiPieChart 
+  FiAlertTriangle
 } from 'react-icons/fi'
 import AnalyticsService, { 
   type FinancialSummary, 
@@ -63,56 +31,14 @@ import AnalyticsService, {
   type AlertSummary 
 } from '../../services/AnalyticsService'
 
-
-interface RFMSegmentData {
-  segment: string;
-  count: number;
-  percentage: number;
-  avg_monetary: number;
-  color: string;
-  profile?: {
-    description: string;
-    characteristics: string[];
-    marketing_strategy: string[];
-  };
-}
-
-interface CohortData {
-  summary: {
-    total_cohorts: number;
-    avg_retention_by_period: Record<number, number>;
-    total_customers_analyzed: number;
-  };
-  insights: string[];
-}
-
-interface ConversionFunnelData {
-  funnel_steps: Record<string, {
-    count: number;
-    percentage: number;
-    description: string;
-  }>;
-  conversions: Record<string, {
-    conversion_rate: number;
-    drop_off_rate: number;
-  }>;
-  insights: string[];
-}
-
 const AnalyticsDashboard: React.FC = () => {
   const [financialData, setFinancialData] = useState<FinancialSummary | null>(null)
   const [realtimeData, setRealtimeData] = useState<RealtimeMetrics | null>(null)
   const [alertsData, setAlertsData] = useState<AlertSummary | null>(null)
   
-  // Phase 2 Advanced Analytics Data
-  const [rfmData, setRfmData] = useState<{ segments: Record<string, RFMSegmentData>; total_customers: number; insights: string[] } | null>(null)
-  const [cohortData, setCohortData] = useState<CohortData | null>(null)
-  const [funnelData, setFunnelData] = useState<ConversionFunnelData | null>(null)
-  
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState(0)
   const toast = useToast()
 
   // Format currency
@@ -178,8 +104,7 @@ const AnalyticsDashboard: React.FC = () => {
         }
       })
       if (response.ok) {
-        const data = await response.json()
-        setRfmData(data)
+        await response.json()
       }
     } catch (err) {
       console.error('Failed to load RFM data:', err)
@@ -195,8 +120,7 @@ const AnalyticsDashboard: React.FC = () => {
         }
       })
       if (response.ok) {
-        const data = await response.json()
-        setCohortData(data)
+        await response.json()
       }
     } catch (err) {
       console.error('Failed to load cohort data:', err)
@@ -212,8 +136,7 @@ const AnalyticsDashboard: React.FC = () => {
         }
       })
       if (response.ok) {
-        const data = await response.json()
-        setFunnelData(data)
+        await response.json()
       }
     } catch (err) {
       console.error('Failed to load funnel data:', err)
@@ -283,7 +206,7 @@ const AnalyticsDashboard: React.FC = () => {
   if (loading) {
     return (
       <Box p={8} textAlign="center">
-        <Spinner size="xl" />
+        <Spinner size="xl" data-testid="loading-spinner" />
         <Text mt={4}>Loading analytics dashboard...</Text>
       </Box>
     )
@@ -385,22 +308,22 @@ const AnalyticsDashboard: React.FC = () => {
         )}
 
         {/* Fallback inventory alerts */}
-        {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory.low_stock_products > 0 && (
+                {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory?.low_stock_products && financialData.inventory.low_stock_products > 0 && (
           <Alert status="warning">
             <AlertIcon />
             <AlertTitle>Inventory Alert!</AlertTitle>
             <AlertDescription>
-              {financialData.inventory.low_stock_products} products are running low on stock.
+              {financialData?.inventory?.low_stock_products} products are running low on stock.
             </AlertDescription>
           </Alert>
         )}
 
-        {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory.out_of_stock_products > 0 && (
+        {(!alertsData || alertsData.alerts.length === 0) && financialData?.inventory?.out_of_stock_products && financialData.inventory.out_of_stock_products > 0 && (
           <Alert status="error">
             <AlertIcon />
             <AlertTitle>Stock Alert!</AlertTitle>
             <AlertDescription>
-              {financialData.inventory.out_of_stock_products} products are out of stock.
+              {financialData?.inventory?.out_of_stock_products} products are out of stock.
             </AlertDescription>
           </Alert>
         )}
@@ -588,11 +511,11 @@ const AnalyticsDashboard: React.FC = () => {
                 <HStack justify="space-between">
                   <Text>Pending Orders</Text>
                   <Badge 
-                    colorScheme={financialData?.orders.pending_orders > 10 ? "orange" : "gray"} 
+                    colorScheme={financialData?.orders?.pending_orders && financialData.orders.pending_orders > 10 ? "orange" : "gray"} 
                     fontSize="md" 
                     px={2}
                   >
-                    {financialData?.orders.pending_orders || 0}
+                    {financialData?.orders?.pending_orders || 0}
                   </Badge>
                 </HStack>
 
@@ -637,13 +560,13 @@ const AnalyticsDashboard: React.FC = () => {
                   <Text>Conversion Rate</Text>
                   <Badge 
                     colorScheme={
-                      financialData?.customers.customer_conversion_rate > 50 ? "green" : 
-                      financialData?.customers.customer_conversion_rate > 25 ? "yellow" : "red"
+                      financialData?.customers?.customer_conversion_rate && financialData.customers.customer_conversion_rate > 50 ? "green" : 
+                      financialData?.customers?.customer_conversion_rate && financialData.customers.customer_conversion_rate > 25 ? "yellow" : "red"
                     } 
                     fontSize="md" 
                     px={2}
                   >
-                    {formatPercentage(financialData?.customers.customer_conversion_rate || 0)}
+                    {formatPercentage(financialData?.customers?.customer_conversion_rate || 0)}
                   </Badge>
                 </HStack>
               </VStack>
@@ -669,22 +592,22 @@ const AnalyticsDashboard: React.FC = () => {
                 <HStack justify="space-between">
                   <Text>Low Stock Items</Text>
                   <Badge 
-                    colorScheme={financialData?.inventory.low_stock_products > 0 ? "orange" : "green"} 
+                    colorScheme={financialData?.inventory?.low_stock_products && financialData.inventory.low_stock_products > 0 ? "orange" : "green"} 
                     fontSize="md" 
                     px={2}
                   >
-                    {financialData?.inventory.low_stock_products || 0}
+                    {financialData?.inventory?.low_stock_products || 0}
                   </Badge>
                 </HStack>
 
                 <HStack justify="space-between">
                   <Text>Out of Stock</Text>
                   <Badge 
-                    colorScheme={financialData?.inventory.out_of_stock_products > 0 ? "red" : "green"} 
+                    colorScheme={financialData?.inventory?.out_of_stock_products && financialData.inventory.out_of_stock_products > 0 ? "red" : "green"} 
                     fontSize="md" 
                     px={2}
                   >
-                    {financialData?.inventory.out_of_stock_products || 0}
+                    {financialData?.inventory?.out_of_stock_products || 0}
                   </Badge>
                 </HStack>
 
@@ -709,7 +632,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <HStack justify="space-between" mb={1}>
                       <Text fontSize="sm">Conversion Rate</Text>
                       <Text fontSize="sm" fontWeight="bold">
-                        {formatPercentage(financialData?.conversion.conversion_rate || 0)}
+                        {formatPercentage(financialData?.conversion?.conversion_rate || 0)}
                       </Text>
                     </HStack>
                     <Box 
@@ -722,10 +645,10 @@ const AnalyticsDashboard: React.FC = () => {
                       <Box 
                         h="full" 
                         bg={
-                          financialData?.conversion.conversion_rate > 5 ? "green.400" :
-                          financialData?.conversion.conversion_rate > 2 ? "orange.400" : "red.400"
+                          financialData?.conversion?.conversion_rate && financialData.conversion.conversion_rate > 5 ? "green.400" :
+                          financialData?.conversion?.conversion_rate && financialData.conversion.conversion_rate > 2 ? "orange.400" : "red.400"
                         }
-                        w={`${Math.min(financialData?.conversion.conversion_rate || 0, 100)}%`}
+                        w={`${Math.min(financialData?.conversion?.conversion_rate || 0, 100)}%`}
                       />
                     </Box>
                   </Box>
@@ -734,7 +657,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <HStack justify="space-between" mb={1}>
                       <Text fontSize="sm">Cart Abandonment Rate</Text>
                       <Text fontSize="sm" fontWeight="bold">
-                        {formatPercentage(financialData?.conversion.cart_abandonment_rate || 0)}
+                        {formatPercentage(financialData?.conversion?.cart_abandonment_rate || 0)}
                       </Text>
                     </HStack>
                     <Box 
@@ -747,10 +670,10 @@ const AnalyticsDashboard: React.FC = () => {
                       <Box 
                         h="full" 
                         bg={
-                          financialData?.conversion.cart_abandonment_rate > 70 ? "red.400" :
-                          financialData?.conversion.cart_abandonment_rate > 50 ? "orange.400" : "green.400"
+                          financialData?.conversion?.cart_abandonment_rate && financialData.conversion.cart_abandonment_rate > 70 ? "red.400" :
+                          financialData?.conversion?.cart_abandonment_rate && financialData.conversion.cart_abandonment_rate > 50 ? "orange.400" : "green.400"
                         }
-                        w={`${financialData?.conversion.cart_abandonment_rate || 0}%`}
+                        w={`${financialData?.conversion?.cart_abandonment_rate || 0}%`}
                       />
                     </Box>
                   </Box>
@@ -759,7 +682,7 @@ const AnalyticsDashboard: React.FC = () => {
                     <HStack justify="space-between" mb={1}>
                       <Text fontSize="sm">Repeat Customer Rate</Text>
                       <Text fontSize="sm" fontWeight="bold">
-                        {formatPercentage(financialData?.conversion.repeat_customer_rate || 0)}
+                        {formatPercentage(financialData?.conversion?.repeat_customer_rate || 0)}
                       </Text>
                     </HStack>
                     <Box 
@@ -772,10 +695,10 @@ const AnalyticsDashboard: React.FC = () => {
                       <Box 
                         h="full" 
                         bg={
-                          financialData?.conversion.repeat_customer_rate > 30 ? "green.400" :
-                          financialData?.conversion.repeat_customer_rate > 15 ? "orange.400" : "red.400"
+                          financialData?.conversion?.repeat_customer_rate && financialData.conversion.repeat_customer_rate > 30 ? "green.400" :
+                          financialData?.conversion?.repeat_customer_rate && financialData.conversion.repeat_customer_rate > 15 ? "orange.400" : "red.400"
                         }
-                        w={`${Math.min(financialData?.conversion.repeat_customer_rate || 0, 100)}%`}
+                        w={`${Math.min(financialData?.conversion?.repeat_customer_rate || 0, 100)}%`}
                       />
                     </Box>
                   </Box>
@@ -784,10 +707,10 @@ const AnalyticsDashboard: React.FC = () => {
                     <HStack justify="space-between" mb={1}>
                       <Text fontSize="sm">Churn Rate</Text>
                       <Text fontSize="sm" fontWeight="bold" color={
-                        financialData?.conversion.churn_rate > 15 ? "red.500" :
-                        financialData?.conversion.churn_rate > 10 ? "orange.500" : "green.500"
+                        financialData?.conversion?.churn_rate && financialData.conversion.churn_rate > 15 ? "red.500" :
+                        financialData?.conversion?.churn_rate && financialData.conversion.churn_rate > 10 ? "orange.500" : "green.500"
                       }>
-                        {formatPercentage(financialData?.conversion.churn_rate || 0)}
+                        {formatPercentage(financialData?.conversion?.churn_rate || 0)}
                       </Text>
                     </HStack>
                     <Box 
@@ -800,10 +723,10 @@ const AnalyticsDashboard: React.FC = () => {
                       <Box 
                         h="full" 
                         bg={
-                          financialData?.conversion.churn_rate > 15 ? "red.400" :
-                          financialData?.conversion.churn_rate > 10 ? "orange.400" : "green.400"
+                          financialData?.conversion?.churn_rate && financialData.conversion.churn_rate > 15 ? "red.400" :
+                          financialData?.conversion?.churn_rate && financialData.conversion.churn_rate > 10 ? "orange.400" : "green.400"
                         }
-                        w={`${Math.min(financialData?.conversion.churn_rate || 0, 100)}%`}
+                        w={`${Math.min(financialData?.conversion?.churn_rate || 0, 100)}%`}
                       />
                     </Box>
                   </Box>

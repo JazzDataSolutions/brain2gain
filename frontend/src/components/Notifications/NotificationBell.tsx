@@ -16,10 +16,8 @@ import {
   useColorModeValue,
   Circle
 } from '@chakra-ui/react';
-import { Bell, Check, X, Trash2 } from 'lucide-react';
+import { FiBell, FiCheck, FiX, FiTrash2 } from 'react-icons/fi';
 import { useNotifications } from '../../hooks/useNotifications';
-import { formatDistanceToNow } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
@@ -90,7 +88,7 @@ export function NotificationBell() {
           position="relative"
           onClick={() => setIsOpen(!isOpen)}
         >
-          <Bell size={20} />
+          <FiBell size={20} />
           {!isConnected && (
             <Circle
               size="8px"
@@ -118,7 +116,7 @@ export function NotificationBell() {
                   size="xs"
                   variant="ghost"
                   onClick={markAllAsRead}
-                  leftIcon={<Check size={12} />}
+                  leftIcon={<FiCheck size={12} />}
                 >
                   Marcar todo
                 </Button>
@@ -127,7 +125,7 @@ export function NotificationBell() {
                 size="xs"
                 variant="ghost"
                 aria-label="Limpiar todo"
-                icon={<Trash2 size={12} />}
+                icon={<FiTrash2 size={12} />}
                 onClick={clearAll}
               />
             </HStack>
@@ -137,7 +135,7 @@ export function NotificationBell() {
         <PopoverBody p={0} maxH="400px" overflowY="auto">
           {notifications.length === 0 ? (
             <Box p={4} textAlign="center" color="gray.500">
-              <Bell size={32} style={{ margin: '0 auto 8px' }} />
+              <FiBell size={32} style={{ margin: '0 auto 8px' }} />
               <Text fontSize="sm">No hay notificaciones</Text>
             </Box>
           ) : (
@@ -169,10 +167,7 @@ export function NotificationBell() {
                         
                         <HStack spacing={2}>
                           <Text fontSize="xs" color="gray.500">
-                            {formatDistanceToNow(new Date(notification.timestamp), {
-                              addSuffix: true,
-                              locale: es
-                            })}
+                            {new Date(notification.timestamp).toLocaleTimeString()}
                           </Text>
                           
                           {!notification.read && (
@@ -185,7 +180,7 @@ export function NotificationBell() {
                         size="xs"
                         variant="ghost"
                         aria-label="Eliminar notificación"
-                        icon={<X size={12} />}
+                        icon={<FiX size={12} />}
                         onClick={(e) => {
                           e.stopPropagation();
                           removeNotification(notification.id);

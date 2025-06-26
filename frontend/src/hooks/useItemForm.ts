@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, type SubmitHandler } from "react-hook-form";
+import { useForm, type SubmitHandler, FieldValues, DefaultValues } from "react-hook-form";
 import type { ApiError } from "../client";
 import useCustomToast from "./useCustomToast";
 import { handleError } from "../utils";
@@ -11,7 +11,7 @@ interface UseItemFormOptions<T> {
   onSuccess?: () => void;
 }
 
-function useItemForm<T>(options: UseItemFormOptions<T>) {
+function useItemForm<T extends FieldValues>(options: UseItemFormOptions<T>) {
   const queryClient = useQueryClient();
   const showToast = useCustomToast();
 
@@ -23,7 +23,7 @@ function useItemForm<T>(options: UseItemFormOptions<T>) {
   } = useForm<T>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: options.defaultValues,
+    defaultValues: options.defaultValues as DefaultValues<T>,
   });
 
   const mutation = useMutation({

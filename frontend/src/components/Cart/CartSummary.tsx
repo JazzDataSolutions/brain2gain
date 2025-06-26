@@ -12,7 +12,7 @@ import { Link } from '@tanstack/react-router'
 import { useCartStore } from '../../stores/cartStore'
 
 const CartSummary = () => {
-  const { items, item_count, total_amount, clearCart } = useCartStore()
+  const { getTotalItems, getTotalPrice, clearCart } = useCartStore()
   
   const cardBg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.600')
@@ -25,7 +25,7 @@ const CartSummary = () => {
   }
 
   // Calculate summary details
-  const subtotal = total_amount
+  const subtotal = getTotalPrice()
   const shipping = subtotal > 100000 ? 0 : 15000 // Free shipping over $100,000
   const tax = Math.round(subtotal * 0.19) // 19% IVA
   const finalTotal = subtotal + shipping + tax
@@ -51,7 +51,7 @@ const CartSummary = () => {
         {/* Order Details */}
         <VStack spacing={3} align="stretch">
           <HStack justify="space-between">
-            <Text>Subtotal ({item_count} productos)</Text>
+            <Text>Subtotal ({getTotalItems()} productos)</Text>
             <Text>{formatPrice(subtotal)}</Text>
           </HStack>
 

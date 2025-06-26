@@ -7,8 +7,6 @@ import {
   Text,
   Button,
   Divider,
-  Alert,
-  AlertIcon,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -21,7 +19,7 @@ import CartItem from './CartItem'
 import CartSummary from './CartSummary'
 
 const CartPage = () => {
-  const { items, item_count, total_amount } = useCartStore()
+  const { items, getTotalItems, getTotalPrice } = useCartStore()
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -73,15 +71,15 @@ const CartPage = () => {
             <BreadcrumbLink as={Link} to="/">Inicio</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
-            <BreadcrumbLink>Carrito ({item_count} productos)</BreadcrumbLink>
-          </BreadcrumbItem>
+              <BreadcrumbLink>Carrito ({getTotalItems()} productos)</BreadcrumbLink>
+            </BreadcrumbItem>
         </Breadcrumb>
 
         {/* Header */}
         <HStack justify="space-between" align="center">
           <Heading size="xl">Mi Carrito</Heading>
           <Text color="gray.600">
-            {item_count} producto{item_count !== 1 ? 's' : ''}
+            {getTotalItems()} producto{getTotalItems() !== 1 ? 's' : ''}
           </Text>
         </HStack>
 
@@ -90,7 +88,7 @@ const CartPage = () => {
           {/* Cart Items */}
           <VStack spacing={4} align="stretch">
             {items.map((item) => (
-              <CartItem key={item.product_id} item={item} />
+              <CartItem key={item.id} item={item} />
             ))}
           </VStack>
 
@@ -114,7 +112,7 @@ const CartPage = () => {
           </Button>
           
           <Text fontSize="lg" fontWeight="semibold">
-            Total: {formatPrice(total_amount)}
+            Total: {formatPrice(getTotalPrice())}
           </Text>
         </HStack>
       </VStack>

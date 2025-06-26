@@ -15,28 +15,27 @@ import {
   Text,
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import ProductCard from './ProductCard'
-import { Product } from '../../stores/cartStore'
-import { ProductsService } from '../../client'
+import { Product, ProductsService } from '../../services/ProductsService'
 
 const ProductCatalog = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('name')
 
   const { 
-    data: products = [], 
+    data: products = { data: [], count: 0 }, 
     isLoading, 
     error 
   } = useQuery({
     queryKey: ['products'],
-    queryFn: () => ProductsService.listProducts(),
+    queryFn: () => ProductsService.readProducts(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
-  const filteredProducts = products
+  const filteredProducts = products.data
     .filter((product: Product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.sku.toLowerCase().includes(searchTerm.toLowerCase())
@@ -44,9 +43,9 @@ const ProductCatalog = () => {
     .sort((a: Product, b: Product) => {
       switch (sortBy) {
         case 'price-low':
-          return a.unit_price - b.unit_price
+          return a.price - b.price
         case 'price-high':
-          return b.unit_price - a.unit_price
+          return b.price - a.price
         case 'name':
         default:
           return a.name.localeCompare(b.name)
@@ -115,7 +114,7 @@ const ProductCatalog = () => {
         {!isLoading && filteredProducts.length > 0 && (
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} spacing={6}>
             {filteredProducts.map((product: Product) => (
-              <ProductCard key={product.product_id} product={product} />
+              <ProductCard key={product.id} product={product} />
             ))}
           </SimpleGrid>
         )}
@@ -130,7 +129,7 @@ const ProductCatalog = () => {
         )}
 
         {/* Empty State */}
-        {!isLoading && products.length === 0 && !searchTerm && (
+        {!isLoading && products.data.length === 0 && !searchTerm && (
           <Box textAlign="center" py={12}>
             <Text fontSize="lg" color="gray.600">
               No hay productos disponibles en este momento.

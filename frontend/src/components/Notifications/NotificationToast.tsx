@@ -1,8 +1,5 @@
-import React, { useEffect } from 'react';
-import {
-  Toast,
-  ToastId,
-  useToast,
+import { useEffect } from 'react';
+import { useToast,
   Box,
   HStack,
   VStack,
@@ -20,7 +17,7 @@ interface ToastNotificationProps {
   onClose: () => void;
 }
 
-function ToastNotification({ id, type, message, timestamp, onClose }: ToastNotificationProps) {
+function ToastNotification({ type, message, timestamp, onClose }: ToastNotificationProps) {
   const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
 
@@ -37,21 +34,6 @@ function ToastNotification({ id, type, message, timestamp, onClose }: ToastNotif
       'error': '❌'
     };
     return icons[type as keyof typeof icons] || '🔔';
-  };
-
-  const getToastStatus = (type: string) => {
-    const statusMap = {
-      'order_update': 'info',
-      'low_stock': 'warning',
-      'new_order': 'success',
-      'connection': 'info',
-      'test': 'info',
-      'info': 'info',
-      'success': 'success',
-      'warning': 'warning',
-      'error': 'error'
-    } as const;
-    return statusMap[type as keyof typeof statusMap] || 'info';
   };
 
   return (
@@ -108,7 +90,7 @@ export function NotificationToastManager() {
       ].includes(latestNotification.type);
 
       if (shouldShowToast) {
-        const toastId = toast({
+        toast({
           duration: latestNotification.type === 'low_stock' ? 10000 : 5000,
           isClosable: true,
           position: 'top-right',

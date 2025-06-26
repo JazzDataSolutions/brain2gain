@@ -8,7 +8,6 @@ import {
   SimpleGrid,
   HStack,
   Icon,
-  VStack,
   Divider,
 } from '@chakra-ui/react'
 import { FaInstagram, FaTwitter, FaFacebook, FaWhatsapp } from 'react-icons/fa'

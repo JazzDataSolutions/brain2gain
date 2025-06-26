@@ -45,7 +45,6 @@ const ProductCard = memo(({
   onWishlistToggle,
   isInWishlist = false,
   showQuickActions = true,
-  variant = 'default'
 }: ProductCardProps) => {
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
@@ -117,7 +116,7 @@ const ProductCard = memo(({
   }
 
   if (isLoading) {
-    return <ProductCardSkeleton variant={variant} />
+    return <ProductCardSkeleton />
   }
 
 
@@ -216,8 +215,7 @@ const ProductCard = memo(({
             <Tooltip label="Ver detalles" hasArrow>
               <IconButton
                 as={Link}
-                to="/products/$productId"
-                params={{ productId: product.id.toString() }}
+                to={`/products/${product.id.toString()}`}
                 aria-label="Ver detalles"
                 icon={<FiEye />}
                 colorScheme="whiteAlpha"
@@ -336,8 +334,7 @@ const ProductCard = memo(({
         <VStack spacing={2}>
           <Button
             as={Link}
-            to="/products/$productId"
-            params={{ productId: product.id.toString() }}
+            to={`/products/${product.id.toString()}`}
             variant="outline"
             colorScheme="blue"
             size="sm"
@@ -367,7 +364,7 @@ const ProductCard = memo(({
 ProductCard.displayName = 'ProductCard'
 
 // Skeleton component for loading state
-const ProductCardSkeleton = ({ variant = 'default' }: { variant?: string }) => {
+const ProductCardSkeleton = ({ }: { }) => {
   return (
     <Box
       bg={useColorModeValue('white', 'gray.800')}

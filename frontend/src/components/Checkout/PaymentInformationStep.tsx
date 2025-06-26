@@ -5,7 +5,6 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Select,
   FormErrorMessage,
   RadioGroup,
   Radio,
@@ -64,8 +63,7 @@ const PaymentInformationStep = ({
   const {
     register,
     watch,
-    formState: { errors, isValid },
-    trigger,
+    formState: { errors },
     setValue,
   } = useForm<PaymentInformation>({
     mode: 'onChange',
@@ -178,7 +176,8 @@ const PaymentInformationStep = ({
 
                 <FormControl>
                   <RadioGroup 
-                    {...register('paymentMethod')}
+                    value={paymentMethod}
+                    onChange={(value) => setValue('paymentMethod', value as 'stripe' | 'paypal' | 'bank_transfer')}
                     defaultValue={data.paymentMethod || 'stripe'}
                   >
                     <VStack spacing={3} align="stretch">

@@ -4,7 +4,6 @@ import {
   VStack,
   Image,
   Text,
-  Button,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
@@ -24,7 +23,7 @@ interface CartItemProps {
 }
 
 const CartItem = ({ item }: CartItemProps) => {
-  const { updateQuantity, removeFromCart } = useCartStore()
+  const { updateQuantity, removeItem } = useCartStore()
   const toast = useToast()
 
   const cardBg = useColorModeValue('white', 'gray.800')
@@ -32,14 +31,14 @@ const CartItem = ({ item }: CartItemProps) => {
 
   const handleQuantityChange = (quantity: number) => {
     if (quantity < 1) return
-    updateQuantity(item.product_id, quantity)
+    updateQuantity(item.id, quantity)
   }
 
   const handleRemove = () => {
-    removeFromCart(item.product_id)
+    removeItem(item.id)
     toast({
       title: 'Producto eliminado',
-      description: `${item.product_name} fue eliminado del carrito`,
+      description: `${item.name} fue eliminado del carrito`,
       status: 'info',
       duration: 3000,
       isClosable: true,
@@ -66,8 +65,8 @@ const CartItem = ({ item }: CartItemProps) => {
         {/* Product Image */}
         <Box flexShrink={0}>
           <Image
-            src={`/imagenes/${item.product_sku.toLowerCase()}.jpg`}
-            alt={item.product_name}
+            src={`/imagenes/${item.sku?.toLowerCase()}.jpg`}
+            alt={item.name}
             boxSize="80px"
             objectFit="cover"
             borderRadius="md"
@@ -80,17 +79,16 @@ const CartItem = ({ item }: CartItemProps) => {
           <Box>
             <Text
               as={Link}
-              to="/products/$productId"
-              params={{ productId: item.product_id.toString() }}
+              to={`/products/${item.id.toString()}`}
               fontWeight="semibold"
               fontSize="lg"
               _hover={{ color: 'blue.600' }}
               noOfLines={2}
             >
-              {item.product_name}
+              {item.name}
             </Text>
             <Text color="gray.500" fontSize="sm">
-              SKU: {item.product_sku}
+              SKU: {item.sku}
             </Text>
           </Box>
 
@@ -119,10 +117,10 @@ const CartItem = ({ item }: CartItemProps) => {
             {/* Price */}
             <VStack spacing={1} align="end">
               <Text fontSize="sm" color="gray.600">
-                {formatPrice(item.unit_price)} c/u
+                {formatPrice(item.price)} c/u
               </Text>
               <Text fontSize="lg" fontWeight="bold" color="blue.600">
-                {formatPrice(item.total_price)}
+                {formatPrice(item.price * item.quantity)}
               </Text>
             </VStack>
 

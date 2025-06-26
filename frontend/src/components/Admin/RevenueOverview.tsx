@@ -42,8 +42,8 @@ const RevenueOverview: React.FC<RevenueOverviewProps> = ({ financialData, realti
             </StatLabel>
             <StatNumber>{formatCurrency(financialData?.revenue.month || 0)}</StatNumber>
             <StatHelpText>
-              <StatArrow type={financialData?.revenue.growth_rate >= 0 ? 'increase' : 'decrease'} />
-              {formatPercentage(Math.abs(financialData?.revenue.growth_rate || 0))} growth
+              <StatArrow type={financialData?.revenue?.growth_rate && financialData.revenue.growth_rate >= 0 ? 'increase' : 'decrease'} />
+              {formatPercentage(Math.abs(financialData?.revenue?.growth_rate || 0))} growth
             </StatHelpText>
           </Stat>
         </CardBody>

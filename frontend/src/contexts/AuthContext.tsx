@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { OpenAPI } from '../client';
-import type { UserRead } from '../client';
+import type { UserPublic } from '../client';
 
 interface JWTPayload {
   sub: string;
@@ -13,7 +13,7 @@ interface JWTPayload {
 }
 
 interface AuthContextType {
-  user: UserRead | null;
+  user: UserPublic | null;
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -42,20 +42,19 @@ const REFRESH_TOKEN_KEY = 'refresh_token';
 const TOKEN_REFRESH_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<UserRead | null>(null);
+  const [user, setUser] = useState<UserPublic | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = Boolean(user && token);
 
   // Get user info from token
-  const getUserFromToken = useCallback((token: string): UserRead | null => {
+  const getUserFromToken = useCallback((token: string): UserPublic | null => {
     try {
       const decoded = jwtDecode<JWTPayload>(token);
       return {
         id: decoded.user_id,
         email: decoded.email,
-        role: decoded.role as any,
         full_name: '', // This would need to come from the API
         is_active: true,
         is_superuser: decoded.role === 'admin',

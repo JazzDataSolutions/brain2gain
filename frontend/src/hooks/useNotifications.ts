@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { notificationService } from '../services/NotificationService';
-import { useAuth } from './useAuth';
+import useAuth from './useAuth';
 
 export interface Notification {
   id: string;
@@ -73,7 +73,7 @@ export function useNotifications() {
   // Connection management
   const connect = useCallback(() => {
     if (user?.id) {
-      const role = user.role?.name || 'user';
+      const role = user.is_superuser ? 'admin' : 'user';
       notificationService.connect(user.id, role);
     }
   }, [user]);

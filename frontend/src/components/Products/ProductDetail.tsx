@@ -30,14 +30,14 @@ import { useParams, Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 
 import { useCartStore } from '../../stores/cartStore'
-import { ProductsService } from '../../client'
+import { ProductsService } from '../../services/ProductsService'
 
 const ProductDetail = () => {
   const { productId } = useParams({ from: '/products/$productId' })
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
   
-  const addToCart = useCartStore((state) => state.addToCart)
+  const addItem = useCartStore((state) => state.addItem)
   const toast = useToast()
 
   const cardBg = useColorModeValue('white', 'gray.800')
@@ -49,7 +49,7 @@ const ProductDetail = () => {
     error 
   } = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => ProductsService.getProduct({ productId: parseInt(productId) }),
+    queryFn: () => ProductsService.readProduct(parseInt(productId)),
     enabled: !!productId,
   })
 
@@ -59,7 +59,13 @@ const ProductDetail = () => {
     setIsAdding(true)
     
     try {
-      addToCart(product, quantity)
+      addItem({
+        id: product.id.toString(),
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        image: product.image
+      })
       
       toast({
         title: '¡Agregado al carrito!',
@@ -190,7 +196,7 @@ const ProductDetail = () => {
                 </Text>
 
                 <Text fontSize="3xl" fontWeight="bold" color="blue.600">
-                  {formatPrice(product.unit_price)}
+                  {formatPrice(product.price)}
                 </Text>
               </VStack>
 
@@ -236,7 +242,7 @@ const ProductDetail = () => {
                     </NumberInput>
                     
                     <Text fontSize="lg" color="gray.600">
-                      Total: {formatPrice(product.unit_price * quantity)}
+                      Total: {formatPrice(product.price * quantity)}
                     </Text>
                   </HStack>
 

@@ -2,14 +2,12 @@ import {
   Flex,
   Box,
   Text,
-  IconButton,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
   MenuDivider,
   Avatar,
-  Badge,
   HStack,
   useColorModeValue,
   Button,
@@ -18,7 +16,6 @@ import {
   InputLeftElement,
 } from '@chakra-ui/react'
 import {
-  FiBell,
   FiSearch,
   FiSettings,
   FiLogOut,

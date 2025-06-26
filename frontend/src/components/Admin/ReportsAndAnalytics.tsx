@@ -75,7 +75,7 @@ const ReportsAndAnalytics = () => {
         {/* Content Area */}
         <Card bg={cardBg}>
           <CardBody>
-            <Box h="400px" display="flex" align="center" justify="center">
+            <Box h="400px" display="flex" alignItems="center" justifyContent="center">
               <VStack spacing={4}>
                 <Text fontSize="lg" color="gray.500">
                   📊 Analytics Dashboard en Desarrollo

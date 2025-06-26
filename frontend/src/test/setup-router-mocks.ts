@@ -40,10 +40,10 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 // Mock useNavigate for components that use it
-global.mockNavigate = vi.fn()
+const mockNavigateFn = vi.fn();
 
 // Export mock functions for use in tests
-export const mockNavigate = global.mockNavigate
+export const mockNavigate = mockNavigateFn;
 export const mockRouter = {
   navigate: vi.fn(),
   state: { location: { pathname: '/' } }

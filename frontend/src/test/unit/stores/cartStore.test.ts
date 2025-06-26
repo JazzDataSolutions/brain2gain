@@ -64,7 +64,7 @@ describe('Cart Store', () => {
 
   describe('Initial State', () => {
     it('should initialize with empty cart', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       expect(store.items).toEqual([])
@@ -93,7 +93,7 @@ describe('Cart Store', () => {
       localStorageMock.getItem.mockReturnValue('invalid-json')
       
       // Should not throw error and fall back to empty cart
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
       
       expect(store.items).toEqual([])
@@ -102,7 +102,7 @@ describe('Cart Store', () => {
 
   describe('Adding Items to Cart', () => {
     it('should add new item to cart', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, 1)
@@ -111,7 +111,7 @@ describe('Cart Store', () => {
     })
 
     it('should add multiple different items to cart', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, 1)
@@ -119,7 +119,7 @@ describe('Cart Store', () => {
     })
 
     it('should increase quantity when adding existing item', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, 2)
@@ -127,7 +127,7 @@ describe('Cart Store', () => {
     })
 
     it('should default to quantity 1 when not specified', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1)
@@ -135,7 +135,7 @@ describe('Cart Store', () => {
     })
 
     it('should persist cart to localStorage after adding item', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, 1)
@@ -144,7 +144,7 @@ describe('Cart Store', () => {
     })
 
     it('should handle adding item with zero quantity', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, 0)
@@ -152,7 +152,7 @@ describe('Cart Store', () => {
     })
 
     it('should handle adding item with negative quantity', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.addToCart(mockProduct1, -1)
@@ -162,7 +162,7 @@ describe('Cart Store', () => {
 
   describe('Updating Item Quantities', () => {
     it('should update item quantity correctly', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.updateQuantity('1', 3)
@@ -170,7 +170,7 @@ describe('Cart Store', () => {
     })
 
     it('should remove item when quantity is updated to zero', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.updateQuantity('1', 0)
@@ -178,7 +178,7 @@ describe('Cart Store', () => {
     })
 
     it('should handle updating non-existent item', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.updateQuantity('non-existent', 1)
@@ -186,7 +186,7 @@ describe('Cart Store', () => {
     })
 
     it('should not allow negative quantities', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.updateQuantity('1', -1)
@@ -194,7 +194,7 @@ describe('Cart Store', () => {
     })
 
     it('should persist cart to localStorage after updating quantity', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.updateQuantity('1', 2)
@@ -204,7 +204,7 @@ describe('Cart Store', () => {
 
   describe('Removing Items from Cart', () => {
     it('should remove item from cart', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.removeFromCart('1')
@@ -212,7 +212,7 @@ describe('Cart Store', () => {
     })
 
     it('should handle removing non-existent item', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.removeFromCart('non-existent')
@@ -220,7 +220,7 @@ describe('Cart Store', () => {
     })
 
     it('should persist cart to localStorage after removing item', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.removeFromCart('1')
@@ -230,7 +230,7 @@ describe('Cart Store', () => {
 
   describe('Clearing Cart', () => {
     it('should clear all items from cart', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.clearCart()
@@ -238,7 +238,7 @@ describe('Cart Store', () => {
     })
 
     it('should persist empty cart to localStorage after clearing', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       store.clearCart()
@@ -248,7 +248,7 @@ describe('Cart Store', () => {
 
   describe('Cart Calculations', () => {
     it('should calculate total items correctly', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       // Mock the function to return a specific value
@@ -259,7 +259,7 @@ describe('Cart Store', () => {
     })
 
     it('should calculate total price correctly', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       // Mock the function to return a specific value
@@ -272,7 +272,7 @@ describe('Cart Store', () => {
 
   describe('Store Subscriptions', () => {
     it('should allow selective subscriptions', () => {
-      const { useCartStore } = require('../../../stores/cartStore')
+      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       // Test that store is available and can be used

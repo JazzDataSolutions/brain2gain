@@ -17,7 +17,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  Button,
   Icon,
 } from '@chakra-ui/react'
 import { FiEdit3, FiBookmark } from 'react-icons/fi'
@@ -64,7 +63,6 @@ const ShippingInformationStep = ({
     register,
     watch,
     formState: { errors, isValid },
-    setValue,
     reset,
   } = useForm<ShippingInformation>({
     mode: 'onChange',

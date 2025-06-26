@@ -108,7 +108,7 @@ const SavedPaymentMethods = ({ onSelectPaymentMethod, selectedMethodId }: SavedP
       case 'amex':
         return '/images/amex-logo.png'
       default:
-        return null
+        return undefined
     }
   }
 

@@ -1,15 +1,16 @@
-import { Button, Flex, Spacer } from "@chakra-ui/react"
+import { Flex, Spacer, useDisclosure } from "@chakra-ui/react"
 
 interface AdminNavbarProps {
-  type: string
-  addModalAs: React.ComponentType
+  addModalAs: React.ComponentType<{ isOpen: boolean; onClose: () => void }>
 }
 
-const AdminNavbar = ({ type, addModalAs: AddModal }: AdminNavbarProps) => {
+const AdminNavbar = ({ addModalAs: AddModal }: AdminNavbarProps) => {
+  const { isOpen, onClose } = useDisclosure()
+
   return (
     <Flex py={8} gap={4}>
       <Spacer />
-      <AddModal />
+      <AddModal isOpen={isOpen} onClose={onClose} />
     </Flex>
   )
 }

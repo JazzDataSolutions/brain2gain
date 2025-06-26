@@ -8,15 +8,17 @@ vi.mock('../../../services/NotificationService');
 const mockNotificationService = notificationService as any;
 
 // Mock useAuth hook
-vi.mock('../../../hooks/useAuth', () => ({
-  useAuth: () => ({
-    user: {
-      id: 'user123',
-      role: { name: 'admin' },
-      email: 'test@example.com'
-    }
-  })
-}));
+vi.mock('../../../hooks/useAuth', () => {
+  return {
+    default: vi.fn(() => ({
+      user: {
+        id: 'user123',
+        role: { name: 'admin' },
+        email: 'test@example.com'
+      }
+    }))
+  };
+});
 
 describe('useNotifications', () => {
   beforeEach(() => {
@@ -204,7 +206,7 @@ describe('useNotifications', () => {
   });
 
   it('should update connection state periodically', async () => {
-    const { result } = renderHook(() => useNotifications());
+    renderHook(() => useNotifications());
 
     // Mock connection state changes
     mockNotificationService.getConnectionState

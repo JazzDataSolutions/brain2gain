@@ -20,7 +20,6 @@ import {
   Checkbox,
   Link,
   Icon,
-  Flex,
   Spinner,
   Skeleton,
 } from '@chakra-ui/react'

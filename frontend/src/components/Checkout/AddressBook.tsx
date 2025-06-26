@@ -19,7 +19,6 @@ import {
   useDisclosure,
   RadioGroup,
   Radio,
-  Flex,
 } from '@chakra-ui/react'
 import { FiPlus, FiEdit2, FiMapPin, FiHome, FiBriefcase } from 'react-icons/fi'
 import { useState, useEffect } from 'react'

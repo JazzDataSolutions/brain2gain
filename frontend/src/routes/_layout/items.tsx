@@ -139,7 +139,7 @@ function Items() {
         Items Management
       </Heading>
 
-      <AdminNavbar type={"Item"} addModalAs={AddItem} />
+      <AdminNavbar addModalAs={AddItem} />
       <ItemsTable />
     </Container>
   )
