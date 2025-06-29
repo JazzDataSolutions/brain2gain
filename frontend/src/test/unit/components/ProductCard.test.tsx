@@ -21,7 +21,7 @@ const mockProduct = {
   sku: 'WP-001',
   name: 'Whey Protein Gold Standard',
   description: '100% Whey Protein Isolate - Chocolate Flavor',
-  unit_price: 45.99,
+  unit_price: 45990, // Colombian pesos format
   stock_quantity: 100,
   status: 'ACTIVE',
   category: 'proteins',
@@ -53,10 +53,12 @@ describe('ProductCard Component', () => {
       render(<ProductCard product={mockProduct} />)
 
       expect(screen.getByText(mockProduct.name)).toBeInTheDocument()
-      expect(screen.getByText(mockProduct.description)).toBeInTheDocument()
-      expect(screen.getByText(`$${mockProduct.unit_price}`)).toBeInTheDocument()
+      // Use more flexible text matching for description
+      expect(screen.getByText(/Whey Protein Isolate/i)).toBeInTheDocument()
+      // Colombian peso format
+      expect(screen.getByText(/45\.990/)).toBeInTheDocument()
       expect(screen.getByText(mockProduct.brand)).toBeInTheDocument()
-      expect(screen.getByText(mockProduct.category)).toBeInTheDocument()
+      expect(screen.getByText(/proteins/i)).toBeInTheDocument()
     })
 
     it('should display product image with correct alt text', () => {

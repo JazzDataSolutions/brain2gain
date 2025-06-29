@@ -110,10 +110,10 @@
           Dirección de Envío
         </mj-text>
         <mj-text>
-          {{ shipping_address.full_name }}<br>
-          {{ shipping_address.street }}<br>
-          {{ shipping_address.city }}, {{ shipping_address.state }} {{ shipping_address.zip_code }}<br>
-          {{ shipping_address.country }}
+          {{ (shipping_address | default({})).get('full_name', 'N/A') }}<br>
+          {{ (shipping_address | default({})).get('street', 'N/A') }}<br>
+          {{ (shipping_address | default({})).get('city', 'N/A') }}, {{ (shipping_address | default({})).get('state', 'N/A') }} {{ (shipping_address | default({})).get('zip_code', 'N/A') }}<br>
+          {{ (shipping_address | default({})).get('country', 'N/A') }}
         </mj-text>
       </mj-column>
     </mj-section>
