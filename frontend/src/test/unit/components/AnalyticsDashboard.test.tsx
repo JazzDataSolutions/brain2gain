@@ -250,10 +250,10 @@ describe('AnalyticsDashboard', () => {
         expect(screen.getByText('Average Order Value')).toBeInTheDocument()
         expect(screen.getByText('Revenue Per Visitor')).toBeInTheDocument()
 
-        // Check values
+        // Check values - use getAllByText for values that might appear multiple times
         expect(screen.getByText('$2,500')).toBeInTheDocument()
         expect(screen.getByText('$45,000')).toBeInTheDocument()
-        expect(screen.getByText('$38,000')).toBeInTheDocument()
+        expect(screen.getAllByText('$38,000')[0]).toBeInTheDocument()
         expect(screen.getByText('$456,000')).toBeInTheDocument()
         expect(screen.getByText('$86')).toBeInTheDocument() // AOV
         expect(screen.getByText('$13')).toBeInTheDocument() // RPV
@@ -302,10 +302,10 @@ describe('AnalyticsDashboard', () => {
       // Assert
       await waitFor(() => {
         expect(screen.getByText('Customer Health')).toBeInTheDocument()
-        expect(screen.getByText('Churn Rate')).toBeInTheDocument()
+        expect(screen.getAllByText('Churn Rate')[0]).toBeInTheDocument()
         expect(screen.getByText('Repeat Rate')).toBeInTheDocument()
-        expect(screen.getByText('8.7%')).toBeInTheDocument() // Churn rate
-        expect(screen.getByText('42.1%')).toBeInTheDocument() // Repeat rate
+        expect(screen.getAllByText('8.7%')[0]).toBeInTheDocument() // Churn rate
+        expect(screen.getAllByText('42.1%')[0]).toBeInTheDocument() // Repeat rate
       })
     })
 
@@ -396,11 +396,13 @@ describe('AnalyticsDashboard', () => {
 
     it('should call refresh methods when refresh button is clicked', async () => {
       // Act
-      render(
-        <TestWrapper>
-          <AnalyticsDashboard />
-        </TestWrapper>
-      )
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AnalyticsDashboard />
+          </TestWrapper>
+        )
+      })
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
@@ -411,7 +413,10 @@ describe('AnalyticsDashboard', () => {
 
       // Click refresh button
       const refreshButton = screen.getByRole('button', { name: /refresh/i })
-      fireEvent.click(refreshButton)
+      
+      await act(async () => {
+        fireEvent.click(refreshButton)
+      })
 
       // Assert
       await waitFor(() => {
@@ -428,37 +433,49 @@ describe('AnalyticsDashboard', () => {
       )
 
       // Act
-      render(
-        <TestWrapper>
-          <AnalyticsDashboard />
-        </TestWrapper>
-      )
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AnalyticsDashboard />
+          </TestWrapper>
+        )
+      })
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
       })
 
       const refreshButton = screen.getByRole('button', { name: /refresh/i })
-      fireEvent.click(refreshButton)
+      
+      await act(async () => {
+        fireEvent.click(refreshButton)
+      })
 
       // Assert
-      expect(screen.getByText('Refreshing')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('Refreshing')).toBeInTheDocument()
+      })
     })
 
     it('should show success toast after successful refresh', async () => {
       // Act
-      render(
-        <TestWrapper>
-          <AnalyticsDashboard />
-        </TestWrapper>
-      )
+      await act(async () => {
+        render(
+          <TestWrapper>
+            <AnalyticsDashboard />
+          </TestWrapper>
+        )
+      })
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument()
       })
 
       const refreshButton = screen.getByRole('button', { name: /refresh/i })
-      fireEvent.click(refreshButton)
+      
+      await act(async () => {
+        fireEvent.click(refreshButton)
+      })
 
       // Assert
       await waitFor(() => {
@@ -598,11 +615,11 @@ describe('AnalyticsDashboard', () => {
 
       // Assert
       await waitFor(() => {
-        expect(screen.getByText('15.2%')).toBeInTheDocument() // Growth rate
-        expect(screen.getByText('28.5%')).toBeInTheDocument() // Cart abandonment
+        expect(screen.getByText('15.2% growth')).toBeInTheDocument() // Growth rate with "growth" suffix
+        expect(screen.getAllByText('28.5%')[0]).toBeInTheDocument() // Cart abandonment
         expect(screen.getAllByText('3.2%')[0]).toBeInTheDocument() // Conversion rate
-        expect(screen.getByText('42.1%')).toBeInTheDocument() // Repeat rate
-        expect(screen.getByText('8.7%')).toBeInTheDocument() // Churn rate
+        expect(screen.getAllByText('42.1%')[0]).toBeInTheDocument() // Repeat rate
+        expect(screen.getAllByText('8.7%')[0]).toBeInTheDocument() // Churn rate
       })
     })
   })

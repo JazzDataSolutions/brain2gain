@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { useCartStore } from '../../../stores/cartStore'
 
 // Mock the cart store module
 const mockCartStore = {
@@ -64,7 +65,6 @@ describe('Cart Store', () => {
 
   describe('Initial State', () => {
     it('should initialize with empty cart', () => {
-      import { useCartStore } from '../../../stores/cartStore'
       const store = useCartStore()
 
       expect(store.items).toEqual([])

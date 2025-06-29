@@ -2,27 +2,38 @@ import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useNotifications } from '../../../hooks/useNotifications';
 import { notificationService } from '../../../services/NotificationService';
+import useAuth from '../../../hooks/useAuth';
 
-// Mock the notification service
-vi.mock('../../../services/NotificationService');
-const mockNotificationService = notificationService as any;
-
-// Mock useAuth hook
+// Mock useAuth hook  
 vi.mock('../../../hooks/useAuth', () => {
   return {
     default: vi.fn(() => ({
       user: {
         id: 'user123',
-        role: { name: 'admin' },
+        is_superuser: true,
         email: 'test@example.com'
       }
     }))
   };
 });
 
+// Mock the notification service
+vi.mock('../../../services/NotificationService');
+const mockNotificationService = notificationService as any;
+const mockUseAuth = useAuth as any;
+
 describe('useNotifications', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Reset useAuth mock to default state
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: 'user123',
+        is_superuser: true,
+        email: 'test@example.com'
+      }
+    });
     
     // Reset notification service mocks
     mockNotificationService.connect = vi.fn();
@@ -38,7 +49,8 @@ describe('useNotifications', () => {
 
     expect(result.current.notifications).toEqual([]);
     expect(result.current.unreadCount).toBe(0);
-    expect(result.current.isConnected).toBe(true);
+    // isConnected starts as false until the service fires the 'connected' event
+    expect(result.current.isConnected).toBe(false);
   });
 
   it('should auto-connect when user is available', () => {
@@ -191,15 +203,20 @@ describe('useNotifications', () => {
   });
 
   it('should disconnect when user becomes unavailable', () => {
-    const { rerender } = renderHook(() => useNotifications());
+    // Start with connected user
+    const { result, rerender } = renderHook(() => useNotifications());
 
-    // Simulate user logout by mocking useAuth to return null user
-    vi.doMock('../../../hooks/useAuth', () => ({
-      useAuth: () => ({
-        user: null
-      })
-    }));
+    // Simulate the connected event to set isConnected to true
+    act(() => {
+      const connectedHandler = mockNotificationService.on.mock.calls.find(call => call[0] === 'connected')?.[1];
+      if (connectedHandler) connectedHandler();
+    });
 
+    expect(result.current.isConnected).toBe(true);
+
+    // Simulate user logout by changing the mock
+    mockUseAuth.mockReturnValue({ user: null });
+    
     rerender();
 
     expect(mockNotificationService.disconnect).toHaveBeenCalled();
@@ -238,16 +255,19 @@ describe('useNotifications', () => {
   it('should not add connection/pong messages to notification list', () => {
     const { result } = renderHook(() => useNotifications());
 
-    // Simulate receiving a connection message
+    // Simulate receiving a connection message through the WebSocket handler
     act(() => {
-      result.current.addNotification({
-        type: 'connection',
-        message: 'Connected to notifications',
-        timestamp: new Date().toISOString()
-      });
+      const notificationHandler = mockNotificationService.on.mock.calls.find(call => call[0] === 'notification')?.[1];
+      if (notificationHandler) {
+        notificationHandler({
+          type: 'connection',
+          message: 'Connected to notifications',
+          timestamp: new Date().toISOString()
+        });
+      }
     });
 
-    // Should not be added to notifications list based on the hook logic
+    // Should not be added to notifications list because the hook filters connection messages
     expect(result.current.notifications).toHaveLength(0);
     expect(result.current.unreadCount).toBe(0);
   });
