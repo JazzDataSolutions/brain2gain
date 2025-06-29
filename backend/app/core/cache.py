@@ -95,9 +95,9 @@ class MockRedisClient:
     async def close(self):
         pass
 
-    def scan_iter(self, match: str):
+    async def scan_iter(self, match: str):
         """Mock scan_iter for pattern matching."""
-        for key in self._data.keys():
+        for key in list(self._data.keys()):
             if match.replace("*", "") in key:
                 yield key
 
@@ -250,6 +250,8 @@ async def get_cache_stats() -> dict:
             "connected": True,
             "keys": len(client._data),
             "hit_rate": round(hit_rate, 2),
+            "hits": cache_metrics["hits"],
+            "misses": cache_metrics["misses"],
             "metrics": cache_metrics.copy(),
             "performance": {
                 "efficiency": (
@@ -278,6 +280,8 @@ async def get_cache_stats() -> dict:
             "type": "redis",
             "connected": True,
             "keys": redis_keys,
+            "hits": cache_metrics["hits"],
+            "misses": cache_metrics["misses"],
             "memory_used": info.get("used_memory_human", "N/A"),
             "memory_peak": info.get("used_memory_peak_human", "N/A"),
             "connected_clients": info.get("connected_clients", 0),
@@ -374,6 +378,16 @@ class CacheService:
     async def delete_pattern(pattern: str) -> int:
         """Delete all keys matching pattern."""
         return await invalidate_cache_pattern(pattern)
+
+    @staticmethod
+    async def invalidate_pattern(pattern: str) -> int:
+        """Invalidate all cache keys matching a pattern."""
+        return await invalidate_cache_pattern(pattern)
+
+    @staticmethod
+    async def get_stats() -> dict:
+        """Get cache statistics."""
+        return await get_cache_stats()
 
 
 async def reset_cache_metrics() -> dict:

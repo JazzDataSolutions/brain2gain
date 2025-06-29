@@ -15,21 +15,16 @@ class TestEmailTemplateIntegration:
     """Integration test suite for Email Template system"""
 
     @pytest.fixture
-    async def client(self):
-        """Create test client"""
-        async with AsyncClient(app=app, base_url="http://test") as ac:
-            yield ac
-
-    @pytest.fixture
     def admin_headers(self):
         """Mock admin authentication headers"""
         # In a real test, you would create a proper admin token
         return {"Authorization": "Bearer mock_admin_token"}
 
     @pytest.mark.asyncio
-    async def test_health_endpoint_public(self, client):
+    async def test_health_endpoint_public(self):
         """Test email template health endpoint (public access)"""
-        response = await client.get("/api/v1/email-templates/health")
+        async with AsyncClient(app=app, base_url="http://test") as async_client:
+            response = await async_client.get("/api/v1/email-templates/health")
         
         assert response.status_code == 200
         data = response.json()

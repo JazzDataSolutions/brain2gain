@@ -160,13 +160,21 @@ class NotificationService:
             # Send immediately
             result = await self._send_immediate_notification(notification_record)
 
-            return {
+            response = {
                 "success": result["success"],
                 "notification_id": notification_id,
                 "status": result["status"],
                 "message": result.get("message", "Notification processed"),
                 "sent_at": datetime.now(timezone.utc).isoformat(),
             }
+            
+            # Include additional fields from result
+            if "template_used" in result:
+                response["template_used"] = result["template_used"]
+            if "content_length" in result:
+                response["content_length"] = result["content_length"]
+                
+            return response
 
         except Exception as e:
             await self._update_notification_status(
