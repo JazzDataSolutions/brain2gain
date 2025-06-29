@@ -140,4 +140,5 @@ markers = [
     "performance: marks tests as performance tests",
     "security: marks tests as security tests",
     "load_test: marks tests as load tests",
+    "asyncio: marks tests as async tests",
 ]

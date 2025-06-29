@@ -1,0 +1,159 @@
+<mjml>
+  <mj-head>
+    <mj-title>Order Shipped - Brain2Gain</mj-title>
+    <mj-preview>Your order is on its way! Tracking #{{ tracking_number }}</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text font-size="16px" color="#333" line-height="1.6" />
+      <mj-button background-color="#27ae60" color="#fff" font-size="16px" font-weight="bold" border-radius="5px" />
+    </mj-attributes>
+  </mj-head>
+  
+  <mj-body background-color="#f4f4f4">
+    <!-- Header Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-image src="https://brain2gain.com/logo.png" alt="Brain2Gain" width="200px" align="center" />
+        <mj-text align="center" font-size="24px" font-weight="bold" color="#27ae60" padding="20px 0 10px 0">
+          🚚 ¡Tu Orden Está en Camino!
+        </mj-text>
+        <mj-text align="center" font-size="18px" color="#333" padding="0 0 20px 0">
+          Orden #{{ order_id }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Shipping Info Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Hola {{ customer_name }},
+        </mj-text>
+        <mj-text>
+          ¡Excelentes noticias! Tu orden ha sido enviada y está en camino. Puedes rastrear tu paquete con la información proporcionada a continuación.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Tracking Section -->
+    <mj-section background-color="#e8f5e8" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="18px" font-weight="bold" color="#27ae60" padding="0 0 10px 0">
+          Información de Rastreo
+        </mj-text>
+        <mj-table>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold; width: 40%;">Número de Rastreo:</td>
+            <td style="padding: 10px 0; font-family: monospace; font-size: 18px; color: #27ae60; font-weight: bold;">{{ tracking_number }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Transportista:</td>
+            <td style="padding: 10px 0;">{{ carrier_name }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Fecha de Envío:</td>
+            <td style="padding: 10px 0;">{{ shipped_date }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Entrega Estimada:</td>
+            <td style="padding: 10px 0; color: #27ae60; font-weight: bold;">{{ estimated_delivery }}</td>
+          </tr>
+        </mj-table>
+      </mj-column>
+    </mj-section>
+
+    <!-- Tracking Button Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-button href="{{ tracking_url }}" align="center" padding="20px 0">
+          Rastrear mi Paquete
+        </mj-button>
+        <mj-text align="center" font-size="14px" color="#7f8c8d" padding="10px 0 0 0">
+          O copia y pega este enlace en tu navegador:<br>
+          <a href="{{ tracking_url }}" style="color: #3498db; word-break: break-all;">{{ tracking_url }}</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Order Summary Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Resumen de tu Orden
+        </mj-text>
+        {% for item in order_items %}
+        <mj-table>
+          <tr style="border-bottom: 1px solid #ecf0f1;">
+            <td style="padding: 10px 0; width: 70%;">
+              <strong>{{ item.product_name }}</strong><br>
+              <span style="color: #7f8c8d;">Cantidad: {{ item.quantity }}</span>
+            </td>
+            <td style="padding: 10px 0; text-align: right; font-weight: bold;">
+              ${{ item.total_price }}
+            </td>
+          </tr>
+        </mj-table>
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+
+    <!-- Shipping Address Section -->
+    <mj-section background-color="#f8f9fa" padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="0 0 10px 0">
+          Dirección de Entrega
+        </mj-text>
+        <mj-text>
+          {{ shipping_address.full_name }}<br>
+          {{ shipping_address.street }}<br>
+          {{ shipping_address.city }}, {{ shipping_address.state }} {{ shipping_address.zip_code }}<br>
+          {{ shipping_address.country }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Tips Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="0 0 10px 0">
+          💡 Consejos de Entrega
+        </mj-text>
+        <mj-text>
+          • Asegúrate de que alguien esté disponible para recibir el paquete<br>
+          • Verifica que la dirección de entrega sea correcta<br>
+          • Si no estás en casa, el transportista puede dejar un aviso de entrega<br>
+          • Contacta al transportista directamente si tienes preguntas sobre la entrega
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Support Section -->
+    <mj-section background-color="#f8f9fa" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="16px" color="#333">
+          <strong>¿Necesitas ayuda?</strong><br>
+          Nuestro equipo de soporte está aquí para ayudarte
+        </mj-text>
+        <mj-text align="center" font-size="14px" color="#7f8c8d" padding="10px 0 0 0">
+          <a href="mailto:support@brain2gain.com" style="color: #e74c3c;">support@brain2gain.com</a> | 
+          <a href="tel:+1234567890" style="color: #e74c3c;">+1 (234) 567-8910</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer Section -->
+    <mj-section background-color="#34495e" padding="20px">
+      <mj-column>
+        <mj-text align="center" color="#ecf0f1" font-size="14px">
+          <strong>Brain2Gain</strong><br>
+          Tu tienda de confianza para suplementos deportivos<br>
+          <a href="mailto:support@brain2gain.com" style="color: #e74c3c;">support@brain2gain.com</a>
+        </mj-text>
+        <mj-text align="center" color="#95a5a6" font-size="12px" padding="10px 0 0 0">
+          Gracias por elegirnos para tu journey fitness.<br>
+          © 2025 Brain2Gain. Todos los derechos reservados.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

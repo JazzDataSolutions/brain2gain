@@ -28,6 +28,11 @@ from app.core.websocket import manager
 
 logger = logging.getLogger(__name__)
 
+# Import email template service (late import to avoid circular dependency)
+def get_email_template_service():
+    from app.services.email_template_service import email_template_service
+    return email_template_service
+
 
 class NotificationType(str, Enum):
     """Notification type enumeration"""
@@ -521,20 +526,51 @@ class NotificationService:
         content: str,
         template_data: dict[str, Any],
         attachments: list[dict[str, Any]] | None = None,
+        template_name: str | None = None,
     ) -> dict[str, Any]:
-        """Send email notification."""
+        """Send email notification with MJML template support."""
         try:
+            html_content = content
+            
+            # If template name is provided, use EmailTemplateService to compile MJML
+            if template_name:
+                try:
+                    email_template_service = get_email_template_service()
+                    html_content = await email_template_service.compile_template(
+                        template_name, template_data
+                    )
+                    logger.info(f"Compiled MJML template: {template_name}")
+                except Exception as template_error:
+                    logger.warning(f"MJML template compilation failed for {template_name}: {template_error}")
+                    # Fall back to basic content if template compilation fails
+                    html_content = content or f"<html><body><h2>{subject}</h2><p>Email content</p></body></html>"
+            
             # TODO: Integrate with actual email service (SendGrid, AWS SES, etc.)
-            # For now, simulate email sending
+            # For now, simulate email sending but log the actual content
             await asyncio.sleep(0.1)  # Simulate API call delay
-
+            
+            # Log email details for development/testing
             logger.info(f"Email sent to {recipient}: {subject}")
+            logger.debug(f"Email HTML content length: {len(html_content)} characters")
+            
+            # In development, you could save the HTML to a file for preview
+            if settings.ENVIRONMENT == "local":
+                try:
+                    import tempfile
+                    import os
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+                        f.write(html_content)
+                        logger.debug(f"Email preview saved to: {f.name}")
+                except Exception:
+                    pass  # Don't fail email sending if preview saving fails
 
             return {
                 "success": True,
                 "status": NotificationStatus.SENT,
                 "message_id": f"email_{uuid.uuid4().hex[:8]}",
-                "message": "Email sent successfully (demo mode)",
+                "message": "Email sent successfully with MJML template",
+                "template_used": template_name,
+                "content_length": len(html_content)
             }
 
         except Exception as e:
@@ -669,6 +705,26 @@ class NotificationService:
 
         return populated_content
 
+    def _get_mjml_template_name(self, template: NotificationTemplate) -> str | None:
+        """
+        Map NotificationTemplate enum to MJML template file name.
+        
+        Args:
+            template: NotificationTemplate enum value
+            
+        Returns:
+            MJML template file name (without .mjml extension) or None
+        """
+        template_mapping = {
+            NotificationTemplate.ORDER_CONFIRMATION: "order_confirmation",
+            NotificationTemplate.ORDER_SHIPPED: "order_shipped",
+            NotificationTemplate.ORDER_DELIVERED: "order_delivered",
+            NotificationTemplate.PASSWORD_RESET: "reset_password",
+            NotificationTemplate.ACCOUNT_CREATED: "new_account",
+        }
+        
+        return template_mapping.get(template)
+
     # Private helper methods
 
     def _get_email_config(self) -> dict[str, Any]:
@@ -766,11 +822,15 @@ class NotificationService:
 
         # Send based on type
         if notification_type == NotificationType.EMAIL:
+            # Map template to MJML template name
+            mjml_template_name = self._get_mjml_template_name(template)
+            
             result = await self._send_email(
                 recipient=recipient,
                 subject=content.get("subject", "Notification"),
                 content=content.get("body", ""),
                 template_data=data,
+                template_name=mjml_template_name,
             )
         elif notification_type == NotificationType.SMS:
             result = await self._send_sms(

@@ -128,3 +128,33 @@ class ProductRepository:
         statement = select(Product.category, func.count(Product.product_id)).group_by(Product.category)
         result = self.session.exec(statement)
         return {category: count for category, count in result.all() if category is not None}
+
+    def get_all(self) -> List[Product]:
+        """Get all products."""
+        statement = select(Product)
+        result = self.session.exec(statement)
+        return list(result.all())
+
+    def get_paginated(self, offset: int = 0, limit: int = 10) -> List[Product]:
+        """Get products with pagination using offset."""
+        statement = select(Product).offset(offset).limit(limit)
+        result = self.session.exec(statement)
+        return list(result.all())
+
+    def count(self) -> int:
+        """Get total count of products."""
+        statement = select(func.count(Product.product_id))
+        result = self.session.exec(statement)
+        return result.first() or 0
+
+    def count_by_category(self, category: str) -> int:
+        """Get count of products by specific category."""
+        statement = select(func.count(Product.product_id)).where(Product.category == category)
+        result = self.session.exec(statement)
+        return result.first() or 0
+
+    def get_by_status(self, status: str) -> List[Product]:
+        """Get products by status."""
+        statement = select(Product).where(Product.status == status)
+        result = self.session.exec(statement)
+        return list(result.all())

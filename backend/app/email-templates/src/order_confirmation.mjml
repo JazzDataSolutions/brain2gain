@@ -1,0 +1,145 @@
+<mjml>
+  <mj-head>
+    <mj-title>Order Confirmation - Brain2Gain</mj-title>
+    <mj-preview>Your order has been confirmed! Order #{{ order_id }}</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text font-size="16px" color="#333" line-height="1.6" />
+      <mj-button background-color="#e74c3c" color="#fff" font-size="16px" font-weight="bold" border-radius="5px" />
+    </mj-attributes>
+  </mj-head>
+  
+  <mj-body background-color="#f4f4f4">
+    <!-- Header Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-image src="https://brain2gain.com/logo.png" alt="Brain2Gain" width="200px" align="center" />
+        <mj-text align="center" font-size="24px" font-weight="bold" color="#e74c3c" padding="20px 0 10px 0">
+          ¡Orden Confirmada!
+        </mj-text>
+        <mj-text align="center" font-size="18px" color="#333" padding="0 0 20px 0">
+          Orden #{{ order_id }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Customer Info Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Hola {{ customer_name }},
+        </mj-text>
+        <mj-text>
+          Gracias por tu pedido. Hemos recibido tu orden y la estamos procesando. Te notificaremos cuando sea enviada.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Order Details Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Detalles de tu Orden
+        </mj-text>
+        <mj-table>
+          <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
+            <td style="padding: 10px 0; font-weight: bold;">Fecha:</td>
+            <td style="padding: 10px 0;">{{ order_date }}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
+            <td style="padding: 10px 0; font-weight: bold;">Estado:</td>
+            <td style="padding: 10px 0; color: #27ae60; font-weight: bold;">Confirmado</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
+            <td style="padding: 10px 0; font-weight: bold;">Método de Pago:</td>
+            <td style="padding: 10px 0;">{{ payment_method }}</td>
+          </tr>
+        </mj-table>
+      </mj-column>
+    </mj-section>
+
+    <!-- Products Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Productos Ordenados
+        </mj-text>
+        {% for item in order_items %}
+        <mj-table>
+          <tr style="border-bottom: 1px solid #ecf0f1;">
+            <td style="padding: 15px 0; width: 60%;">
+              <strong>{{ item.product_name }}</strong><br>
+              <span style="color: #7f8c8d;">Cantidad: {{ item.quantity }}</span>
+            </td>
+            <td style="padding: 15px 0; text-align: right; font-weight: bold;">
+              ${{ item.unit_price }} x {{ item.quantity }}
+            </td>
+            <td style="padding: 15px 0; text-align: right; font-weight: bold;">
+              ${{ item.total_price }}
+            </td>
+          </tr>
+        </mj-table>
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+
+    <!-- Total Section -->
+    <mj-section background-color="#f8f9fa" padding="20px">
+      <mj-column>
+        <mj-table>
+          <tr>
+            <td style="padding: 10px 0; font-size: 16px;">Subtotal:</td>
+            <td style="padding: 10px 0; text-align: right; font-size: 16px;">${{ subtotal }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-size: 16px;">Envío:</td>
+            <td style="padding: 10px 0; text-align: right; font-size: 16px;">${{ shipping_cost }}</td>
+          </tr>
+          <tr style="border-top: 2px solid #e74c3c;">
+            <td style="padding: 15px 0; font-size: 20px; font-weight: bold; color: #e74c3c;">Total:</td>
+            <td style="padding: 15px 0; text-align: right; font-size: 20px; font-weight: bold; color: #e74c3c;">${{ total_amount }}</td>
+          </tr>
+        </mj-table>
+      </mj-column>
+    </mj-section>
+
+    <!-- Shipping Address Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="0 0 10px 0">
+          Dirección de Envío
+        </mj-text>
+        <mj-text>
+          {{ shipping_address.full_name }}<br>
+          {{ shipping_address.street }}<br>
+          {{ shipping_address.city }}, {{ shipping_address.state }} {{ shipping_address.zip_code }}<br>
+          {{ shipping_address.country }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Action Button Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-button href="{{ track_order_url }}" align="center" padding="20px 0">
+          Ver Estado de mi Orden
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer Section -->
+    <mj-section background-color="#34495e" padding="20px">
+      <mj-column>
+        <mj-text align="center" color="#ecf0f1" font-size="14px">
+          <strong>Brain2Gain</strong><br>
+          Tu tienda de confianza para suplementos deportivos<br>
+          <a href="mailto:support@brain2gain.com" style="color: #e74c3c;">support@brain2gain.com</a>
+        </mj-text>
+        <mj-text align="center" color="#95a5a6" font-size="12px" padding="10px 0 0 0">
+          Si tienes alguna pregunta sobre tu orden, no dudes en contactarnos.<br>
+          © 2025 Brain2Gain. Todos los derechos reservados.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

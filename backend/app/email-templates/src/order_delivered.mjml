@@ -1,0 +1,188 @@
+<mjml>
+  <mj-head>
+    <mj-title>Order Delivered - Brain2Gain</mj-title>
+    <mj-preview>Your order has been delivered! We'd love your feedback.</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Arial, Helvetica, sans-serif" />
+      <mj-text font-size="16px" color="#333" line-height="1.6" />
+      <mj-button background-color="#f39c12" color="#fff" font-size="16px" font-weight="bold" border-radius="5px" />
+    </mj-attributes>
+  </mj-head>
+  
+  <mj-body background-color="#f4f4f4">
+    <!-- Header Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-image src="https://brain2gain.com/logo.png" alt="Brain2Gain" width="200px" align="center" />
+        <mj-text align="center" font-size="24px" font-weight="bold" color="#f39c12" padding="20px 0 10px 0">
+          ✅ ¡Orden Entregada!
+        </mj-text>
+        <mj-text align="center" font-size="18px" color="#333" padding="0 0 20px 0">
+          Orden #{{ order_id }}
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Delivery Confirmation Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Hola {{ customer_name }},
+        </mj-text>
+        <mj-text>
+          ¡Genial! Tu orden ha sido entregada exitosamente. Esperamos que disfrutes tus productos Brain2Gain y que te ayuden a alcanzar tus objetivos fitness.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Delivery Details Section -->
+    <mj-section background-color="#fff3cd" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="18px" font-weight="bold" color="#f39c12" padding="0 0 10px 0">
+          Detalles de la Entrega
+        </mj-text>
+        <mj-table>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold; width: 40%;">Fecha de Entrega:</td>
+            <td style="padding: 10px 0; color: #f39c12; font-weight: bold;">{{ delivered_date }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Hora de Entrega:</td>
+            <td style="padding: 10px 0;">{{ delivered_time }}</td>
+          </tr>
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Dirección:</td>
+            <td style="padding: 10px 0;">{{ delivery_address }}</td>
+          </tr>
+          {% if delivery_notes %}
+          <tr>
+            <td style="padding: 10px 0; font-weight: bold;">Notas:</td>
+            <td style="padding: 10px 0;">{{ delivery_notes }}</td>
+          </tr>
+          {% endif %}
+        </mj-table>
+      </mj-column>
+    </mj-section>
+
+    <!-- Products Delivered Section -->
+    <mj-section background-color="#ffffff" padding="0 20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="20px 0 10px 0">
+          Productos Entregados
+        </mj-text>
+        {% for item in order_items %}
+        <mj-table>
+          <tr style="border-bottom: 1px solid #ecf0f1;">
+            <td style="padding: 15px 0; width: 70%;">
+              <strong>{{ item.product_name }}</strong><br>
+              <span style="color: #7f8c8d;">Cantidad: {{ item.quantity }}</span>
+            </td>
+            <td style="padding: 15px 0; text-align: right; font-weight: bold;">
+              ${{ item.total_price }}
+            </td>
+          </tr>
+        </mj-table>
+        {% endfor %}
+      </mj-column>
+    </mj-section>
+
+    <!-- Usage Tips Section -->
+    <mj-section background-color="#e8f6f3" padding="20px">
+      <mj-column>
+        <mj-text font-size="18px" font-weight="bold" color="#333" padding="0 0 15px 0">
+          💪 Tips para Maximizar tus Resultados
+        </mj-text>
+        <mj-text>
+          <strong>Proteína:</strong> Consume 30-45 minutos después del entrenamiento para mejor recuperación.<br><br>
+          <strong>Creatina:</strong> Toma 3-5g diarios, preferiblemente post-entreno con carbohidratos.<br><br>
+          <strong>Pre-entreno:</strong> Consume 20-30 minutos antes del entrenamiento para mayor energía.<br><br>
+          <strong>Hidratación:</strong> Mantén siempre una buena hidratación durante el uso de suplementos.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Review Request Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="18px" font-weight="bold" color="#333" padding="0 0 15px 0">
+          ⭐ ¿Qué tal tu experiencia?
+        </mj-text>
+        <mj-text align="center">
+          Tu opinión es muy valiosa para nosotros y ayuda a otros atletas a tomar mejores decisiones. ¿Te gustaría compartir tu experiencia?
+        </mj-text>
+        <mj-button href="{{ review_url }}" align="center" padding="20px 0">
+          Escribir Reseña
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Reorder Section -->
+    <mj-section background-color="#f8f9fa" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="18px" font-weight="bold" color="#333" padding="0 0 10px 0">
+          🔄 ¿Necesitas Reabastecerte?
+        </mj-text>
+        <mj-text align="center">
+          Mantén tu rutina sin interrupciones. Reordena tus productos favoritos con un solo clic.
+        </mj-text>
+        <mj-button href="{{ reorder_url }}" align="center" padding="20px 0" background-color="#27ae60">
+          Reordenar Productos
+        </mj-button>
+      </mj-column>
+    </mj-section>
+
+    <!-- Customer Support Section -->
+    <mj-section background-color="#ffffff" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="16px" font-weight="bold" color="#333" padding="0 0 10px 0">
+          ¿Algún Problema con tu Orden?
+        </mj-text>
+        <mj-text align="center">
+          Si hay algún problema con tu entrega o productos, no dudes en contactarnos. Estamos aquí para ayudarte.
+        </mj-text>
+        <mj-text align="center" font-size="14px" color="#7f8c8d" padding="15px 0 0 0">
+          <a href="mailto:support@brain2gain.com" style="color: #e74c3c;">support@brain2gain.com</a> | 
+          <a href="tel:+1234567890" style="color: #e74c3c;">+1 (234) 567-8910</a>
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <!-- Social Media Section -->
+    <mj-section background-color="#f8f9fa" padding="20px">
+      <mj-column>
+        <mj-text align="center" font-size="16px" font-weight="bold" color="#333" padding="0 0 15px 0">
+          📱 Síguenos en Redes Sociales
+        </mj-text>
+        <mj-text align="center">
+          Únete a nuestra comunidad fitness y comparte tu progreso con #Brain2Gain
+        </mj-text>
+        <mj-social font-size="15px" icon-size="30px" mode="horizontal" padding="15px 0 0 0" align="center">
+          <mj-social-element name="instagram" href="https://instagram.com/brain2gain" background-color="#E4405F">
+            Instagram
+          </mj-social-element>
+          <mj-social-element name="facebook" href="https://facebook.com/brain2gain" background-color="#3b5998">
+            Facebook
+          </mj-social-element>
+          <mj-social-element name="youtube" href="https://youtube.com/brain2gain" background-color="#FF0000">
+            YouTube
+          </mj-social-element>
+        </mj-social>
+      </mj-column>
+    </mj-section>
+
+    <!-- Footer Section -->
+    <mj-section background-color="#34495e" padding="20px">
+      <mj-column>
+        <mj-text align="center" color="#ecf0f1" font-size="14px">
+          <strong>Brain2Gain</strong><br>
+          Tu tienda de confianza para suplementos deportivos<br>
+          <a href="mailto:support@brain2gain.com" style="color: #e74c3c;">support@brain2gain.com</a>
+        </mj-text>
+        <mj-text align="center" color="#95a5a6" font-size="12px" padding="10px 0 0 0">
+          ¡Gracias por ser parte de la familia Brain2Gain!<br>
+          © 2025 Brain2Gain. Todos los derechos reservados.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

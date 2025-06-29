@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.api.routes import (
     analytics,
     cart,
+    email_templates,
     events,
     items,
     login,
@@ -51,6 +52,9 @@ if API_MODE in ["admin", "full"] and ENABLE_ADMIN_ROUTES:
     api_router.include_router(
         events.router, prefix="/events", tags=["events"]
     )  # Event Sourcing
+    api_router.include_router(
+        email_templates.router, prefix="/email-templates", tags=["email-templates"]
+    )  # Email Templates Management
 
     # Debug routes only for local admin
     if settings.ENVIRONMENT == "local":

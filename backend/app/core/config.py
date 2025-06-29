@@ -26,7 +26,7 @@ def parse_cors(v: Any) -> list[str] | str:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         # Use top level .env file (one level above ./backend/)
-        env_file="../.env",
+        env_file=[".env.testing", "../.env"],
         env_ignore_empty=True,
         extra="ignore",
     )
@@ -103,6 +103,19 @@ class Settings(BaseSettings):
         return self
 
     EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
+    
+    # Email service configuration for templates
+    EMAIL_SERVICE: Literal["smtp", "sendgrid", "mailgun", "ses"] = "smtp"
+    EMAIL_API_KEY: str = ""
+    SENDGRID_API_KEY: str = ""
+    MAILGUN_API_KEY: str = ""
+    MAILGUN_DOMAIN: str = ""
+    AWS_SES_REGION: str = "us-east-1"
+    
+    # Email template configuration
+    EMAIL_TEMPLATE_CACHE_TTL: int = 3600  # 1 hour
+    EMAIL_TEMPLATE_FALLBACK_ENABLED: bool = True
+    MJML_CLI_ENABLED: bool = False  # Set to True if MJML CLI is installed
 
     @computed_field  # type: ignore[prop-decorator]
     @property
