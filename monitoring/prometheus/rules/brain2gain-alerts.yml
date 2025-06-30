@@ -1,0 +1,220 @@
+# Brain2Gain Production Alerting Rules
+
+groups:
+  # Application-level alerts
+  - name: brain2gain-application
+    rules:
+      # Backend API alerts
+      - alert: BackendDown
+        expr: up{job="brain2gain-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Brain2Gain Backend API is down"
+          description: "The Backend API has been down for more than 1 minute."
+
+      - alert: BackendHighErrorRate
+        expr: rate(http_requests_total{job="brain2gain-backend",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High error rate on Backend API"
+          description: "Backend API error rate is {{ $value }} requests/second."
+
+      - alert: BackendHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="brain2gain-backend"}[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High latency on Backend API"
+          description: "95th percentile latency is {{ $value }}s."
+
+      # Frontend alerts
+      - alert: FrontendDown
+        expr: up{job="nginx-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: frontend
+        annotations:
+          summary: "Brain2Gain Frontend is down"
+          description: "The Frontend service has been down for more than 1 minute."
+
+      # Load Balancer alerts
+      - alert: LoadBalancerDown
+        expr: up{job="haproxy"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: loadbalancer
+        annotations:
+          summary: "HAProxy Load Balancer is down"
+          description: "The Load Balancer has been down for more than 1 minute."
+
+  # Database alerts
+  - name: brain2gain-database
+    rules:
+      - alert: PostgreSQLDown
+        expr: up{job="postgres-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been down for more than 1 minute."
+
+      - alert: PostgreSQLHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL connection usage is high"
+          description: "PostgreSQL is using {{ $value }}% of available connections."
+
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_activity_max_tx_duration[5m]) > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "PostgreSQL has slow queries"
+          description: "PostgreSQL has queries running for more than 60 seconds."
+
+      - alert: RedisDown
+        expr: up{job="redis-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis has been down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "Redis memory usage is high"
+          description: "Redis is using {{ $value }}% of available memory."
+
+  # Infrastructure alerts
+  - name: brain2gain-infrastructure
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Low disk space detected"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} ({{ $labels.mountpoint }})."
+
+      - alert: HighDiskIOWait
+        expr: irate(node_cpu_seconds_total{mode="iowait"}[5m]) * 100 > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High disk I/O wait detected"
+          description: "I/O wait is {{ $value }}% on {{ $labels.instance }}."
+
+  # Container alerts
+  - name: brain2gain-containers
+    rules:
+      - alert: ContainerKilled
+        expr: time() - container_last_seen > 60
+        for: 0m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container killed"
+          description: "A container has disappeared for {{ $labels.name }}."
+
+      - alert: ContainerHighCPUUsage
+        expr: (sum(rate(container_cpu_usage_seconds_total[3m])) BY (container_label_com_docker_swarm_service_name, instance) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container high CPU usage"
+          description: "Container {{ $labels.container_label_com_docker_swarm_service_name }} CPU usage is {{ $value }}%."
+
+      - alert: ContainerHighMemoryUsage
+        expr: (sum(container_memory_working_set_bytes) BY (container_label_com_docker_swarm_service_name, instance) / sum(container_spec_memory_limit_bytes > 0) BY (container_label_com_docker_swarm_service_name, instance) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: container
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.container_label_com_docker_swarm_service_name }} memory usage is {{ $value }}%."
+
+  # Business metrics alerts
+  - name: brain2gain-business
+    rules:
+      - alert: HighOrderFailureRate
+        expr: rate(brain2gain_orders_failed_total[5m]) / rate(brain2gain_orders_total[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          service: business
+        annotations:
+          summary: "High order failure rate"
+          description: "Order failure rate is {{ $value | humanizePercentage }}."
+
+      - alert: PaymentProcessingDown
+        expr: up{job="brain2gain-backend", endpoint="/api/v1/payments/health"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: payments
+        annotations:
+          summary: "Payment processing is down"
+          description: "Payment processing endpoint is not responding."
+
+      - alert: LowInventoryAlert
+        expr: brain2gain_inventory_stock_level < brain2gain_inventory_min_threshold
+        for: 0m
+        labels:
+          severity: warning
+          service: inventory
+        annotations:
+          summary: "Low inventory alert"
+          description: "Product {{ $labels.product_id }} stock is below minimum threshold."

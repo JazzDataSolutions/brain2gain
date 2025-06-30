@@ -1,0 +1,28 @@
+# Grafana Dashboard Provisioning Configuration
+
+apiVersion: 1
+
+providers:
+  # Brain2Gain Production Dashboards
+  - name: 'brain2gain-dashboards'
+    orgId: 1
+    folder: 'Brain2Gain Production'
+    folderUid: 'brain2gain-prod'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+
+  # System Dashboards
+  - name: 'system-dashboards'
+    orgId: 1
+    folder: 'System Monitoring'
+    folderUid: 'system-monitoring'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/system

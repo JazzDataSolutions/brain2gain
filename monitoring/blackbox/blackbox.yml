@@ -1,0 +1,71 @@
+# Blackbox Exporter Configuration for Brain2Gain
+
+modules:
+  # HTTP 2xx check
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: []  # Defaults to 2xx
+      method: GET
+      follow_redirects: true
+      preferred_ip_protocol: "ip4"
+
+  # HTTP POST check
+  http_post_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      method: POST
+      headers:
+        Content-Type: application/json
+      body: '{"health": "check"}'
+
+  # HTTP with basic auth
+  http_2xx_auth:
+    prober: http
+    timeout: 5s
+    http:
+      method: GET
+      valid_status_codes: []
+      basic_auth:
+        username: "admin"
+        password: "password"
+
+  # TCP connection check
+  tcp_connect:
+    prober: tcp
+    timeout: 5s
+
+  # ICMP ping check
+  icmp:
+    prober: icmp
+    timeout: 5s
+    icmp:
+      preferred_ip_protocol: "ip4"
+
+  # DNS check
+  dns_a:
+    prober: dns
+    timeout: 5s
+    dns:
+      query_name: "brain2gain.com"
+      query_type: "A"
+
+  # PostgreSQL check
+  postgres_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - expect: "^\\x00"
+
+  # Redis check
+  redis_connect:
+    prober: tcp
+    timeout: 5s
+    tcp:
+      query_response:
+        - send: "*1\r\n$4\r\nPING\r\n"
+        - expect: "^\\+PONG"

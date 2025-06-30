@@ -1,0 +1,26 @@
+# Logstash Configuration for Brain2Gain
+
+http.host: "0.0.0.0"
+xpack.monitoring.enabled: false
+xpack.security.enabled: false
+
+# Pipeline configuration
+pipeline.workers: 2
+pipeline.batch.size: 500
+pipeline.batch.delay: 50
+
+# Path settings
+path.config: /usr/share/logstash/pipeline
+path.logs: /usr/share/logstash/logs
+
+# Log level
+log.level: info
+
+# Dead letter queue
+dead_letter_queue.enable: true
+dead_letter_queue.max_bytes: 1024mb
+
+# Queue settings
+queue.type: memory
+queue.max_events: 0
+queue.max_bytes: 1024mb

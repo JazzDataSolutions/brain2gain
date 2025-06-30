@@ -1,0 +1,113 @@
+# Additional Exporters for Brain2Gain Monitoring
+
+services:
+  # PostgreSQL Exporter
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: brain2gain-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://brain2gain_prod:${POSTGRES_PASSWORD}@brain2gain_postgres:5432/brain2gain_prod?sslmode=disable"
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9187/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # Redis Exporter
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.55.0
+    container_name: brain2gain-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    environment:
+      REDIS_ADDR: "brain2gain_redis:6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    depends_on:
+      - redis
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9121/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # Nginx Exporter
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:0.11.0
+    container_name: brain2gain-nginx-exporter
+    restart: unless-stopped
+    ports:
+      - "9113:9113"
+    command:
+      - '-nginx.scrape-uri=http://brain2gain_frontend/nginx_status'
+    depends_on:
+      - frontend
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9113/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.05'
+
+  # Blackbox Exporter for external monitoring
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.24.0
+    container_name: brain2gain-blackbox-exporter
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./monitoring/blackbox/blackbox.yml:/config/blackbox.yml:ro
+    command:
+      - '--config.file=/config/blackbox.yml'
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9115/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+  # JSON Exporter for custom metrics
+  json-exporter:
+    image: prometheuscommunity/json-exporter:v0.6.0
+    container_name: brain2gain-json-exporter
+    restart: unless-stopped
+    ports:
+      - "7979:7979"
+    volumes:
+      - ./monitoring/json-exporter/config.yml:/config.yml:ro
+    command:
+      - '--config.file=/config.yml'
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.05'
+
+networks:
+  default:
+    external: true
+    name: brain2gain_prod_network

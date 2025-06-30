@@ -1,0 +1,165 @@
+# AlertManager Configuration for Brain2Gain Production
+
+global:
+  # Global configuration
+  smtp_smarthost: 'localhost:587'
+  smtp_from: 'alerts@brain2gain.com'
+  smtp_auth_username: 'alerts@brain2gain.com'
+  smtp_auth_password: 'your-smtp-password'
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Route configuration
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'web.hook'
+  routes:
+    # Critical alerts - immediate notification
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      group_wait: 0s
+      repeat_interval: 5m
+      
+    # Database alerts
+    - match:
+        service: database
+      receiver: 'database-team'
+      
+    # Infrastructure alerts
+    - match:
+        service: system
+      receiver: 'infrastructure-team'
+      
+    # Application alerts
+    - match_re:
+        service: backend|frontend|loadbalancer
+      receiver: 'application-team'
+      
+    # Business alerts
+    - match:
+        service: business
+      receiver: 'business-team'
+
+# Inhibition rules
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'cluster', 'service']
+
+# Receiver configurations
+receivers:
+  # Default webhook
+  - name: 'web.hook'
+    webhook_configs:
+      - url: 'http://localhost:5001/webhook'
+        send_resolved: true
+
+  # Critical alerts - multiple channels
+  - name: 'critical-alerts'
+    email_configs:
+      - to: 'alerts@brain2gain.com'
+        subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }} - Brain2Gain Production'
+        html: |
+          <h2>🚨 CRITICAL ALERT</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Service:</strong> {{ .GroupLabels.service }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Time:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+          <hr>
+          <p>Please investigate immediately.</p>
+    
+    slack_configs:
+      - channel: '#alerts-critical'
+        color: 'danger'
+        title: '🚨 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          *Service:* {{ .GroupLabels.service }}
+          *Severity:* {{ .CommonLabels.severity }}
+          *Summary:* {{ .CommonAnnotations.summary }}
+          *Description:* {{ .CommonAnnotations.description }}
+        send_resolved: true
+
+  # Database team alerts
+  - name: 'database-team'
+    email_configs:
+      - to: 'database-team@brain2gain.com'
+        subject: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>🗄️ Database Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+    
+    slack_configs:
+      - channel: '#database-alerts'
+        color: 'warning'
+        title: '🗄️ Database: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.summary }}'
+
+  # Infrastructure team alerts
+  - name: 'infrastructure-team'
+    email_configs:
+      - to: 'infrastructure@brain2gain.com'
+        subject: '🖥️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>🖥️ Infrastructure Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+    
+    slack_configs:
+      - channel: '#infrastructure-alerts'
+      - color: 'warning'
+        title: '🖥️ Infrastructure: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.summary }}'
+
+  # Application team alerts
+  - name: 'application-team'
+    email_configs:
+      - to: 'dev-team@brain2gain.com'
+        subject: '🚀 Application Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>🚀 Application Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Service:</strong> {{ .GroupLabels.service }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+    
+    slack_configs:
+      - channel: '#dev-alerts'
+        color: 'warning'
+        title: '🚀 Application: {{ .GroupLabels.alertname }}'
+        text: |
+          *Service:* {{ .GroupLabels.service }}
+          *Summary:* {{ .CommonAnnotations.summary }}
+
+  # Business team alerts
+  - name: 'business-team'
+    email_configs:
+      - to: 'business@brain2gain.com'
+        subject: '💼 Business Alert: {{ .GroupLabels.alertname }}'
+        html: |
+          <h2>💼 Business Metrics Alert</h2>
+          <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
+          <p><strong>Severity:</strong> {{ .CommonLabels.severity }}</p>
+          <p><strong>Summary:</strong> {{ .CommonAnnotations.summary }}</p>
+          <p><strong>Description:</strong> {{ .CommonAnnotations.description }}</p>
+    
+    slack_configs:
+      - channel: '#business-alerts'
+      - color: 'warning'
+        title: '💼 Business: {{ .GroupLabels.alertname }}'
+        text: '{{ .CommonAnnotations.summary }}'
