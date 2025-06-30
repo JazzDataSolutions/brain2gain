@@ -1,33 +1,40 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Badge,
   Box,
-  VStack,
-  HStack,
-  Text,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Heading,
+  Checkbox,
   Divider,
-  Badge,
-  Button,
-  useColorModeValue,
   Grid,
   GridItem,
-  Image,
-  Alert,
-  AlertIcon,
-  AlertDescription,
-  Checkbox,
-  Link,
+  HStack,
+  Heading,
   Icon,
-  Spinner,
+  Image,
+  Link,
   Skeleton,
-} from '@chakra-ui/react'
-import { FaCreditCard, FaPaypal, FaUniversity, FaTruck, FaUser, FaMapMarkerAlt } from 'react-icons/fa'
-import { useCartStore } from '../../stores/cartStore'
-import type { ContactInformation } from './ContactInformationStep'
-import type { ShippingInformation } from './ShippingInformationStep'
-import type { PaymentInformation } from './PaymentInformationStep'
+  Spinner,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import {
+  FaCreditCard,
+  FaMapMarkerAlt,
+  FaPaypal,
+  FaTruck,
+  FaUniversity,
+  FaUser,
+} from "react-icons/fa"
+import { useCartStore } from "../../stores/cartStore"
+import type { ContactInformation } from "./ContactInformationStep"
+import type { PaymentInformation } from "./PaymentInformationStep"
+import type { ShippingInformation } from "./ShippingInformationStep"
 
 interface OrderConfirmationStepProps {
   contactInfo: ContactInformation
@@ -56,21 +63,23 @@ const OrderConfirmationStep = ({
   isCalculatingTotals = false,
 }: OrderConfirmationStepProps) => {
   const { items, getTotalPrice, getTotalItems } = useCartStore()
-  const cardBg = useColorModeValue('white', 'gray.800')
-  
+  const cardBg = useColorModeValue("white", "gray.800")
+
   // Use calculated totals from backend if available, otherwise fall back to local calculation
   const subtotal = calculatedTotals?.subtotal ?? getTotalPrice()
-  const shippingCost = calculatedTotals?.shipping_cost ?? (getTotalPrice() >= 50 ? 0 : 5.99)
-  const taxAmount = calculatedTotals?.tax_amount ?? (getTotalPrice() * 0.16)
-  const total = calculatedTotals?.total_amount ?? (subtotal + shippingCost + taxAmount)
+  const shippingCost =
+    calculatedTotals?.shipping_cost ?? (getTotalPrice() >= 50 ? 0 : 5.99)
+  const taxAmount = calculatedTotals?.tax_amount ?? getTotalPrice() * 0.16
+  const total =
+    calculatedTotals?.total_amount ?? subtotal + shippingCost + taxAmount
 
   const getPaymentMethodIcon = () => {
     switch (paymentInfo.paymentMethod) {
-      case 'stripe':
+      case "stripe":
         return FaCreditCard
-      case 'paypal':
+      case "paypal":
         return FaPaypal
-      case 'bank_transfer':
+      case "bank_transfer":
         return FaUniversity
       default:
         return FaCreditCard
@@ -79,14 +88,16 @@ const OrderConfirmationStep = ({
 
   const getPaymentMethodText = () => {
     switch (paymentInfo.paymentMethod) {
-      case 'stripe':
-        return `Tarjeta terminada en ${paymentInfo.cardNumber?.slice(-4) || '****'}`
-      case 'paypal':
-        return 'PayPal'
-      case 'bank_transfer':
-        return 'Transferencia Bancaria'
+      case "stripe":
+        return `Tarjeta terminada en ${
+          paymentInfo.cardNumber?.slice(-4) || "****"
+        }`
+      case "paypal":
+        return "PayPal"
+      case "bank_transfer":
+        return "Transferencia Bancaria"
       default:
-        return 'Método de pago'
+        return "Método de pago"
     }
   }
 
@@ -99,12 +110,12 @@ const OrderConfirmationStep = ({
       <Alert status="info">
         <AlertIcon />
         <AlertDescription>
-          Revisa cuidadosamente la información antes de confirmar tu pedido.
-          Una vez confirmado, recibirás un email de confirmación.
+          Revisa cuidadosamente la información antes de confirmar tu pedido. Una
+          vez confirmado, recibirás un email de confirmación.
         </AlertDescription>
       </Alert>
 
-      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={6}>
+      <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={6}>
         {/* Order Details */}
         <GridItem>
           <VStack spacing={6} align="stretch">
@@ -112,7 +123,9 @@ const OrderConfirmationStep = ({
             <Card bg={cardBg}>
               <CardHeader>
                 <HStack justify="space-between">
-                  <Heading size="md">Productos ({getTotalItems()} artículos)</Heading>
+                  <Heading size="md">
+                    Productos ({getTotalItems()} artículos)
+                  </Heading>
                   <Button
                     size="sm"
                     variant="outline"
@@ -127,7 +140,10 @@ const OrderConfirmationStep = ({
                   {items.map((item) => (
                     <HStack key={item.id} spacing={4} align="start">
                       <Image
-                        src={item.image || 'https://via.placeholder.com/80x80?text=Producto'}
+                        src={
+                          item.image ||
+                          "https://via.placeholder.com/80x80?text=Producto"
+                        }
                         alt={item.name}
                         boxSize="60px"
                         objectFit="cover"
@@ -169,9 +185,15 @@ const OrderConfirmationStep = ({
               </CardHeader>
               <CardBody pt={0}>
                 <VStack spacing={2} align="start">
-                  <Text><strong>Nombre:</strong> {contactInfo.customerName}</Text>
-                  <Text><strong>Email:</strong> {contactInfo.email}</Text>
-                  <Text><strong>Teléfono:</strong> {contactInfo.customerPhone}</Text>
+                  <Text>
+                    <strong>Nombre:</strong> {contactInfo.customerName}
+                  </Text>
+                  <Text>
+                    <strong>Email:</strong> {contactInfo.email}
+                  </Text>
+                  <Text>
+                    <strong>Teléfono:</strong> {contactInfo.customerPhone}
+                  </Text>
                   {contactInfo.createAccount && (
                     <Badge colorScheme="green">Se creará cuenta</Badge>
                   )}
@@ -202,18 +224,23 @@ const OrderConfirmationStep = ({
                     {shippingInfo.firstName} {shippingInfo.lastName}
                   </Text>
                   {shippingInfo.company && (
-                    <Text fontSize="sm" color="gray.600">{shippingInfo.company}</Text>
+                    <Text fontSize="sm" color="gray.600">
+                      {shippingInfo.company}
+                    </Text>
                   )}
                   <Text>{shippingInfo.addressLine1}</Text>
                   {shippingInfo.addressLine2 && (
                     <Text>{shippingInfo.addressLine2}</Text>
                   )}
                   <Text>
-                    {shippingInfo.city}, {shippingInfo.state} {shippingInfo.postalCode}
+                    {shippingInfo.city}, {shippingInfo.state}{" "}
+                    {shippingInfo.postalCode}
                   </Text>
                   <Text>{shippingInfo.country}</Text>
                   {shippingInfo.phone && (
-                    <Text fontSize="sm" color="gray.600">Tel: {shippingInfo.phone}</Text>
+                    <Text fontSize="sm" color="gray.600">
+                      Tel: {shippingInfo.phone}
+                    </Text>
                   )}
                 </VStack>
               </CardBody>
@@ -238,7 +265,7 @@ const OrderConfirmationStep = ({
               </CardHeader>
               <CardBody pt={0}>
                 <Text>{getPaymentMethodText()}</Text>
-                {paymentInfo.paymentMethod === 'bank_transfer' && (
+                {paymentInfo.paymentMethod === "bank_transfer" && (
                   <Text fontSize="sm" color="orange.600" mt={2}>
                     Se enviará información bancaria por email
                   </Text>
@@ -274,42 +301,68 @@ const OrderConfirmationStep = ({
                     >
                       <HStack>
                         <Spinner size="sm" color="blue.500" />
-                        <Text fontSize="sm" color="gray.600">Calculando...</Text>
+                        <Text fontSize="sm" color="gray.600">
+                          Calculando...
+                        </Text>
                       </HStack>
                     </Box>
                   )}
-                  
+
                   <HStack justify="space-between">
                     <Text>Subtotal ({getTotalItems()} artículos)</Text>
-                    <Skeleton isLoaded={!isCalculatingTotals} height="20px" width="60px">
+                    <Skeleton
+                      isLoaded={!isCalculatingTotals}
+                      height="20px"
+                      width="60px"
+                    >
                       <Text>${subtotal.toFixed(2)}</Text>
                     </Skeleton>
                   </HStack>
-                  
+
                   <HStack justify="space-between">
                     <HStack>
                       <Icon as={FaTruck} size="sm" color="green.500" />
                       <Text>Envío</Text>
                     </HStack>
-                    <Skeleton isLoaded={!isCalculatingTotals} height="20px" width="60px">
-                      <Text color={shippingCost === 0 ? "green.500" : "inherit"}>
-                        {shippingCost === 0 ? 'GRATIS' : `$${shippingCost.toFixed(2)}`}
+                    <Skeleton
+                      isLoaded={!isCalculatingTotals}
+                      height="20px"
+                      width="60px"
+                    >
+                      <Text
+                        color={shippingCost === 0 ? "green.500" : "inherit"}
+                      >
+                        {shippingCost === 0
+                          ? "GRATIS"
+                          : `$${shippingCost.toFixed(2)}`}
                       </Text>
                     </Skeleton>
                   </HStack>
 
                   <HStack justify="space-between">
                     <Text>Impuestos (16%)</Text>
-                    <Skeleton isLoaded={!isCalculatingTotals} height="20px" width="60px">
+                    <Skeleton
+                      isLoaded={!isCalculatingTotals}
+                      height="20px"
+                      width="60px"
+                    >
                       <Text>${taxAmount.toFixed(2)}</Text>
                     </Skeleton>
                   </HStack>
 
                   <Divider />
 
-                  <HStack justify="space-between" fontSize="lg" fontWeight="bold">
+                  <HStack
+                    justify="space-between"
+                    fontSize="lg"
+                    fontWeight="bold"
+                  >
                     <Text>Total</Text>
-                    <Skeleton isLoaded={!isCalculatingTotals} height="24px" width="80px">
+                    <Skeleton
+                      isLoaded={!isCalculatingTotals}
+                      height="24px"
+                      width="80px"
+                    >
                       <Text color="blue.500">${total.toFixed(2)}</Text>
                     </Skeleton>
                   </HStack>
@@ -327,16 +380,16 @@ const OrderConfirmationStep = ({
                 <VStack spacing={3}>
                   <Checkbox size="sm" defaultChecked>
                     <Text fontSize="sm">
-                      Acepto los{' '}
+                      Acepto los{" "}
                       <Link color="blue.500" href="/terms" isExternal>
                         términos y condiciones
                       </Link>
                     </Text>
                   </Checkbox>
-                  
+
                   <Checkbox size="sm" defaultChecked>
                     <Text fontSize="sm">
-                      Acepto la{' '}
+                      Acepto la{" "}
                       <Link color="blue.500" href="/privacy" isExternal>
                         política de privacidad
                       </Link>

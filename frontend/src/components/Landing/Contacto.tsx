@@ -3,20 +3,20 @@ import {
   Box,
   Button,
   FormControl,
-  FormLabel,
   FormErrorMessage,
+  FormLabel,
+  Heading,
   Input,
   Textarea,
-  Heading,
   VStack,
   useToast,
-} from '@chakra-ui/react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+} from "@chakra-ui/react"
+import { type SubmitHandler, useForm } from "react-hook-form"
 
 interface ContactoFormInputs {
-  name: string;
-  email: string;
-  message: string;
+  name: string
+  email: string
+  message: string
 }
 
 const Contacto = () => {
@@ -25,22 +25,23 @@ const Contacto = () => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ContactoFormInputs>();
-  const toast = useToast();
+  } = useForm<ContactoFormInputs>()
+  const toast = useToast()
 
   const onSubmit: SubmitHandler<ContactoFormInputs> = async (data) => {
     // Aquí puedes integrar la llamada a FastAPI usando fetch, axios, etc.
     // Por ahora, simulamos el envío.
-    console.log('Datos enviados:', data);
+    console.log("Datos enviados:", data)
     toast({
-      title: 'Mensaje enviado',
-      description: 'Gracias por contactarnos. Pronto nos pondremos en contacto contigo.',
-      status: 'success',
+      title: "Mensaje enviado",
+      description:
+        "Gracias por contactarnos. Pronto nos pondremos en contacto contigo.",
+      status: "success",
       duration: 5000,
       isClosable: true,
-    });
-    reset();
-  };
+    })
+    reset()
+  }
 
   return (
     <Box p={8}>
@@ -59,9 +60,9 @@ const Contacto = () => {
           <Input
             id="name"
             placeholder="Tu nombre"
-            {...register('name', { required: 'El nombre es requerido' })}
+            {...register("name", { required: "El nombre es requerido" })}
           />
-          <FormErrorMessage>{errors.name && errors.name.message}</FormErrorMessage>
+          <FormErrorMessage>{errors.name?.message}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={!!errors.email}>
@@ -70,17 +71,15 @@ const Contacto = () => {
             id="email"
             type="email"
             placeholder="tu@email.com"
-            {...register('email', {
-              required: 'El email es requerido',
+            {...register("email", {
+              required: "El email es requerido",
               pattern: {
                 value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Email inválido',
+                message: "Email inválido",
               },
             })}
           />
-          <FormErrorMessage>
-            {errors.email && errors.email.message}
-          </FormErrorMessage>
+          <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
         </FormControl>
 
         <FormControl isInvalid={!!errors.message}>
@@ -88,11 +87,9 @@ const Contacto = () => {
           <Textarea
             id="message"
             placeholder="Escribe tu mensaje..."
-            {...register('message', { required: 'El mensaje es requerido' })}
+            {...register("message", { required: "El mensaje es requerido" })}
           />
-          <FormErrorMessage>
-            {errors.message && errors.message.message}
-          </FormErrorMessage>
+          <FormErrorMessage>{errors.message?.message}</FormErrorMessage>
         </FormControl>
 
         <Button
@@ -105,7 +102,7 @@ const Contacto = () => {
         </Button>
       </VStack>
     </Box>
-  );
-};
+  )
+}
 
-export default Contacto;
+export default Contacto

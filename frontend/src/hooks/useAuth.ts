@@ -10,8 +10,8 @@ import {
   type UserRegister,
   UsersService,
 } from "../client"
-import useCustomToast from "./useCustomToast"
 import { useAuth as useAuthContext } from "../contexts/AuthContext"
+import useCustomToast from "./useCustomToast"
 
 const isLoggedIn = () => {
   return localStorage.getItem("access_token") !== null
@@ -22,7 +22,12 @@ const useAuth = () => {
   const navigate = useNavigate()
   const showToast = useCustomToast()
   const queryClient = useQueryClient()
-  const { user, isLoading, login: contextLogin, logout: contextLogout } = useAuthContext()
+  const {
+    user,
+    isLoading,
+    login: contextLogin,
+    logout: contextLogout,
+  } = useAuthContext()
 
   const signUpMutation = useMutation({
     mutationFn: (data: UserRegister) =>

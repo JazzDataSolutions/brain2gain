@@ -1,44 +1,44 @@
 // src/components/CatalogoPage.tsx
-import { SimpleGrid, Box, Image, Text, Heading } from '@chakra-ui/react';
+import { Box, Heading, Image, SimpleGrid, Text } from "@chakra-ui/react"
 
 interface Producto {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-  precio: number;
-  imagen: string;
+  id: number
+  nombre: string
+  descripcion?: string
+  precio: number
+  imagen: string
 }
 
 const productosEjemplo: Producto[] = [
   {
     id: 1,
-    nombre: 'Creatina Birdman',
-    descripcion: 'Alta calidad para potenciar tu fuerza',
+    nombre: "Creatina Birdman",
+    descripcion: "Alta calidad para potenciar tu fuerza",
     precio: 589.99,
-    imagen: '/imagenes/creatina_catalogo.jpg',
+    imagen: "/imagenes/creatina_catalogo.jpg",
   },
   {
     id: 2,
-    nombre: 'Proteína IsoFlex',
-    descripcion: 'Proteína de rápida absorción',
+    nombre: "Proteína IsoFlex",
+    descripcion: "Proteína de rápida absorción",
     precio: 1599.99,
-    imagen: '/imagenes/proteina_catalogo.jpg',
+    imagen: "/imagenes/proteina_catalogo.jpg",
   },
   {
     id: 3,
-    nombre: 'Preworkout VENOM INFERNO',
-    descripcion: 'Energía y enfoque en cada entrenamiento',
+    nombre: "Preworkout VENOM INFERNO",
+    descripcion: "Energía y enfoque en cada entrenamiento",
     precio: 549.99,
-    imagen: '/imagenes/preworkout_catalogo.jpg',
+    imagen: "/imagenes/preworkout_catalogo.jpg",
   },
   {
     id: 3,
-    nombre: 'Preworkout VENOM INFERNO',
-    descripcion: 'Energía y enfoque en cada entrenamiento',
+    nombre: "Preworkout VENOM INFERNO",
+    descripcion: "Energía y enfoque en cada entrenamiento",
     precio: 549.99,
-    imagen: '/imagenes/preworkout_catalogo.jpg',
+    imagen: "/imagenes/preworkout_catalogo.jpg",
   },
-];
+]
 
 const CatalogoPage = () => {
   return (
@@ -54,9 +54,13 @@ const CatalogoPage = () => {
             borderRadius="lg"
             overflow="hidden"
             p={4}
-            _hover={{ boxShadow: 'md' }}
+            _hover={{ boxShadow: "md" }}
           >
-            <Image src={producto.imagen} alt={producto.nombre} borderRadius="md" />
+            <Image
+              src={producto.imagen}
+              alt={producto.nombre}
+              borderRadius="md"
+            />
             <Text mt={4} fontSize="xl" fontWeight="bold">
               {producto.nombre}
             </Text>
@@ -68,7 +72,7 @@ const CatalogoPage = () => {
         ))}
       </SimpleGrid>
     </Box>
-  );
-};
+  )
+}
 
-export default CatalogoPage;
+export default CatalogoPage

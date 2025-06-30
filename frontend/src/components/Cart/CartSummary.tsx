@@ -1,26 +1,26 @@
 import {
   Box,
-  VStack,
-  HStack,
-  Text,
   Button,
   Divider,
+  HStack,
+  Text,
+  VStack,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { Link } from '@tanstack/react-router'
+} from "@chakra-ui/react"
+import { Link } from "@tanstack/react-router"
 
-import { useCartStore } from '../../stores/cartStore'
+import { useCartStore } from "../../stores/cartStore"
 
 const CartSummary = () => {
   const { getTotalItems, getTotalPrice, clearCart } = useCartStore()
-  
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+
+  const cardBg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.600")
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
     }).format(price)
   }
 
@@ -57,8 +57,8 @@ const CartSummary = () => {
 
           <HStack justify="space-between">
             <Text>Envío</Text>
-            <Text color={shipping === 0 ? 'green.500' : 'gray.600'}>
-              {shipping === 0 ? 'GRATIS' : formatPrice(shipping)}
+            <Text color={shipping === 0 ? "green.500" : "gray.600"}>
+              {shipping === 0 ? "GRATIS" : formatPrice(shipping)}
             </Text>
           </HStack>
 
@@ -98,12 +98,7 @@ const CartSummary = () => {
             Proceder al Checkout
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            w="100%"
-            onClick={clearCart}
-          >
+          <Button variant="outline" size="sm" w="100%" onClick={clearCart}>
             Vaciar Carrito
           </Button>
         </VStack>

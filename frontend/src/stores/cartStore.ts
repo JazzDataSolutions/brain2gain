@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand"
+import { persist } from "zustand/middleware"
 
 export interface CartItem {
   id: string
@@ -27,7 +27,6 @@ export interface CartActions {
   setError: (error: string | null) => void
 }
 
-
 export const useCartStore = create<CartState & CartActions>()(
   persist(
     (set, get) => ({
@@ -40,19 +39,19 @@ export const useCartStore = create<CartState & CartActions>()(
       addItem: (item: CartItem) => {
         set((state) => {
           const existingItemIndex = state.items.findIndex(
-            existingItem => existingItem.id === item.id
+            (existingItem) => existingItem.id === item.id,
           )
 
           let newItems: CartItem[]
-          
+
           if (existingItemIndex >= 0) {
             newItems = state.items.map((existingItem, index) =>
               index === existingItemIndex
                 ? {
                     ...existingItem,
-                    quantity: existingItem.quantity + item.quantity
+                    quantity: existingItem.quantity + item.quantity,
                   }
-                : existingItem
+                : existingItem,
             )
           } else {
             newItems = [...state.items, item]
@@ -60,7 +59,7 @@ export const useCartStore = create<CartState & CartActions>()(
 
           return {
             ...state,
-            items: newItems
+            items: newItems,
           }
         })
       },
@@ -68,7 +67,7 @@ export const useCartStore = create<CartState & CartActions>()(
       removeItem: (itemId: string) => {
         set((state) => ({
           ...state,
-          items: state.items.filter(item => item.id !== itemId)
+          items: state.items.filter((item) => item.id !== itemId),
         }))
       },
 
@@ -80,24 +79,25 @@ export const useCartStore = create<CartState & CartActions>()(
 
         set((state) => ({
           ...state,
-          items: state.items.map(item =>
-            item.id === itemId
-              ? { ...item, quantity }
-              : item
-          )
+          items: state.items.map((item) =>
+            item.id === itemId ? { ...item, quantity } : item,
+          ),
         }))
       },
 
       clearCart: () => {
         set({
           items: [],
-          error: null
+          error: null,
         })
       },
 
       getTotalPrice: () => {
         const state = get()
-        return state.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+        return state.items.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0,
+        )
       },
 
       getTotalItems: () => {
@@ -111,13 +111,13 @@ export const useCartStore = create<CartState & CartActions>()(
 
       setError: (error: string | null) => {
         set({ error })
-      }
+      },
     }),
     {
-      name: 'brain2gain-cart',
+      name: "brain2gain-cart",
       partialize: (state) => ({
-        items: state.items
-      })
-    }
-  )
+        items: state.items,
+      }),
+    },
+  ),
 )

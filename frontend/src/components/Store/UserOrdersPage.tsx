@@ -1,46 +1,52 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Badge,
   Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
-  useColorModeValue,
-  Badge,
+  Center,
+  Container,
   Divider,
+  Flex,
   Grid,
   GridItem,
+  HStack,
+  Heading,
   Icon,
-  Alert,
-  AlertIcon,
-  AlertDescription,
-  Spinner,
-  Center,
-  Flex,
-  Select,
   Input,
   InputGroup,
   InputLeftElement,
-} from '@chakra-ui/react'
-import { FiCalendar, FiPackage, FiEye, FiSearch, FiFilter } from 'react-icons/fi'
-import { useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import orderService, { type Order } from '../../services/orderService'
+  Select,
+  Spinner,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { useNavigate } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import {
+  FiCalendar,
+  FiEye,
+  FiFilter,
+  FiPackage,
+  FiSearch,
+} from "react-icons/fi"
+import orderService, { type Order } from "../../services/orderService"
 
 interface OrderFilters {
   status: string
   search: string
-  sortBy: 'created_at' | 'total_amount' | 'status'
-  sortOrder: 'asc' | 'desc'
+  sortBy: "created_at" | "total_amount" | "status"
+  sortOrder: "asc" | "desc"
 }
 
 const UserOrdersPage = () => {
   const navigate = useNavigate()
-  const cardBg = useColorModeValue('white', 'gray.800')
+  const cardBg = useColorModeValue("white", "gray.800")
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -51,10 +57,10 @@ const UserOrdersPage = () => {
     totalPages: 0,
   })
   const [filters, setFilters] = useState<OrderFilters>({
-    status: '',
-    search: '',
-    sortBy: 'created_at',
-    sortOrder: 'desc',
+    status: "",
+    search: "",
+    sortBy: "created_at",
+    sortOrder: "desc",
   })
 
   const fetchOrders = async () => {
@@ -64,43 +70,54 @@ const UserOrdersPage = () => {
       const result = await orderService.getMyOrders(
         pagination.page,
         pagination.pageSize,
-        statusFilter
+        statusFilter,
       )
-      
+
       // Client-side filtering and sorting if needed
       let filteredOrders = result.orders
-      
+
       if (filters.search) {
-        filteredOrders = filteredOrders.filter(order =>
-          order.order_id.toLowerCase().includes(filters.search.toLowerCase()) ||
-          order.items.some(item => 
-            item.product_name.toLowerCase().includes(filters.search.toLowerCase())
-          )
+        filteredOrders = filteredOrders.filter(
+          (order) =>
+            order.order_id
+              .toLowerCase()
+              .includes(filters.search.toLowerCase()) ||
+            order.items.some((item) =>
+              item.product_name
+                .toLowerCase()
+                .includes(filters.search.toLowerCase()),
+            ),
         )
       }
-      
+
       // Sort orders
       filteredOrders.sort((a, b) => {
-        const multiplier = filters.sortOrder === 'asc' ? 1 : -1
-        if (filters.sortBy === 'created_at') {
-          return multiplier * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-        } else if (filters.sortBy === 'total_amount') {
+        const multiplier = filters.sortOrder === "asc" ? 1 : -1
+        if (filters.sortBy === "created_at") {
+          return (
+            multiplier *
+            (new Date(a.created_at).getTime() -
+              new Date(b.created_at).getTime())
+          )
+        }
+        if (filters.sortBy === "total_amount") {
           return multiplier * (a.total_amount - b.total_amount)
-        } else if (filters.sortBy === 'status') {
+        }
+        if (filters.sortBy === "status") {
           return multiplier * a.status.localeCompare(b.status)
         }
         return 0
       })
-      
+
       setOrders(filteredOrders)
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         total: result.total,
         totalPages: result.total_pages,
       }))
     } catch (err) {
-      console.error('Error fetching orders:', err)
-      setError('No se pudieron cargar los pedidos')
+      console.error("Error fetching orders:", err)
+      setError("No se pudieron cargar los pedidos")
     } finally {
       setLoading(false)
     }
@@ -112,37 +129,37 @@ const UserOrdersPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 'green'
-      case 'pending':
-        return 'yellow'
-      case 'processing':
-        return 'blue'
-      case 'shipped':
-        return 'purple'
-      case 'delivered':
-        return 'green'
-      case 'cancelled':
-        return 'red'
+      case "confirmed":
+        return "green"
+      case "pending":
+        return "yellow"
+      case "processing":
+        return "blue"
+      case "shipped":
+        return "purple"
+      case "delivered":
+        return "green"
+      case "cancelled":
+        return "red"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 'Confirmado'
-      case 'pending':
-        return 'Pendiente'
-      case 'processing':
-        return 'Procesando'
-      case 'shipped':
-        return 'Enviado'
-      case 'delivered':
-        return 'Entregado'
-      case 'cancelled':
-        return 'Cancelado'
+      case "confirmed":
+        return "Confirmado"
+      case "pending":
+        return "Pendiente"
+      case "processing":
+        return "Procesando"
+      case "shipped":
+        return "Enviado"
+      case "delivered":
+        return "Entregado"
+      case "cancelled":
+        return "Cancelado"
       default:
         return status
     }
@@ -153,7 +170,7 @@ const UserOrdersPage = () => {
   }
 
   const handlePageChange = (newPage: number) => {
-    setPagination(prev => ({ ...prev, page: newPage }))
+    setPagination((prev) => ({ ...prev, page: newPage }))
   }
 
   if (loading && orders.length === 0) {
@@ -188,9 +205,7 @@ const UserOrdersPage = () => {
           <Heading size="xl" mb={2}>
             Mis Pedidos
           </Heading>
-          <Text color="gray.600">
-            Gestiona y rastrea tus pedidos
-          </Text>
+          <Text color="gray.600">Gestiona y rastrea tus pedidos</Text>
         </Box>
 
         {/* Filters */}
@@ -199,7 +214,14 @@ const UserOrdersPage = () => {
             <Heading size="md">Filtros y Búsqueda</Heading>
           </CardHeader>
           <CardBody>
-            <Grid templateColumns={{ base: '1fr', md: '1fr 1fr', lg: '2fr 1fr 1fr 1fr' }} gap={4}>
+            <Grid
+              templateColumns={{
+                base: "1fr",
+                md: "1fr 1fr",
+                lg: "2fr 1fr 1fr 1fr",
+              }}
+              gap={4}
+            >
               <GridItem>
                 <InputGroup>
                   <InputLeftElement>
@@ -208,17 +230,24 @@ const UserOrdersPage = () => {
                   <Input
                     placeholder="Buscar por ID de pedido o producto..."
                     value={filters.search}
-                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }))
+                    }
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </InputGroup>
               </GridItem>
-              
+
               <GridItem>
                 <Select
                   placeholder="Todos los estados"
                   value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({ ...prev, status: e.target.value }))
+                  }
                 >
                   <option value="PENDING">Pendiente</option>
                   <option value="CONFIRMED">Confirmado</option>
@@ -228,35 +257,39 @@ const UserOrdersPage = () => {
                   <option value="CANCELLED">Cancelado</option>
                 </Select>
               </GridItem>
-              
+
               <GridItem>
                 <Select
                   value={filters.sortBy}
-                  onChange={(e) => setFilters(prev => ({ 
-                    ...prev, 
-                    sortBy: e.target.value as OrderFilters['sortBy']
-                  }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      sortBy: e.target.value as OrderFilters["sortBy"],
+                    }))
+                  }
                 >
                   <option value="created_at">Fecha</option>
                   <option value="total_amount">Total</option>
                   <option value="status">Estado</option>
                 </Select>
               </GridItem>
-              
+
               <GridItem>
                 <Select
                   value={filters.sortOrder}
-                  onChange={(e) => setFilters(prev => ({ 
-                    ...prev, 
-                    sortOrder: e.target.value as OrderFilters['sortOrder']
-                  }))}
+                  onChange={(e) =>
+                    setFilters((prev) => ({
+                      ...prev,
+                      sortOrder: e.target.value as OrderFilters["sortOrder"],
+                    }))
+                  }
                 >
                   <option value="desc">Descendente</option>
                   <option value="asc">Ascendente</option>
                 </Select>
               </GridItem>
             </Grid>
-            
+
             <HStack mt={4}>
               <Button
                 leftIcon={<Icon as={FiSearch} />}
@@ -270,10 +303,10 @@ const UserOrdersPage = () => {
                 variant="outline"
                 onClick={() => {
                   setFilters({
-                    status: '',
-                    search: '',
-                    sortBy: 'created_at',
-                    sortOrder: 'desc',
+                    status: "",
+                    search: "",
+                    sortBy: "created_at",
+                    sortOrder: "desc",
                   })
                   fetchOrders()
                 }}
@@ -297,7 +330,7 @@ const UserOrdersPage = () => {
               </Text>
               <Button
                 colorScheme="blue"
-                onClick={() => navigate({ to: '/store/products' })}
+                onClick={() => navigate({ to: "/store/products" })}
               >
                 Explorar Productos
               </Button>
@@ -308,7 +341,11 @@ const UserOrdersPage = () => {
             {orders.map((order) => (
               <Card key={order.order_id} bg={cardBg}>
                 <CardBody>
-                  <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr 1fr 1fr' }} gap={4} alignItems="center">
+                  <Grid
+                    templateColumns={{ base: "1fr", lg: "2fr 1fr 1fr 1fr" }}
+                    gap={4}
+                    alignItems="center"
+                  >
                     {/* Order Info */}
                     <GridItem>
                       <VStack align="start" spacing={2}>
@@ -324,11 +361,14 @@ const UserOrdersPage = () => {
                           <HStack>
                             <Icon as={FiCalendar} />
                             <Text>
-                              {new Date(order.created_at).toLocaleDateString('es-MX', {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric'
-                              })}
+                              {new Date(order.created_at).toLocaleDateString(
+                                "es-MX",
+                                {
+                                  year: "numeric",
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
                             </Text>
                           </HStack>
                           <HStack>
@@ -337,7 +377,9 @@ const UserOrdersPage = () => {
                           </HStack>
                         </HStack>
                         <Text fontSize="sm" color="gray.500" noOfLines={1}>
-                          {order.items.map(item => item.product_name).join(', ')}
+                          {order.items
+                            .map((item) => item.product_name)
+                            .join(", ")}
                         </Text>
                       </VStack>
                     </GridItem>
@@ -345,12 +387,18 @@ const UserOrdersPage = () => {
                     {/* Payment Status */}
                     <GridItem>
                       <VStack align="start" spacing={1}>
-                        <Text fontSize="sm" fontWeight="medium">Pago</Text>
-                        <Badge 
+                        <Text fontSize="sm" fontWeight="medium">
+                          Pago
+                        </Text>
+                        <Badge
                           colorScheme={
-                            order.payment_status === 'CAPTURED' ? 'green' :
-                            order.payment_status === 'PENDING' ? 'yellow' :
-                            order.payment_status === 'FAILED' ? 'red' : 'gray'
+                            order.payment_status === "CAPTURED"
+                              ? "green"
+                              : order.payment_status === "PENDING"
+                                ? "yellow"
+                                : order.payment_status === "FAILED"
+                                  ? "red"
+                                  : "gray"
                           }
                         >
                           {order.payment_status}
@@ -361,7 +409,9 @@ const UserOrdersPage = () => {
                     {/* Total */}
                     <GridItem>
                       <VStack align="start" spacing={1}>
-                        <Text fontSize="sm" fontWeight="medium">Total</Text>
+                        <Text fontSize="sm" fontWeight="medium">
+                          Total
+                        </Text>
                         <Text fontSize="lg" fontWeight="bold" color="blue.500">
                           ${order.total_amount.toFixed(2)}
                         </Text>
@@ -370,28 +420,37 @@ const UserOrdersPage = () => {
 
                     {/* Actions */}
                     <GridItem>
-                      <HStack spacing={2} justify={{ base: 'start', lg: 'end' }}>
+                      <HStack
+                        spacing={2}
+                        justify={{ base: "start", lg: "end" }}
+                      >
                         <Button
                           size="sm"
                           leftIcon={<Icon as={FiEye} />}
-                          onClick={() => navigate({ 
-                            to: '/store/orders/$orderId', 
-                            params: { orderId: order.order_id }
-                          })}
+                          onClick={() =>
+                            navigate({
+                              to: "/store/orders/$orderId",
+                              params: { orderId: order.order_id },
+                            })
+                          }
                         >
                           Ver Detalles
                         </Button>
-                        {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+                        {(order.status === "PENDING" ||
+                          order.status === "CONFIRMED") && (
                           <Button
                             size="sm"
                             variant="outline"
                             colorScheme="red"
                             onClick={async () => {
                               try {
-                                await orderService.cancelOrder(order.order_id, 'Cancelado por el usuario')
+                                await orderService.cancelOrder(
+                                  order.order_id,
+                                  "Cancelado por el usuario",
+                                )
                                 fetchOrders()
                               } catch (error) {
-                                console.error('Error canceling order:', error)
+                                console.error("Error canceling order:", error)
                               }
                             }}
                           >
@@ -423,20 +482,27 @@ const UserOrdersPage = () => {
                   >
                     Anterior
                   </Button>
-                  {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                    const page = i + 1
-                    return (
-                      <Button
-                        key={page}
-                        size="sm"
-                        variant={pagination.page === page ? 'solid' : 'outline'}
-                        colorScheme={pagination.page === page ? 'blue' : 'gray'}
-                        onClick={() => handlePageChange(page)}
-                      >
-                        {page}
-                      </Button>
-                    )
-                  })}
+                  {Array.from(
+                    { length: Math.min(5, pagination.totalPages) },
+                    (_, i) => {
+                      const page = i + 1
+                      return (
+                        <Button
+                          key={page}
+                          size="sm"
+                          variant={
+                            pagination.page === page ? "solid" : "outline"
+                          }
+                          colorScheme={
+                            pagination.page === page ? "blue" : "gray"
+                          }
+                          onClick={() => handlePageChange(page)}
+                        >
+                          {page}
+                        </Button>
+                      )
+                    },
+                  )}
                   <Button
                     size="sm"
                     isDisabled={pagination.page === pagination.totalPages}

@@ -1,7 +1,7 @@
 // Dashboard.tsx
 export interface DashboardProps {
-  userName: string;
-  notifications: number;
+  userName: string
+  notifications: number
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ userName, notifications }) => {
@@ -10,8 +10,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userName, notifications }) => {
       <h1>Bienvenido, {userName}</h1>
       <p>Tienes {notifications} notificaciones</p>
     </div>
-  );
-};
+  )
+}
 
-export default Dashboard;
-
+export default Dashboard

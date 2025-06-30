@@ -1,22 +1,29 @@
-import React, { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Box, 
-  VStack, 
-  HStack, 
-  Text, 
-  Button, 
+import {
+  Badge,
+  Box,
+  Button,
+  Divider,
+  HStack,
   IconButton,
   Image,
-  Divider,
-  Badge,
-  useColorModeValue,
   Portal,
-  useDisclosure
-} from '@chakra-ui/react'
-import { FiX, FiShoppingCart, FiPlus, FiMinus, FiArrowRight } from 'react-icons/fi'
-import { useCartStore } from '../../stores/cartStore'
-import { useNavigate } from '@tanstack/react-router'
+  Text,
+  VStack,
+  useColorModeValue,
+  useDisclosure,
+} from "@chakra-ui/react"
+import { useNavigate } from "@tanstack/react-router"
+import { AnimatePresence, motion } from "framer-motion"
+import type React from "react"
+import { useState } from "react"
+import {
+  FiArrowRight,
+  FiMinus,
+  FiPlus,
+  FiShoppingCart,
+  FiX,
+} from "react-icons/fi"
+import { useCartStore } from "../../stores/cartStore"
 
 interface QuickCartProps {
   isOpen: boolean
@@ -25,30 +32,34 @@ interface QuickCartProps {
 
 const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate()
-  const { items, updateQuantity, removeItem, getTotalPrice, getTotalItems } = useCartStore()
-  
+  const { items, updateQuantity, removeItem, getTotalPrice, getTotalItems } =
+    useCartStore()
+
   // Theme colors
-  const bgColor = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
-  const shadowColor = useColorModeValue('rgba(0, 0, 0, 0.1)', 'rgba(255, 255, 255, 0.1)')
+  const bgColor = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.600")
+  const shadowColor = useColorModeValue(
+    "rgba(0, 0, 0, 0.1)",
+    "rgba(255, 255, 255, 0.1)",
+  )
 
   const total = getTotalPrice()
   const totalItems = getTotalItems()
 
   const handleCheckout = () => {
     onClose()
-    navigate({ to: '/store/checkout' })
+    navigate({ to: "/store/checkout" })
   }
 
   const handleViewCart = () => {
     onClose()
-    navigate({ to: '/store/cart' })
+    navigate({ to: "/store/cart" })
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
       minimumFractionDigits: 0,
     }).format(price)
   }
@@ -65,14 +76,14 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
               exit={{ opacity: 0 }}
               onClick={onClose}
               style={{
-                position: 'fixed',
+                position: "fixed",
                 top: 0,
                 left: 0,
                 right: 0,
                 bottom: 0,
-                backgroundColor: 'rgba(0, 0, 0, 0.4)',
+                backgroundColor: "rgba(0, 0, 0, 0.4)",
                 zIndex: 1000,
-                backdropFilter: 'blur(4px)'
+                backdropFilter: "blur(4px)",
               }}
             />
 
@@ -81,23 +92,23 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
               initial={{ x: 400, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 400, opacity: 0 }}
-              transition={{ 
-                type: 'spring', 
-                stiffness: 300, 
-                damping: 30 
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
               }}
               style={{
-                position: 'fixed',
-                top: '80px',
-                right: '20px',
-                width: '400px',
-                maxHeight: 'calc(100vh - 120px)',
+                position: "fixed",
+                top: "80px",
+                right: "20px",
+                width: "400px",
+                maxHeight: "calc(100vh - 120px)",
                 zIndex: 1001,
                 backgroundColor: bgColor,
-                borderRadius: '12px',
+                borderRadius: "12px",
                 boxShadow: `0 20px 40px ${shadowColor}`,
                 border: `1px solid ${borderColor}`,
-                overflow: 'hidden'
+                overflow: "hidden",
               }}
             >
               <Box p={6}>
@@ -129,14 +140,12 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                     <Box opacity={0.5}>
                       <FiShoppingCart size={48} />
                     </Box>
-                    <Text color="gray.500">
-                      Tu carrito está vacío
-                    </Text>
+                    <Text color="gray.500">Tu carrito está vacío</Text>
                     <Button
                       variant="outline"
                       onClick={() => {
                         onClose()
-                        navigate({ to: '/store/products' })
+                        navigate({ to: "/store/products" })
                       }}
                     >
                       Explorar Productos
@@ -150,15 +159,15 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                       maxH="400px"
                       overflowY="auto"
                       sx={{
-                        '&::-webkit-scrollbar': {
-                          width: '4px',
+                        "&::-webkit-scrollbar": {
+                          width: "4px",
                         },
-                        '&::-webkit-scrollbar-track': {
-                          bg: 'transparent',
+                        "&::-webkit-scrollbar-track": {
+                          bg: "transparent",
                         },
-                        '&::-webkit-scrollbar-thumb': {
-                          bg: 'gray.300',
-                          borderRadius: '2px',
+                        "&::-webkit-scrollbar-thumb": {
+                          bg: "gray.300",
+                          borderRadius: "2px",
                         },
                       }}
                     >
@@ -169,14 +178,14 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -20 }}
-                          style={{ width: '100%' }}
+                          style={{ width: "100%" }}
                         >
                           <Box
                             p={3}
                             borderRadius="lg"
                             border="1px solid"
                             borderColor={borderColor}
-                            bg={useColorModeValue('gray.50', 'gray.700')}
+                            bg={useColorModeValue("gray.50", "gray.700")}
                           >
                             <HStack spacing={3}>
                               {/* Product Image */}
@@ -204,10 +213,18 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
 
                               {/* Product Info */}
                               <VStack flex={1} align="start" spacing={1}>
-                                <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
+                                <Text
+                                  fontSize="sm"
+                                  fontWeight="medium"
+                                  noOfLines={2}
+                                >
                                   {item.name}
                                 </Text>
-                                <Text fontSize="sm" color="brand.500" fontWeight="bold">
+                                <Text
+                                  fontSize="sm"
+                                  color="brand.500"
+                                  fontWeight="bold"
+                                >
                                   {formatPrice(item.price)}
                                 </Text>
                               </VStack>
@@ -220,7 +237,9 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                                     icon={<FiMinus />}
                                     size="xs"
                                     variant="outline"
-                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                    onClick={() =>
+                                      updateQuantity(item.id, item.quantity - 1)
+                                    }
                                     isDisabled={item.quantity <= 1}
                                   />
                                   <Text
@@ -236,7 +255,9 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                                     icon={<FiPlus />}
                                     size="xs"
                                     variant="outline"
-                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                    onClick={() =>
+                                      updateQuantity(item.id, item.quantity + 1)
+                                    }
                                   />
                                 </HStack>
                                 <Button
@@ -275,11 +296,11 @@ const QuickCart: React.FC<QuickCartProps> = ({ isOpen, onClose }) => {
                         rightIcon={<FiArrowRight />}
                         onClick={handleCheckout}
                         bg="brand.500"
-                        _hover={{ bg: 'brand.600' }}
+                        _hover={{ bg: "brand.600" }}
                       >
                         Finalizar Compra
                       </Button>
-                      
+
                       <Button
                         w="full"
                         variant="outline"
@@ -305,11 +326,11 @@ export default QuickCart
 // Hook personalizado para manejar el estado del QuickCart
 export const useQuickCart = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
-  
+
   return {
     isOpen,
     openCart: onOpen,
     closeCart: onClose,
-    toggleCart: () => isOpen ? onClose() : onOpen()
+    toggleCart: () => (isOpen ? onClose() : onOpen()),
   }
 }

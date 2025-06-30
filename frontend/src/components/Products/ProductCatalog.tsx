@@ -1,52 +1,52 @@
+import { SearchIcon } from "@chakra-ui/icons"
 import {
+  Alert,
+  AlertIcon,
   Box,
   Container,
+  HStack,
   Heading,
-  SimpleGrid,
   Input,
   InputGroup,
   InputLeftElement,
   Select,
-  HStack,
-  VStack,
+  SimpleGrid,
   Spinner,
-  Alert,
-  AlertIcon,
   Text,
-} from '@chakra-ui/react'
-import { SearchIcon } from '@chakra-ui/icons'
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+  VStack,
+} from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query"
+import { useState } from "react"
 
-import ProductCard from './ProductCard'
-import { Product, ProductsService } from '../../services/ProductsService'
+import { type Product, ProductsService } from "../../services/ProductsService"
+import ProductCard from "./ProductCard"
 
 const ProductCatalog = () => {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('name')
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortBy, setSortBy] = useState("name")
 
-  const { 
-    data: products = { data: [], count: 0 }, 
-    isLoading, 
-    error 
+  const {
+    data: products = { data: [], count: 0 },
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ['products'],
+    queryKey: ["products"],
     queryFn: () => ProductsService.readProducts(),
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
   const filteredProducts = products.data
-    .filter((product: Product) =>
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter(
+      (product: Product) =>
+        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.sku.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a: Product, b: Product) => {
       switch (sortBy) {
-        case 'price-low':
+        case "price-low":
           return a.price - b.price
-        case 'price-high':
+        case "price-high":
           return b.price - a.price
-        case 'name':
         default:
           return a.name.localeCompare(b.name)
       }

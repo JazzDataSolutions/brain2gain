@@ -1,4 +1,23 @@
-<!-- FILE: /tmp/tmpazii_gy_.mjml -->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email Preview: Order Confirmation - #NIT-001</title>
+    <style>
+        .email-info { background: #f0f0f0; padding: 10px; margin-bottom: 20px; border-left: 4px solid #007bff; }
+        .email-content { border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="email-info">
+        <h3>📧 Email Preview</h3>
+        <p><strong>To:</strong> integration.test@brain2gain.com</p>
+        <p><strong>Subject:</strong> Order Confirmation - #NIT-001</p>
+        <p><strong>Generated:</strong> 2025-06-30T13:30:13.064491</p>
+        <p><strong>Environment:</strong> testing</p>
+    </div>
+    <div class="email-content">
+        <!-- FILE: /tmp/tmpl9jmt4ck.mjml -->
 <!doctype html>
 <html lang="und" dir="auto" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 
@@ -89,7 +108,7 @@
 </head>
 
 <body style="word-spacing:normal;background-color:#f4f4f4;">
-  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your order has been confirmed! Order #12345</div>
+  <div style="display:none;font-size:1px;color:#ffffff;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">Your order has been confirmed! Order #NIT-001</div>
   <div style="background-color:#f4f4f4;" lang="und" dir="auto">
     <!-- Header Section -->
     <!--[if mso | IE]><table align="center" border="0" cellpadding="0" cellspacing="0" class="" role="presentation" style="width:600px;" width="600" bgcolor="#ffffff" ><tr><td style="line-height:0px;font-size:0px;mso-line-height-rule:exactly;"><![endif]-->
@@ -122,7 +141,7 @@
                     </tr>
                     <tr>
                       <td align="center" style="font-size:0px;padding:0 0 20px 0;word-break:break-word;">
-                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:18px;line-height:1.6;text-align:center;color:#333333;">Orden #12345</div>
+                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:18px;line-height:1.6;text-align:center;color:#333333;">Orden #NIT-001</div>
                       </td>
                     </tr>
                   </tbody>
@@ -148,7 +167,7 @@
                   <tbody>
                     <tr>
                       <td align="left" style="font-size:0px;padding:20px 0 10px 0;word-break:break-word;">
-                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:bold;line-height:1.6;text-align:left;color:#333333;">Hola John Doe,</div>
+                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:bold;line-height:1.6;text-align:left;color:#333333;">Hola Notification Integration Test,</div>
                       </td>
                     </tr>
                     <tr>
@@ -187,7 +206,7 @@
                         <table cellpadding="0" cellspacing="0" width="100%" border="0" style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:22px;table-layout:auto;width:100%;border:none;">
                           <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
                             <td style="padding: 10px 0; font-weight: bold;">Fecha:</td>
-                            <td style="padding: 10px 0;"></td>
+                            <td style="padding: 10px 0;">29 de Junio, 2025</td>
                           </tr>
                           <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
                             <td style="padding: 10px 0; font-weight: bold;">Estado:</td>
@@ -195,7 +214,7 @@
                           </tr>
                           <tr style="border-bottom: 1px solid #ecf0f1; padding: 15px 0;">
                             <td style="padding: 10px 0; font-weight: bold;">Método de Pago:</td>
-                            <td style="padding: 10px 0;"></td>
+                            <td style="padding: 10px 0;">Tarjeta de Crédito</td>
                           </tr>
                         </table>
                       </td>
@@ -226,6 +245,20 @@
                         <div style="font-family:Arial, Helvetica, sans-serif;font-size:18px;font-weight:bold;line-height:1.6;text-align:left;color:#333333;">Productos Ordenados</div>
                       </td>
                     </tr>
+                    <tr>
+                      <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
+                        <table cellpadding="0" cellspacing="0" width="100%" border="0" style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:22px;table-layout:auto;width:100%;border:none;">
+                          <tr style="border-bottom: 1px solid #ecf0f1;">
+                            <td style="padding: 15px 0; width: 60%;">
+                              <strong>Test Product</strong><br>
+                              <span style="color: #7f8c8d;">Cantidad: 1</span>
+                            </td>
+                            <td style="padding: 15px 0; text-align: right; font-weight: bold;"> $79.99 x 1 </td>
+                            <td style="padding: 15px 0; text-align: right; font-weight: bold;"> $79.99 </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -252,15 +285,15 @@
                         <table cellpadding="0" cellspacing="0" width="100%" border="0" style="color:#000000;font-family:Arial, Helvetica, sans-serif;font-size:13px;line-height:22px;table-layout:auto;width:100%;border:none;">
                           <tr>
                             <td style="padding: 10px 0; font-size: 16px;">Subtotal:</td>
-                            <td style="padding: 10px 0; text-align: right; font-size: 16px;">$</td>
+                            <td style="padding: 10px 0; text-align: right; font-size: 16px;">$79.99</td>
                           </tr>
                           <tr>
                             <td style="padding: 10px 0; font-size: 16px;">Envío:</td>
-                            <td style="padding: 10px 0; text-align: right; font-size: 16px;">$</td>
+                            <td style="padding: 10px 0; text-align: right; font-size: 16px;">$10.00</td>
                           </tr>
                           <tr style="border-top: 2px solid #e74c3c;">
                             <td style="padding: 15px 0; font-size: 20px; font-weight: bold; color: #e74c3c;">Total:</td>
-                            <td style="padding: 15px 0; text-align: right; font-size: 20px; font-weight: bold; color: #e74c3c;">$</td>
+                            <td style="padding: 15px 0; text-align: right; font-size: 20px; font-weight: bold; color: #e74c3c;">$89.99</td>
                           </tr>
                         </table>
                       </td>
@@ -293,7 +326,7 @@
                     </tr>
                     <tr>
                       <td align="left" style="font-size:0px;padding:10px 25px;word-break:break-word;">
-                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;text-align:left;color:#333333;">N/A<br> N/A<br> N/A, N/A N/A<br> N/A</div>
+                        <div style="font-family:Arial, Helvetica, sans-serif;font-size:16px;line-height:1.6;text-align:left;color:#333333;">Notification Integration Test<br> Test Street 123<br> Test City, TEST 12345<br> México</div>
                       </td>
                     </tr>
                   </tbody>
@@ -323,7 +356,7 @@
                           <tbody>
                             <tr>
                               <td align="center" bgcolor="#e74c3c" role="presentation" style="border:none;border-radius:5px;cursor:auto;mso-padding-alt:10px 25px;background:#e74c3c;" valign="middle">
-                                <p href="" style="display:inline-block;background:#e74c3c;color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:5px;"> Ver Estado de mi Orden </p>
+                                <a href="https://brain2gain.com/orders/NIT-001" style="display:inline-block;background:#e74c3c;color:#ffffff;font-family:Arial, Helvetica, sans-serif;font-size:16px;font-weight:bold;line-height:120%;margin:0;text-decoration:none;text-transform:none;padding:10px 25px;mso-padding-alt:0px;border-radius:5px;" target="_blank"> Ver Estado de mi Orden </a>
                               </td>
                             </tr>
                           </tbody>
@@ -378,3 +411,8 @@
 
 </html>
 
+
+    </div>
+</body>
+</html>
+                        

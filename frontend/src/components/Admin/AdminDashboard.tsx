@@ -1,158 +1,158 @@
 import {
+  Avatar,
+  Badge,
   Box,
+  Card,
+  CardBody,
+  CardHeader,
+  Flex,
+  HStack,
+  Heading,
+  Icon,
+  Progress,
   SimpleGrid,
   Stat,
+  StatArrow,
+  StatHelpText,
   StatLabel,
   StatNumber,
-  StatHelpText,
-  StatArrow,
-  Card,
-  CardHeader,
-  CardBody,
-  Heading,
-  Text,
-  Progress,
-  VStack,
-  HStack,
   Table,
-  Thead,
   Tbody,
-  Tr,
-  Th,
   Td,
-  Badge,
-  Avatar,
+  Text,
+  Th,
+  Thead,
+  Tr,
+  VStack,
   useColorModeValue,
-  Flex,
-  Icon,
-} from '@chakra-ui/react'
+} from "@chakra-ui/react"
 import {
+  FiAlertTriangle,
   FiDollarSign,
+  FiPackage,
   FiShoppingCart,
   FiUsers,
-  FiPackage,
-  FiAlertTriangle,
-} from 'react-icons/fi'
+} from "react-icons/fi"
 
 const AdminDashboard = () => {
-  const cardBg = useColorModeValue('white', 'gray.800')
-  
+  const cardBg = useColorModeValue("white", "gray.800")
+
   // Mock data - En el futuro se conectará con el backend
   const stats = [
     {
-      label: 'Ventas Totales',
-      value: '$12,426',
+      label: "Ventas Totales",
+      value: "$12,426",
       change: 12.5,
       icon: FiDollarSign,
-      color: 'green',
+      color: "green",
     },
     {
-      label: 'Pedidos',
-      value: '1,847',
+      label: "Pedidos",
+      value: "1,847",
       change: 8.2,
       icon: FiShoppingCart,
-      color: 'blue',
+      color: "blue",
     },
     {
-      label: 'Clientes',
-      value: '892',
+      label: "Clientes",
+      value: "892",
       change: 5.7,
       icon: FiUsers,
-      color: 'purple',
+      color: "purple",
     },
     {
-      label: 'Productos',
-      value: '156',
+      label: "Productos",
+      value: "156",
       change: -2.1,
       icon: FiPackage,
-      color: 'orange',
+      color: "orange",
     },
   ]
 
   const recentOrders = [
     {
-      id: '#1023',
-      customer: 'Juan Pérez',
-      email: 'juan@email.com',
+      id: "#1023",
+      customer: "Juan Pérez",
+      email: "juan@email.com",
       amount: 156.99,
-      status: 'completed',
-      date: '2024-06-10',
+      status: "completed",
+      date: "2024-06-10",
     },
     {
-      id: '#1022',
-      customer: 'María García',
-      email: 'maria@email.com',
-      amount: 89.50,
-      status: 'pending',
-      date: '2024-06-10',
+      id: "#1022",
+      customer: "María García",
+      email: "maria@email.com",
+      amount: 89.5,
+      status: "pending",
+      date: "2024-06-10",
     },
     {
-      id: '#1021',
-      customer: 'Carlos López',
-      email: 'carlos@email.com',
+      id: "#1021",
+      customer: "Carlos López",
+      email: "carlos@email.com",
       amount: 234.75,
-      status: 'processing',
-      date: '2024-06-09',
+      status: "processing",
+      date: "2024-06-09",
     },
     {
-      id: '#1020',
-      customer: 'Ana Martínez',
-      email: 'ana@email.com',
+      id: "#1020",
+      customer: "Ana Martínez",
+      email: "ana@email.com",
       amount: 67.25,
-      status: 'completed',
-      date: '2024-06-09',
+      status: "completed",
+      date: "2024-06-09",
     },
   ]
 
   const lowStockProducts = [
     {
-      name: 'Whey Protein Gold',
-      sku: 'WPG-001',
+      name: "Whey Protein Gold",
+      sku: "WPG-001",
       stock: 5,
       minStock: 20,
-      category: 'Proteínas',
+      category: "Proteínas",
     },
     {
-      name: 'Creatina Monohidrato',
-      sku: 'CRE-002',
+      name: "Creatina Monohidrato",
+      sku: "CRE-002",
       stock: 3,
       minStock: 15,
-      category: 'Creatina',
+      category: "Creatina",
     },
     {
-      name: 'Pre-Workout Extreme',
-      sku: 'PWO-003',
+      name: "Pre-Workout Extreme",
+      sku: "PWO-003",
       stock: 8,
       minStock: 25,
-      category: 'Pre-Workout',
+      category: "Pre-Workout",
     },
   ]
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'green'
-      case 'pending':
-        return 'yellow'
-      case 'processing':
-        return 'blue'
-      case 'cancelled':
-        return 'red'
+      case "completed":
+        return "green"
+      case "pending":
+        return "yellow"
+      case "processing":
+        return "blue"
+      case "cancelled":
+        return "red"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed':
-        return 'Completado'
-      case 'pending':
-        return 'Pendiente'
-      case 'processing':
-        return 'Procesando'
-      case 'cancelled':
-        return 'Cancelado'
+      case "completed":
+        return "Completado"
+      case "pending":
+        return "Pendiente"
+      case "processing":
+        return "Procesando"
+      case "cancelled":
+        return "Cancelado"
       default:
         return status
     }
@@ -187,17 +187,13 @@ const AdminDashboard = () => {
                       </StatNumber>
                       <StatHelpText mb={0}>
                         <StatArrow
-                          type={stat.change > 0 ? 'increase' : 'decrease'}
+                          type={stat.change > 0 ? "increase" : "decrease"}
                         />
                         {Math.abs(stat.change)}% vs mes anterior
                       </StatHelpText>
                     </Stat>
                   </Box>
-                  <Box
-                    bg={`${stat.color}.100`}
-                    p={3}
-                    rounded="lg"
-                  >
+                  <Box bg={`${stat.color}.100`} p={3} rounded="lg">
                     <Icon
                       as={stat.icon}
                       boxSize={6}
@@ -292,7 +288,14 @@ const AdminDashboard = () => {
             <CardBody pt={0}>
               <VStack spacing={4} align="stretch">
                 {lowStockProducts.map((product, index) => (
-                  <Box key={index} p={4} bg="red.50" rounded="lg" border="1px" borderColor="red.200">
+                  <Box
+                    key={index}
+                    p={4}
+                    bg="red.50"
+                    rounded="lg"
+                    border="1px"
+                    borderColor="red.200"
+                  >
                     <Flex justify="space-between" align="start" mb={2}>
                       <Box>
                         <Text fontSize="sm" fontWeight="medium">
@@ -328,7 +331,14 @@ const AdminDashboard = () => {
             <Heading size="md">Ventas de los Últimos 7 Días</Heading>
           </CardHeader>
           <CardBody>
-            <Box h="200px" bg="gray.50" rounded="lg" display="flex" alignItems="center" justifyContent="center">
+            <Box
+              h="200px"
+              bg="gray.50"
+              rounded="lg"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
               <Text color="gray.500">
                 📊 Aquí irá el gráfico de ventas (Chart.js/Recharts)
               </Text>

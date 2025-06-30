@@ -2,41 +2,41 @@
  * Unit tests for useCart custom hook.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useCartStore } from '../../../stores/cartStore'
+import { act, renderHook } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { useCartStore } from "../../../stores/cartStore"
 
 // Mock the cart store
-vi.mock('../../../stores/cartStore', () => ({
+vi.mock("../../../stores/cartStore", () => ({
   useCartStore: vi.fn(),
 }))
 
 // Mock product data
 const mockProduct = {
-  product_id: '1',
-  sku: 'WP-001',
-  name: 'Whey Protein Gold Standard',
-  description: '100% Whey Protein Isolate',
+  product_id: "1",
+  sku: "WP-001",
+  name: "Whey Protein Gold Standard",
+  description: "100% Whey Protein Isolate",
   unit_price: 45.99,
   stock_quantity: 100,
-  status: 'ACTIVE',
-  category: 'proteins',
-  brand: 'Optimum Nutrition',
+  status: "ACTIVE",
+  category: "proteins",
+  brand: "Optimum Nutrition",
 }
 
 const mockProduct2 = {
-  product_id: '2',
-  sku: 'CR-001',
-  name: 'Creatine Monohydrate',
-  description: 'Pure Creatine Monohydrate',
+  product_id: "2",
+  sku: "CR-001",
+  name: "Creatine Monohydrate",
+  description: "Pure Creatine Monohydrate",
   unit_price: 29.99,
   stock_quantity: 50,
-  status: 'ACTIVE',
-  category: 'creatine',
-  brand: 'MuscleTech',
+  status: "ACTIVE",
+  category: "creatine",
+  brand: "MuscleTech",
 }
 
-describe('useCart Hook', () => {
+describe("useCart Hook", () => {
   const mockAddToCart = vi.fn()
   const mockUpdateQuantity = vi.fn()
   const mockRemoveFromCart = vi.fn()
@@ -44,7 +44,7 @@ describe('useCart Hook', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Default mock implementation
     ;(useCartStore as any).mockReturnValue({
       items: [],
@@ -59,8 +59,8 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Cart State Management', () => {
-    it('should return empty cart initially', () => {
+  describe("Cart State Management", () => {
+    it("should return empty cart initially", () => {
       const { result } = renderHook(() => useCartStore())
 
       expect(result.current.items).toEqual([])
@@ -68,7 +68,7 @@ describe('useCart Hook', () => {
       expect(result.current.totalPrice).toBe(0)
     })
 
-    it('should return cart with items when items exist', () => {
+    it("should return cart with items when items exist", () => {
       const mockItems = [
         {
           product: mockProduct,
@@ -81,7 +81,6 @@ describe('useCart Hook', () => {
           subtotal: 29.99,
         },
       ]
-
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 3,
@@ -102,8 +101,8 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Adding Items to Cart', () => {
-    it('should call addToCart with correct parameters', () => {
+  describe("Adding Items to Cart", () => {
+    it("should call addToCart with correct parameters", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -113,7 +112,7 @@ describe('useCart Hook', () => {
       expect(mockAddToCart).toHaveBeenCalledWith(mockProduct, 2)
     })
 
-    it('should handle adding item with default quantity of 1', () => {
+    it("should handle adding item with default quantity of 1", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -123,7 +122,7 @@ describe('useCart Hook', () => {
       expect(mockAddToCart).toHaveBeenCalledWith(mockProduct)
     })
 
-    it('should handle adding multiple different items', () => {
+    it("should handle adding multiple different items", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -136,7 +135,7 @@ describe('useCart Hook', () => {
       expect(mockAddToCart).toHaveBeenNthCalledWith(2, mockProduct2, 3)
     })
 
-    it('should handle adding same item multiple times', () => {
+    it("should handle adding same item multiple times", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -150,8 +149,8 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Updating Item Quantities', () => {
-    it('should call updateQuantity with correct parameters', () => {
+  describe("Updating Item Quantities", () => {
+    it("should call updateQuantity with correct parameters", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -161,7 +160,7 @@ describe('useCart Hook', () => {
       expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.product_id, 5)
     })
 
-    it('should handle quantity increase', () => {
+    it("should handle quantity increase", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -171,7 +170,7 @@ describe('useCart Hook', () => {
       expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.product_id, 3)
     })
 
-    it('should handle quantity decrease', () => {
+    it("should handle quantity decrease", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -181,13 +180,12 @@ describe('useCart Hook', () => {
       expect(mockUpdateQuantity).toHaveBeenCalledWith(mockProduct.product_id, 1)
     })
 
-    it('should not allow negative quantities', () => {
+    it("should not allow negative quantities", () => {
       const mockUpdateQuantityWithValidation = vi.fn((productId, quantity) => {
         if (quantity < 1) {
-          throw new Error('Quantity must be at least 1')
+          throw new Error("Quantity must be at least 1")
         }
       })
-
       ;(useCartStore as any).mockReturnValue({
         items: [],
         totalItems: 0,
@@ -206,12 +204,12 @@ describe('useCart Hook', () => {
         act(() => {
           result.current.updateQuantity(mockProduct.product_id, -1)
         })
-      }).toThrow('Quantity must be at least 1')
+      }).toThrow("Quantity must be at least 1")
     })
   })
 
-  describe('Removing Items from Cart', () => {
-    it('should call removeFromCart with correct product ID', () => {
+  describe("Removing Items from Cart", () => {
+    it("should call removeFromCart with correct product ID", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -221,19 +219,19 @@ describe('useCart Hook', () => {
       expect(mockRemoveFromCart).toHaveBeenCalledWith(mockProduct.product_id)
     })
 
-    it('should handle removing non-existent item gracefully', () => {
+    it("should handle removing non-existent item gracefully", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
-        result.current.removeFromCart('non-existent-id')
+        result.current.removeFromCart("non-existent-id")
       })
 
-      expect(mockRemoveFromCart).toHaveBeenCalledWith('non-existent-id')
+      expect(mockRemoveFromCart).toHaveBeenCalledWith("non-existent-id")
     })
   })
 
-  describe('Clearing Cart', () => {
-    it('should call clearCart when clearing entire cart', () => {
+  describe("Clearing Cart", () => {
+    it("should call clearCart when clearing entire cart", () => {
       const { result } = renderHook(() => useCartStore())
 
       act(() => {
@@ -244,13 +242,12 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Cart Calculations', () => {
-    it('should calculate total items correctly', () => {
+  describe("Cart Calculations", () => {
+    it("should calculate total items correctly", () => {
       const mockItems = [
         { product: mockProduct, quantity: 2, subtotal: 91.98 },
         { product: mockProduct2, quantity: 3, subtotal: 89.97 },
       ]
-
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 5, // 2 + 3
@@ -268,12 +265,11 @@ describe('useCart Hook', () => {
       expect(result.current.totalItems).toBe(5)
     })
 
-    it('should calculate total price correctly', () => {
+    it("should calculate total price correctly", () => {
       const mockItems = [
         { product: mockProduct, quantity: 2, subtotal: 91.98 },
         { product: mockProduct2, quantity: 1, subtotal: 29.99 },
       ]
-
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 3,
@@ -291,7 +287,7 @@ describe('useCart Hook', () => {
       expect(result.current.totalPrice).toBe(121.97)
     })
 
-    it('should handle empty cart calculations', () => {
+    it("should handle empty cart calculations", () => {
       const { result } = renderHook(() => useCartStore())
 
       expect(result.current.totalItems).toBe(0)
@@ -299,8 +295,8 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Loading States', () => {
-    it('should handle loading state during cart operations', () => {
+  describe("Loading States", () => {
+    it("should handle loading state during cart operations", () => {
       ;(useCartStore as any).mockReturnValue({
         items: [],
         totalItems: 0,
@@ -318,7 +314,7 @@ describe('useCart Hook', () => {
       expect(result.current.isLoading).toBe(true)
     })
 
-    it('should handle completed state after cart operations', () => {
+    it("should handle completed state after cart operations", () => {
       ;(useCartStore as any).mockReturnValue({
         items: [{ product: mockProduct, quantity: 1, subtotal: 45.99 }],
         totalItems: 1,
@@ -337,10 +333,9 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Error Handling', () => {
-    it('should handle errors during cart operations', () => {
-      const mockError = 'Failed to add item to cart'
-
+  describe("Error Handling", () => {
+    it("should handle errors during cart operations", () => {
+      const mockError = "Failed to add item to cart"
       ;(useCartStore as any).mockReturnValue({
         items: [],
         totalItems: 0,
@@ -358,7 +353,7 @@ describe('useCart Hook', () => {
       expect(result.current.error).toBe(mockError)
     })
 
-    it('should clear error when operation succeeds', () => {
+    it("should clear error when operation succeeds", () => {
       // Start with error state
       ;(useCartStore as any).mockReturnValue({
         items: [],
@@ -369,12 +364,12 @@ describe('useCart Hook', () => {
         removeFromCart: mockRemoveFromCart,
         clearCart: mockClearCart,
         isLoading: false,
-        error: 'Previous error',
+        error: "Previous error",
       })
 
       const { result, rerender } = renderHook(() => useCartStore())
 
-      expect(result.current.error).toBe('Previous error')
+      expect(result.current.error).toBe("Previous error")
 
       // Update to success state
       ;(useCartStore as any).mockReturnValue({
@@ -395,11 +390,10 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Cart Persistence', () => {
-    it('should persist cart to localStorage on changes', () => {
-      const mockSetItem = vi.spyOn(Storage.prototype, 'setItem')
+  describe("Cart Persistence", () => {
+    it("should persist cart to localStorage on changes", () => {
+      const mockSetItem = vi.spyOn(Storage.prototype, "setItem")
       const mockItems = [{ product: mockProduct, quantity: 1, subtotal: 45.99 }]
-
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 1,
@@ -424,14 +418,13 @@ describe('useCart Hook', () => {
       mockSetItem.mockRestore()
     })
 
-    it('should restore cart from localStorage on initialization', () => {
-      const mockGetItem = vi.spyOn(Storage.prototype, 'getItem')
+    it("should restore cart from localStorage on initialization", () => {
+      const mockGetItem = vi.spyOn(Storage.prototype, "getItem")
       const persistedCart = JSON.stringify([
-        { product: mockProduct, quantity: 2, subtotal: 91.98 }
+        { product: mockProduct, quantity: 2, subtotal: 91.98 },
       ])
-      
-      mockGetItem.mockReturnValue(persistedCart)
 
+      mockGetItem.mockReturnValue(persistedCart)
       ;(useCartStore as any).mockReturnValue({
         items: [{ product: mockProduct, quantity: 2, subtotal: 91.98 }],
         totalItems: 2,
@@ -453,12 +446,9 @@ describe('useCart Hook', () => {
     })
   })
 
-  describe('Cart Item Utilities', () => {
-    it('should provide helper to check if item is in cart', () => {
-      const mockItems = [
-        { product: mockProduct, quantity: 1, subtotal: 45.99 }
-      ]
-
+  describe("Cart Item Utilities", () => {
+    it("should provide helper to check if item is in cart", () => {
+      const mockItems = [{ product: mockProduct, quantity: 1, subtotal: 45.99 }]
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 1,
@@ -475,14 +465,13 @@ describe('useCart Hook', () => {
       const { result } = renderHook(() => useCartStore())
 
       expect(result.current.isInCart(mockProduct.product_id)).toBe(true)
-      expect(result.current.isInCart('non-existent-id')).toBe(false)
+      expect(result.current.isInCart("non-existent-id")).toBe(false)
     })
 
-    it('should provide helper to get item quantity in cart', () => {
+    it("should provide helper to get item quantity in cart", () => {
       const mockItems = [
-        { product: mockProduct, quantity: 3, subtotal: 137.97 }
+        { product: mockProduct, quantity: 3, subtotal: 137.97 },
       ]
-
       ;(useCartStore as any).mockReturnValue({
         items: mockItems,
         totalItems: 3,
@@ -493,15 +482,15 @@ describe('useCart Hook', () => {
         clearCart: mockClearCart,
         isLoading: false,
         error: null,
-        getItemQuantity: vi.fn((productId) => 
-          productId === mockProduct.product_id ? 3 : 0
+        getItemQuantity: vi.fn((productId) =>
+          productId === mockProduct.product_id ? 3 : 0,
         ),
       })
 
       const { result } = renderHook(() => useCartStore())
 
       expect(result.current.getItemQuantity(mockProduct.product_id)).toBe(3)
-      expect(result.current.getItemQuantity('non-existent-id')).toBe(0)
+      expect(result.current.getItemQuantity("non-existent-id")).toBe(0)
     })
   })
 })

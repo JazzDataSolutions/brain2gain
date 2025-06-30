@@ -1,34 +1,34 @@
 import {
+  Badge,
   Box,
-  VStack,
-  HStack,
-  Text,
+  Button,
   Card,
   CardBody,
-  Button,
-  useColorModeValue,
-  Badge,
+  HStack,
   Icon,
   Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
   ModalBody,
+  ModalCloseButton,
+  ModalContent,
   ModalFooter,
-  useDisclosure,
-  RadioGroup,
+  ModalHeader,
+  ModalOverlay,
   Radio,
-} from '@chakra-ui/react'
-import { FiPlus, FiEdit2, FiMapPin, FiHome, FiBriefcase } from 'react-icons/fi'
-import { useState, useEffect } from 'react'
-import { type ShippingInformation } from './ShippingInformationStep'
+  RadioGroup,
+  Text,
+  VStack,
+  useColorModeValue,
+  useDisclosure,
+} from "@chakra-ui/react"
+import { useEffect, useState } from "react"
+import { FiBriefcase, FiEdit2, FiHome, FiMapPin, FiPlus } from "react-icons/fi"
+import type { ShippingInformation } from "./ShippingInformationStep"
 
 interface SavedAddress extends ShippingInformation {
   id: string
   name: string
   isDefault: boolean
-  type: 'home' | 'work' | 'other'
+  type: "home" | "work" | "other"
 }
 
 interface AddressBookProps {
@@ -36,55 +36,58 @@ interface AddressBookProps {
   selectedAddressId?: string
 }
 
-const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) => {
-  const cardBg = useColorModeValue('white', 'gray.800')
+const AddressBook = ({
+  onSelectAddress,
+  selectedAddressId,
+}: AddressBookProps) => {
+  const cardBg = useColorModeValue("white", "gray.800")
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([])
-  const [selectedId, setSelectedId] = useState<string>(selectedAddressId || '')
+  const [selectedId, setSelectedId] = useState<string>(selectedAddressId || "")
 
   // Mock data - in real app, this would come from user profile API
   useEffect(() => {
     const mockAddresses: SavedAddress[] = [
       {
-        id: '1',
-        name: 'Casa',
-        type: 'home',
+        id: "1",
+        name: "Casa",
+        type: "home",
         isDefault: true,
-        firstName: 'Juan',
-        lastName: 'Pérez',
-        addressLine1: 'Av. Insurgentes Sur 123',
-        addressLine2: 'Col. Roma Norte',
-        city: 'Ciudad de México',
-        state: 'Ciudad de México',
-        postalCode: '06700',
-        country: 'MX',
-        phone: '+52 55 1234 5678',
+        firstName: "Juan",
+        lastName: "Pérez",
+        addressLine1: "Av. Insurgentes Sur 123",
+        addressLine2: "Col. Roma Norte",
+        city: "Ciudad de México",
+        state: "Ciudad de México",
+        postalCode: "06700",
+        country: "MX",
+        phone: "+52 55 1234 5678",
         isBusinessAddress: false,
         sameAsBilling: true,
       },
       {
-        id: '2',
-        name: 'Oficina',
-        type: 'work',
+        id: "2",
+        name: "Oficina",
+        type: "work",
         isDefault: false,
-        firstName: 'Juan',
-        lastName: 'Pérez',
-        company: 'Mi Empresa S.A.',
-        addressLine1: 'Paseo de la Reforma 456',
-        addressLine2: 'Piso 10, Oficina 1001',
-        city: 'Ciudad de México',
-        state: 'Ciudad de México',
-        postalCode: '11000',
-        country: 'MX',
-        phone: '+52 55 9876 5432',
+        firstName: "Juan",
+        lastName: "Pérez",
+        company: "Mi Empresa S.A.",
+        addressLine1: "Paseo de la Reforma 456",
+        addressLine2: "Piso 10, Oficina 1001",
+        city: "Ciudad de México",
+        state: "Ciudad de México",
+        postalCode: "11000",
+        country: "MX",
+        phone: "+52 55 9876 5432",
         isBusinessAddress: true,
         sameAsBilling: false,
       },
     ]
     setSavedAddresses(mockAddresses)
-    
+
     // Set default selection
-    const defaultAddress = mockAddresses.find(addr => addr.isDefault)
+    const defaultAddress = mockAddresses.find((addr) => addr.isDefault)
     if (defaultAddress && !selectedAddressId) {
       setSelectedId(defaultAddress.id)
       onSelectAddress(defaultAddress)
@@ -93,31 +96,31 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
 
   const handleAddressSelect = (addressId: string) => {
     setSelectedId(addressId)
-    const address = savedAddresses.find(addr => addr.id === addressId)
+    const address = savedAddresses.find((addr) => addr.id === addressId)
     if (address) {
       onSelectAddress(address)
     }
   }
 
-  const getAddressIcon = (type: SavedAddress['type']) => {
+  const getAddressIcon = (type: SavedAddress["type"]) => {
     switch (type) {
-      case 'home':
+      case "home":
         return FiHome
-      case 'work':
+      case "work":
         return FiBriefcase
       default:
         return FiMapPin
     }
   }
 
-  const getAddressTypeColor = (type: SavedAddress['type']) => {
+  const getAddressTypeColor = (type: SavedAddress["type"]) => {
     switch (type) {
-      case 'home':
-        return 'green'
-      case 'work':
-        return 'blue'
+      case "home":
+        return "green"
+      case "work":
+        return "blue"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
@@ -158,14 +161,16 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
           <RadioGroup value={selectedId} onChange={handleAddressSelect}>
             <VStack spacing={3} align="stretch">
               {savedAddresses.map((address) => (
-                <Card 
-                  key={address.id} 
+                <Card
+                  key={address.id}
                   bg={cardBg}
                   border="2px"
-                  borderColor={selectedId === address.id ? 'blue.200' : 'gray.200'}
+                  borderColor={
+                    selectedId === address.id ? "blue.200" : "gray.200"
+                  }
                   cursor="pointer"
                   onClick={() => handleAddressSelect(address.id)}
-                  _hover={{ borderColor: 'blue.300' }}
+                  _hover={{ borderColor: "blue.300" }}
                 >
                   <CardBody>
                     <HStack justify="space-between" align="start">
@@ -173,37 +178,51 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
                         <Radio value={address.id} colorScheme="blue" mt={1} />
                         <VStack align="start" spacing={2} flex={1}>
                           <HStack>
-                            <Icon as={getAddressIcon(address.type)} color={`${getAddressTypeColor(address.type)}.500`} />
+                            <Icon
+                              as={getAddressIcon(address.type)}
+                              color={`${getAddressTypeColor(address.type)}.500`}
+                            />
                             <Text fontWeight="semibold">{address.name}</Text>
                             {address.isDefault && (
-                              <Badge colorScheme="green" size="sm">Por Defecto</Badge>
+                              <Badge colorScheme="green" size="sm">
+                                Por Defecto
+                              </Badge>
                             )}
-                            <Badge colorScheme={getAddressTypeColor(address.type)} size="sm">
-                              {address.type === 'home' ? 'Casa' : address.type === 'work' ? 'Trabajo' : 'Otro'}
+                            <Badge
+                              colorScheme={getAddressTypeColor(address.type)}
+                              size="sm"
+                            >
+                              {address.type === "home"
+                                ? "Casa"
+                                : address.type === "work"
+                                  ? "Trabajo"
+                                  : "Otro"}
                             </Badge>
                           </HStack>
-                          
-                          <VStack align="start" spacing={1} fontSize="sm" color="gray.600">
+
+                          <VStack
+                            align="start"
+                            spacing={1}
+                            fontSize="sm"
+                            color="gray.600"
+                          >
                             <Text fontWeight="medium" color="gray.800">
                               {address.firstName} {address.lastName}
                             </Text>
-                            {address.company && (
-                              <Text>{address.company}</Text>
-                            )}
+                            {address.company && <Text>{address.company}</Text>}
                             <Text>{address.addressLine1}</Text>
                             {address.addressLine2 && (
                               <Text>{address.addressLine2}</Text>
                             )}
                             <Text>
-                              {address.city}, {address.state} {address.postalCode}
+                              {address.city}, {address.state}{" "}
+                              {address.postalCode}
                             </Text>
-                            {address.phone && (
-                              <Text>Tel: {address.phone}</Text>
-                            )}
+                            {address.phone && <Text>Tel: {address.phone}</Text>}
                           </VStack>
                         </VStack>
                       </HStack>
-                      
+
                       <Button
                         size="sm"
                         variant="ghost"
@@ -211,7 +230,7 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
                         onClick={(e) => {
                           e.stopPropagation()
                           // Handle edit address
-                          console.log('Edit address:', address.id)
+                          console.log("Edit address:", address.id)
                         }}
                       >
                         Editar
@@ -226,7 +245,8 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
 
         <Box bg="blue.50" p={3} rounded="md">
           <Text fontSize="sm" color="blue.700">
-            💡 <strong>Tip:</strong> Guarda múltiples direcciones para hacer checkout más rápido en futuras compras.
+            💡 <strong>Tip:</strong> Guarda múltiples direcciones para hacer
+            checkout más rápido en futuras compras.
           </Text>
         </Box>
       </VStack>
@@ -239,7 +259,8 @@ const AddressBook = ({ onSelectAddress, selectedAddressId }: AddressBookProps) =
           <ModalCloseButton />
           <ModalBody>
             <Text color="gray.600" mb={4}>
-              Esta funcionalidad se implementará próximamente. Por ahora, puedes usar el formulario de envío en el checkout.
+              Esta funcionalidad se implementará próximamente. Por ahora, puedes
+              usar el formulario de envío en el checkout.
             </Text>
           </ModalBody>
           <ModalFooter>

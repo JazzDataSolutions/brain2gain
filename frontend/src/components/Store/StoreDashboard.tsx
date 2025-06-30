@@ -1,31 +1,32 @@
 import {
-  Box,
-  Container,
-  VStack,
-  Heading,
-  Text,
-  Button,
-  SimpleGrid,
-  useColorModeValue,
-  Stack,
-  Image,
   Badge,
+  Box,
+  Button,
+  Container,
   Flex,
-} from '@chakra-ui/react'
-import { useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+  Heading,
+  Image,
+  SimpleGrid,
+  Stack,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
 
-import { ProductsService } from '../../services/ProductsService'
-import ProductCard from '../Products/ProductCard'
+import { ProductsService } from "../../services/ProductsService"
+import ProductCard from "../Products/ProductCard"
 
 const StoreDashboard = () => {
   const navigate = useNavigate()
-  const bg = useColorModeValue('white', 'gray.800')
-  
+  const bg = useColorModeValue("white", "gray.800")
+
   // Consultar productos destacados
   const { data: featuredProducts, isLoading } = useQuery({
-    queryKey: ['products', 'featured'],
-    queryFn: () => ProductsService.getProductsWithFallback({ skip: 0, limit: 8 }),
+    queryKey: ["products", "featured"],
+    queryFn: () =>
+      ProductsService.getProductsWithFallback({ skip: 0, limit: 8 }),
   })
 
   return (
@@ -39,20 +40,20 @@ const StoreDashboard = () => {
       >
         <Container maxW="6xl">
           <VStack spacing={6}>
-            <Heading fontSize={{ base: '3xl', md: '5xl' }} fontWeight="bold">
+            <Heading fontSize={{ base: "3xl", md: "5xl" }} fontWeight="bold">
               Potencia Tu Rendimiento
             </Heading>
-            <Text fontSize={{ base: 'lg', md: 'xl' }} maxW="2xl">
+            <Text fontSize={{ base: "lg", md: "xl" }} maxW="2xl">
               Descubre nuestra selección premium de suplementos deportivos.
               Calidad garantizada para alcanzar tus objetivos fitness.
             </Text>
-            <Stack direction={{ base: 'column', sm: 'row' }} spacing={4}>
+            <Stack direction={{ base: "column", sm: "row" }} spacing={4}>
               <Button
                 size="lg"
                 bg="white"
                 color="blue.600"
-                _hover={{ bg: 'gray.50' }}
-                onClick={() => navigate({ to: '/store/products' })}
+                _hover={{ bg: "gray.50" }}
+                onClick={() => navigate({ to: "/store/products" })}
               >
                 Ver Productos
               </Button>
@@ -61,8 +62,8 @@ const StoreDashboard = () => {
                 variant="outline"
                 borderColor="white"
                 color="white"
-                _hover={{ bg: 'whiteAlpha.200' }}
-                onClick={() => navigate({ to: '/store/offers' })}
+                _hover={{ bg: "whiteAlpha.200" }}
+                onClick={() => navigate({ to: "/store/offers" })}
               >
                 Ofertas Especiales
               </Button>
@@ -86,28 +87,28 @@ const StoreDashboard = () => {
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={6}>
             {[
               {
-                name: 'Proteínas',
-                image: '/imagenes/proteina_catalogo.jpg',
-                description: 'Whey, Caseína y más',
-                href: '/store/products?category=proteinas'
+                name: "Proteínas",
+                image: "/imagenes/proteina_catalogo.jpg",
+                description: "Whey, Caseína y más",
+                href: "/store/products?category=proteinas",
               },
               {
-                name: 'Creatina',
-                image: '/imagenes/creatina_catalogo.jpg',
-                description: 'Potencia y fuerza',
-                href: '/store/products?category=creatina'
+                name: "Creatina",
+                image: "/imagenes/creatina_catalogo.jpg",
+                description: "Potencia y fuerza",
+                href: "/store/products?category=creatina",
               },
               {
-                name: 'Pre-Workout',
-                image: '/imagenes/preworkout_catalogo.jpg',
-                description: 'Energía y enfoque',
-                href: '/store/products?category=pre-workout'
+                name: "Pre-Workout",
+                image: "/imagenes/preworkout_catalogo.jpg",
+                description: "Energía y enfoque",
+                href: "/store/products?category=pre-workout",
               },
               {
-                name: 'Quemadores',
-                image: '/imagenes/cafeina.jpg',
-                description: 'Definición muscular',
-                href: '/store/products?category=quemadores'
+                name: "Quemadores",
+                image: "/imagenes/cafeina.jpg",
+                description: "Definición muscular",
+                href: "/store/products?category=quemadores",
               },
             ].map((category) => (
               <Box
@@ -118,7 +119,7 @@ const StoreDashboard = () => {
                 overflow="hidden"
                 cursor="pointer"
                 transition="transform 0.2s"
-                _hover={{ transform: 'translateY(-4px)', shadow: 'lg' }}
+                _hover={{ transform: "translateY(-4px)", shadow: "lg" }}
                 onClick={() => navigate({ to: category.href })}
               >
                 <Image
@@ -143,7 +144,7 @@ const StoreDashboard = () => {
       </Container>
 
       {/* Productos Destacados */}
-      <Box bg={useColorModeValue('gray.50', 'gray.900')} py={16}>
+      <Box bg={useColorModeValue("gray.50", "gray.900")} py={16}>
         <Container maxW="7xl">
           <VStack spacing={8} align="stretch">
             <Flex justify="space-between" align="center">
@@ -151,34 +152,30 @@ const StoreDashboard = () => {
                 <Heading size="lg" mb={2}>
                   Productos Destacados
                 </Heading>
-                <Text color="gray.600">
-                  Los más vendidos de la semana
-                </Text>
+                <Text color="gray.600">Los más vendidos de la semana</Text>
               </Box>
               <Button
                 variant="outline"
                 colorScheme="blue"
-                onClick={() => navigate({ to: '/store/products' })}
+                onClick={() => navigate({ to: "/store/products" })}
               >
                 Ver Todos
               </Button>
             </Flex>
 
             <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-              {isLoading ? (
-                // Skeleton loading
-                Array.from({ length: 8 }).map((_, i) => (
-                  <Box key={i} bg={bg} rounded="lg" p={4}>
-                    <Box h="200px" bg="gray.200" rounded="md" mb={4} />
-                    <Box h="20px" bg="gray.200" rounded="md" mb={2} />
-                    <Box h="16px" bg="gray.200" rounded="md" w="60%" />
-                  </Box>
-                ))
-              ) : (
-                featuredProducts?.data?.map((product) => (
-                  <ProductCard key={product.id} product={product} />
-                ))
-              )}
+              {isLoading
+                ? // Skeleton loading
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <Box key={i} bg={bg} rounded="lg" p={4}>
+                      <Box h="200px" bg="gray.200" rounded="md" mb={4} />
+                      <Box h="20px" bg="gray.200" rounded="md" mb={2} />
+                      <Box h="16px" bg="gray.200" rounded="md" w="60%" />
+                    </Box>
+                  ))
+                : featuredProducts?.data?.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
             </SimpleGrid>
           </VStack>
         </Container>
@@ -186,27 +183,20 @@ const StoreDashboard = () => {
 
       {/* CTA Section */}
       <Container maxW="6xl" py={16}>
-        <Box
-          bg="blue.50"
-          rounded="xl"
-          p={8}
-          textAlign="center"
-        >
+        <Box bg="blue.50" rounded="xl" p={8} textAlign="center">
           <VStack spacing={6}>
             <Badge colorScheme="blue" px={3} py={1} rounded="full">
               Oferta Especial
             </Badge>
-            <Heading size="lg">
-              ¡Envío Gratis en Pedidos Mayores a $50!
-            </Heading>
+            <Heading size="lg">¡Envío Gratis en Pedidos Mayores a $50!</Heading>
             <Text color="gray.600" maxW="md">
-              Aprovecha nuestra promoción especial. Envío gratuito a todo el país
-              en compras superiores a $50 USD.
+              Aprovecha nuestra promoción especial. Envío gratuito a todo el
+              país en compras superiores a $50 USD.
             </Text>
             <Button
               colorScheme="blue"
               size="lg"
-              onClick={() => navigate({ to: '/store/products' })}
+              onClick={() => navigate({ to: "/store/products" })}
             >
               Comprar Ahora
             </Button>

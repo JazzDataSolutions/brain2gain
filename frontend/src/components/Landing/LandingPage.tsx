@@ -1,11 +1,11 @@
-import { Box } from '@chakra-ui/react'
+import { Box } from "@chakra-ui/react"
 
-import Navbar from './Navbar'
-import HeroSection from './HeroSection'
-import FeaturedProducts from './FeaturedProducts'
-import Conocenos from './Conocenos'
-import Contacto from './Contacto'
-import Footer from './Footer'
+import Conocenos from "./Conocenos"
+import Contacto from "./Contacto"
+import FeaturedProducts from "./FeaturedProducts"
+import Footer from "./Footer"
+import HeroSection from "./HeroSection"
+import Navbar from "./Navbar"
 
 const LandingPage = () => {
   return (
@@ -24,4 +24,4 @@ const LandingPage = () => {
   )
 }
 
-export default LandingPage;
+export default LandingPage

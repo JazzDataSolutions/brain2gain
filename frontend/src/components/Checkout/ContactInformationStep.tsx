@@ -1,16 +1,16 @@
 import {
   Box,
-  VStack,
+  Checkbox,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   Input,
-  FormErrorMessage,
-  Checkbox,
   Text,
+  VStack,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { useForm } from 'react-hook-form'
-import { useEffect } from 'react'
+} from "@chakra-ui/react"
+import { useEffect } from "react"
+import { useForm } from "react-hook-form"
 
 export interface ContactInformation {
   email: string
@@ -26,23 +26,23 @@ interface ContactInformationStepProps {
   onValidationChange: (isValid: boolean) => void
 }
 
-const ContactInformationStep = ({ 
-  data, 
-  onDataChange, 
-  onValidationChange 
+const ContactInformationStep = ({
+  data,
+  onDataChange,
+  onValidationChange,
 }: ContactInformationStepProps) => {
   const {
     register,
     watch,
     formState: { errors, isValid },
   } = useForm<ContactInformation>({
-    mode: 'onChange',
+    mode: "onChange",
     defaultValues: data,
   })
 
-  const inputBg = useColorModeValue('white', 'gray.700')
+  const inputBg = useColorModeValue("white", "gray.700")
   const watchedValues = watch()
-  const createAccount = watch('createAccount')
+  const createAccount = watch("createAccount")
 
   // Update parent component when form data changes
   useEffect(() => {
@@ -68,11 +68,11 @@ const ContactInformationStep = ({
             type="email"
             placeholder="tu@ejemplo.com"
             bg={inputBg}
-            {...register('email', {
-              required: 'El correo electrónico es requerido',
+            {...register("email", {
+              required: "El correo electrónico es requerido",
               pattern: {
                 value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Ingresa un correo electrónico válido',
+                message: "Ingresa un correo electrónico válido",
               },
             })}
           />
@@ -85,11 +85,11 @@ const ContactInformationStep = ({
             id="customerName"
             placeholder="Juan Pérez"
             bg={inputBg}
-            {...register('customerName', {
-              required: 'El nombre es requerido',
+            {...register("customerName", {
+              required: "El nombre es requerido",
               minLength: {
                 value: 2,
-                message: 'El nombre debe tener al menos 2 caracteres',
+                message: "El nombre debe tener al menos 2 caracteres",
               },
             })}
           />
@@ -103,11 +103,11 @@ const ContactInformationStep = ({
             type="tel"
             placeholder="+52 55 1234 5678"
             bg={inputBg}
-            {...register('customerPhone', {
-              required: 'El teléfono es requerido',
+            {...register("customerPhone", {
+              required: "El teléfono es requerido",
               pattern: {
                 value: /^[\+]?[1-9][\d]{0,15}$/,
-                message: 'Ingresa un número de teléfono válido',
+                message: "Ingresa un número de teléfono válido",
               },
             })}
           />
@@ -115,10 +115,7 @@ const ContactInformationStep = ({
         </FormControl>
 
         <Box>
-          <Checkbox 
-            {...register('createAccount')}
-            colorScheme="blue"
-          >
+          <Checkbox {...register("createAccount")} colorScheme="blue">
             Crear cuenta para futuras compras
           </Checkbox>
         </Box>
@@ -131,11 +128,11 @@ const ContactInformationStep = ({
               type="password"
               placeholder="Mínimo 8 caracteres"
               bg={inputBg}
-              {...register('password', {
-                required: createAccount ? 'La contraseña es requerida' : false,
+              {...register("password", {
+                required: createAccount ? "La contraseña es requerida" : false,
                 minLength: {
                   value: 8,
-                  message: 'La contraseña debe tener al menos 8 caracteres',
+                  message: "La contraseña debe tener al menos 8 caracteres",
                 },
               })}
             />
@@ -145,8 +142,9 @@ const ContactInformationStep = ({
 
         <Box bg="blue.50" p={4} rounded="md">
           <Text fontSize="sm" color="blue.700">
-            💡 <strong>Tip:</strong> Usaremos esta información para enviar actualizaciones 
-            sobre tu pedido y contactarte en caso de cualquier problema con la entrega.
+            💡 <strong>Tip:</strong> Usaremos esta información para enviar
+            actualizaciones sobre tu pedido y contactarte en caso de cualquier
+            problema con la entrega.
           </Text>
         </Box>
       </VStack>

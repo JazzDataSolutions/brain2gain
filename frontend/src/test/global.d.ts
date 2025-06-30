@@ -1,9 +1,9 @@
 declare namespace NodeJS {
   interface Global {
-    mockNavigate: jest.Mock;
+    mockNavigate: jest.Mock
   }
 }
 
 declare global {
-  var mockNavigate: jest.Mock;
+  var mockNavigate: jest.Mock
 }

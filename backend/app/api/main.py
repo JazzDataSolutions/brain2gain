@@ -9,6 +9,7 @@ from app.api.routes import (
     events,
     items,
     login,
+    notifications,
     orders,
     payments,
     private,
@@ -39,6 +40,9 @@ if API_MODE in ["public", "store", "full"] and ENABLE_STORE_ROUTES:
     api_router.include_router(
         payments.router, prefix="/payments", tags=["payments"]
     )  # Payment processing
+    api_router.include_router(
+        notifications.router, prefix="/notifications", tags=["notifications"]
+    )  # Email notifications
     api_router.include_router(login.router)  # Basic auth for customers
 
 # Admin routes

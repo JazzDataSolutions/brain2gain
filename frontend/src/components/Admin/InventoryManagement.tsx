@@ -1,20 +1,20 @@
 import {
+  Badge,
   Box,
-  Heading,
-  Text,
   Button,
   Card,
   CardBody,
   HStack,
+  Heading,
+  Text,
   VStack,
-  Badge,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { FiPlus, FiPackage, FiAlertTriangle } from 'react-icons/fi'
+} from "@chakra-ui/react"
+import { FiAlertTriangle, FiPackage, FiPlus } from "react-icons/fi"
 
 const InventoryManagement = () => {
-  const cardBg = useColorModeValue('white', 'gray.800')
-  
+  const cardBg = useColorModeValue("white", "gray.800")
+
   return (
     <Box w="full">
       <VStack spacing={6} align="stretch">
@@ -24,9 +24,7 @@ const InventoryManagement = () => {
             <Heading size="lg" mb={2}>
               Gestión de Inventario
             </Heading>
-            <Text color="gray.600">
-              Control de stock y productos
-            </Text>
+            <Text color="gray.600">Control de stock y productos</Text>
           </Box>
           <Button leftIcon={<FiPlus />} colorScheme="blue">
             Nuevo Producto
@@ -42,13 +40,17 @@ const InventoryManagement = () => {
                   <FiPackage color="blue.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold">156</Text>
-                  <Text fontSize="sm" color="gray.600">Total Productos</Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    156
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Total Productos
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
           </Card>
-          
+
           <Card bg={cardBg} flex={1}>
             <CardBody>
               <HStack>
@@ -56,8 +58,12 @@ const InventoryManagement = () => {
                   <FiAlertTriangle color="red.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold" color="red.500">8</Text>
-                  <Text fontSize="sm" color="gray.600">Stock Bajo</Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="red.500">
+                    8
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Stock Bajo
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
@@ -67,7 +73,12 @@ const InventoryManagement = () => {
         {/* Content Area */}
         <Card bg={cardBg}>
           <CardBody>
-            <Box h="400px" display="flex" alignItems="center" justifyContent="center">
+            <Box
+              h="400px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
               <VStack spacing={4}>
                 <Text fontSize="lg" color="gray.500">
                   🏗️ Gestión de Inventario en Desarrollo

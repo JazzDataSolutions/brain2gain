@@ -1,67 +1,67 @@
-import { 
-  Box, 
-  Flex, 
-  HStack,
-  Link as ChakraLink, 
-  Button, 
-  Image,
-  useColorModeValue,
+import { HamburgerIcon } from "@chakra-ui/icons"
+import {
+  Box,
+  Button,
+  Link as ChakraLink,
   Container,
-  Show,
-  Hide,
-  IconButton,
-  useDisclosure,
-  VStack,
   Drawer,
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
-} from '@chakra-ui/react'
-import { HamburgerIcon } from '@chakra-ui/icons'
-import { Link as RouterLink } from '@tanstack/react-router'
+  Flex,
+  HStack,
+  Hide,
+  IconButton,
+  Image,
+  Show,
+  VStack,
+  useColorModeValue,
+  useDisclosure,
+} from "@chakra-ui/react"
+import { Link as RouterLink } from "@tanstack/react-router"
 
-import MiniCart from '../Cart/MiniCart'
-import useAuth from '../../hooks/useAuth'
+import useAuth from "../../hooks/useAuth"
+import MiniCart from "../Cart/MiniCart"
 
 const Navbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { user, logout } = useAuth()
-  
-  const bg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+
+  const bg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.600")
 
   const NavLinks = () => (
     <>
-      <ChakraLink 
-        as={RouterLink} 
+      <ChakraLink
+        as={RouterLink}
         to="/"
-        _hover={{ color: 'blue.500' }}
+        _hover={{ color: "blue.500" }}
         fontWeight="medium"
       >
         Inicio
       </ChakraLink>
-      <ChakraLink 
-        as={RouterLink} 
+      <ChakraLink
+        as={RouterLink}
         to="/products"
-        _hover={{ color: 'blue.500' }}
+        _hover={{ color: "blue.500" }}
         fontWeight="medium"
       >
         Productos
       </ChakraLink>
-      <ChakraLink 
-        as={RouterLink} 
+      <ChakraLink
+        as={RouterLink}
         to="/#conocenos"
-        _hover={{ color: 'blue.500' }}
+        _hover={{ color: "blue.500" }}
         fontWeight="medium"
       >
         Conócenos
       </ChakraLink>
-      <ChakraLink 
-        as={RouterLink} 
+      <ChakraLink
+        as={RouterLink}
         to="/#contacto"
-        _hover={{ color: 'blue.500' }}
+        _hover={{ color: "blue.500" }}
         fontWeight="medium"
       >
         Contacto
@@ -70,9 +70,9 @@ const Navbar = () => {
   )
 
   return (
-    <Box 
-      bg={bg} 
-      borderBottom="1px" 
+    <Box
+      bg={bg}
+      borderBottom="1px"
       borderColor={borderColor}
       position="sticky"
       top={0}
@@ -80,18 +80,13 @@ const Navbar = () => {
       shadow="sm"
     >
       <Container maxW="7xl">
-        <Flex
-          as="nav"
-          align="center"
-          justify="space-between"
-          py={4}
-        >
+        <Flex as="nav" align="center" justify="space-between" py={4}>
           {/* Logo */}
           <Box>
             <ChakraLink as={RouterLink} to="/">
-              <Image 
-                src="/imagenes/logo.png" 
-                alt="Brain2Gain" 
+              <Image
+                src="/imagenes/logo.png"
+                alt="Brain2Gain"
                 height="40px"
                 fallbackSrc="https://via.placeholder.com/120x40?text=Brain2Gain"
               />
@@ -113,15 +108,10 @@ const Navbar = () => {
             {/* Authentication */}
             {user ? (
               <HStack spacing={2}>
-                <Button 
-                  as={RouterLink} 
-                  to="/_layout" 
-                  variant="ghost"
-                  size="sm"
-                >
+                <Button as={RouterLink} to="/_layout" variant="ghost" size="sm">
                   Dashboard
                 </Button>
-                <Button 
+                <Button
                   onClick={logout}
                   variant="outline"
                   size="sm"
@@ -132,17 +122,12 @@ const Navbar = () => {
               </HStack>
             ) : (
               <HStack spacing={2}>
-                <Button 
-                  as={RouterLink} 
-                  to="/login" 
-                  variant="ghost"
-                  size="sm"
-                >
+                <Button as={RouterLink} to="/login" variant="ghost" size="sm">
                   Iniciar Sesión
                 </Button>
-                <Button 
-                  as={RouterLink} 
-                  to="/signup" 
+                <Button
+                  as={RouterLink}
+                  to="/signup"
                   colorScheme="blue"
                   size="sm"
                 >
@@ -181,4 +166,4 @@ const Navbar = () => {
   )
 }
 
-export default Navbar;
+export default Navbar

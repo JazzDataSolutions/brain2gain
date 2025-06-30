@@ -1,28 +1,28 @@
-import React from 'react'
-import { motion } from 'framer-motion'
-import { Box, Text, VStack, useColorModeValue } from '@chakra-ui/react'
+import { Box, Text, VStack, useColorModeValue } from "@chakra-ui/react"
+import { motion } from "framer-motion"
+import type React from "react"
 
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: "sm" | "md" | "lg" | "xl"
   text?: string
-  variant?: 'dots' | 'circle' | 'pulse' | 'skeleton'
+  variant?: "dots" | "circle" | "pulse" | "skeleton"
   color?: string
 }
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
-  size = 'md',
+  size = "md",
   text,
-  variant = 'circle',
-  color
+  variant = "circle",
+  color,
 }) => {
-  const defaultColor = useColorModeValue('brand.500', 'brand.200')
+  const defaultColor = useColorModeValue("brand.500", "brand.200")
   const spinnerColor = color || defaultColor
-  
+
   const sizes = {
-    sm: { container: 20, spinner: 16, text: 'sm' },
-    md: { container: 32, spinner: 24, text: 'md' },
-    lg: { container: 48, spinner: 36, text: 'lg' },
-    xl: { container: 64, spinner: 48, text: 'xl' }
+    sm: { container: 20, spinner: 16, text: "sm" },
+    md: { container: 32, spinner: 24, text: "md" },
+    lg: { container: 48, spinner: 36, text: "lg" },
+    xl: { container: 64, spinner: 48, text: "xl" },
   }
 
   const currentSize = sizes[size]
@@ -31,10 +31,10 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const DotsSpinner = () => (
     <motion.div
       style={{
-        display: 'flex',
-        gap: '4px',
-        alignItems: 'center',
-        justifyContent: 'center'
+        display: "flex",
+        gap: "4px",
+        alignItems: "center",
+        justifyContent: "center",
       }}
     >
       {[0, 1, 2].map((index) => (
@@ -44,16 +44,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             width: currentSize.spinner / 3,
             height: currentSize.spinner / 3,
             backgroundColor: spinnerColor,
-            borderRadius: '50%'
+            borderRadius: "50%",
           }}
           animate={{
             scale: [1, 1.5, 1],
-            opacity: [0.5, 1, 0.5]
+            opacity: [0.5, 1, 0.5],
           }}
           transition={{
             duration: 0.6,
-            repeat: Infinity,
-            delay: index * 0.1
+            repeat: Number.POSITIVE_INFINITY,
+            delay: index * 0.1,
           }}
         />
       ))}
@@ -66,15 +66,15 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       style={{
         width: currentSize.spinner,
         height: currentSize.spinner,
-        border: `3px solid transparent`,
+        border: "3px solid transparent",
         borderTop: `3px solid ${spinnerColor}`,
-        borderRadius: '50%'
+        borderRadius: "50%",
       }}
       animate={{ rotate: 360 }}
       transition={{
         duration: 1,
-        repeat: Infinity,
-        ease: 'linear'
+        repeat: Number.POSITIVE_INFINITY,
+        ease: "linear",
       }}
     />
   )
@@ -86,16 +86,16 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         width: currentSize.spinner,
         height: currentSize.spinner,
         backgroundColor: spinnerColor,
-        borderRadius: '50%'
+        borderRadius: "50%",
       }}
       animate={{
         scale: [1, 1.2, 1],
-        opacity: [0.7, 1, 0.7]
+        opacity: [0.7, 1, 0.7],
       }}
       transition={{
         duration: 1.5,
-        repeat: Infinity,
-        ease: 'easeInOut'
+        repeat: Number.POSITIVE_INFINITY,
+        ease: "easeInOut",
       }}
     />
   )
@@ -107,18 +107,18 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         <motion.div
           key={index}
           style={{
-            width: '100%',
-            height: '16px',
-            backgroundColor: useColorModeValue('#f0f0f0', '#2d3748'),
-            borderRadius: '4px'
+            width: "100%",
+            height: "16px",
+            backgroundColor: useColorModeValue("#f0f0f0", "#2d3748"),
+            borderRadius: "4px",
           }}
           animate={{
-            opacity: [0.3, 0.7, 0.3]
+            opacity: [0.3, 0.7, 0.3],
           }}
           transition={{
             duration: 1.5,
-            repeat: Infinity,
-            delay: index * 0.2
+            repeat: Number.POSITIVE_INFINITY,
+            delay: index * 0.2,
           }}
         />
       ))}
@@ -127,13 +127,13 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
   const renderSpinner = () => {
     switch (variant) {
-      case 'dots':
+      case "dots":
         return <DotsSpinner />
-      case 'circle':
+      case "circle":
         return <CircleSpinner />
-      case 'pulse':
+      case "pulse":
         return <PulseSpinner />
-      case 'skeleton':
+      case "skeleton":
         return <SkeletonSpinner />
       default:
         return <CircleSpinner />
@@ -151,18 +151,14 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
       >
         {renderSpinner()}
       </Box>
-      
+
       {text && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <Text
-            fontSize={currentSize.text}
-            color="gray.500"
-            textAlign="center"
-          >
+          <Text fontSize={currentSize.text} color="gray.500" textAlign="center">
             {text}
           </Text>
         </motion.div>
@@ -179,11 +175,7 @@ export const ProductCardSkeleton = () => (
 )
 
 export const PageLoadingSpinner = () => (
-  <LoadingSpinner 
-    variant="circle" 
-    size="lg" 
-    text="Cargando página..." 
-  />
+  <LoadingSpinner variant="circle" size="lg" text="Cargando página..." />
 )
 
 export const ButtonLoadingSpinner = () => (
@@ -191,9 +183,5 @@ export const ButtonLoadingSpinner = () => (
 )
 
 export const SearchLoadingSpinner = () => (
-  <LoadingSpinner 
-    variant="pulse" 
-    size="sm" 
-    text="Buscando productos..." 
-  />
+  <LoadingSpinner variant="pulse" size="sm" text="Buscando productos..." />
 )

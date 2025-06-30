@@ -1,19 +1,19 @@
 import {
+  Badge,
   Box,
-  Heading,
-  Text,
   Card,
   CardBody,
   HStack,
+  Heading,
+  Text,
   VStack,
-  Badge,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { FiBarChart, FiTrendingUp, FiPieChart } from 'react-icons/fi'
+} from "@chakra-ui/react"
+import { FiBarChart, FiPieChart, FiTrendingUp } from "react-icons/fi"
 
 const ReportsAndAnalytics = () => {
-  const cardBg = useColorModeValue('white', 'gray.800')
-  
+  const cardBg = useColorModeValue("white", "gray.800")
+
   return (
     <Box w="full">
       <VStack spacing={6} align="stretch">
@@ -22,9 +22,7 @@ const ReportsAndAnalytics = () => {
           <Heading size="lg" mb={2}>
             Reportes y Analytics
           </Heading>
-          <Text color="gray.600">
-            Métricas de negocio y análisis de datos
-          </Text>
+          <Text color="gray.600">Métricas de negocio y análisis de datos</Text>
         </Box>
 
         {/* Quick Stats */}
@@ -36,13 +34,17 @@ const ReportsAndAnalytics = () => {
                   <FiBarChart color="blue.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold">$12,426</Text>
-                  <Text fontSize="sm" color="gray.600">Ventas del Mes</Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    $12,426
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Ventas del Mes
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
           </Card>
-          
+
           <Card bg={cardBg} flex={1}>
             <CardBody>
               <HStack>
@@ -50,8 +52,12 @@ const ReportsAndAnalytics = () => {
                   <FiTrendingUp color="green.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold" color="green.500">+23%</Text>
-                  <Text fontSize="sm" color="gray.600">Crecimiento</Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                    +23%
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Crecimiento
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
@@ -64,8 +70,12 @@ const ReportsAndAnalytics = () => {
                   <FiPieChart color="purple.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold">3.2%</Text>
-                  <Text fontSize="sm" color="gray.600">Conversión</Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    3.2%
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Conversión
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
@@ -75,7 +85,12 @@ const ReportsAndAnalytics = () => {
         {/* Content Area */}
         <Card bg={cardBg}>
           <CardBody>
-            <Box h="400px" display="flex" alignItems="center" justifyContent="center">
+            <Box
+              h="400px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
               <VStack spacing={4}>
                 <Text fontSize="lg" color="gray.500">
                   📊 Analytics Dashboard en Desarrollo

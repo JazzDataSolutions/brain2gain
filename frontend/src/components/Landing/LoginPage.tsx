@@ -3,16 +3,16 @@ import {
   Box,
   Button,
   FormControl,
+  FormErrorMessage,
   FormLabel,
   Input,
-  FormErrorMessage
-} from '@chakra-ui/react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+} from "@chakra-ui/react"
+import { type SubmitHandler, useForm } from "react-hook-form"
 
 // Definimos la interfaz para los datos del formulario de login
 interface LoginFormInputs {
-  email: string;
-  password: string;
+  email: string
+  password: string
 }
 
 const LoginPage: React.FC = () => {
@@ -20,14 +20,16 @@ const LoginPage: React.FC = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors }
-  } = useForm<LoginFormInputs>();
+    formState: { errors },
+  } = useForm<LoginFormInputs>()
 
   // Función de envío con tipado explícito
-  const onSubmit: SubmitHandler<LoginFormInputs> = async (data: LoginFormInputs) => {
+  const onSubmit: SubmitHandler<LoginFormInputs> = async (
+    data: LoginFormInputs,
+  ) => {
     // Aquí se podría llamar a la API para autenticar al usuario.
-    console.log('Datos de login:', data);
-  };
+    console.log("Datos de login:", data)
+  }
 
   return (
     <Box p={4}>
@@ -40,9 +42,7 @@ const LoginPage: React.FC = () => {
             placeholder="tu@correo.com"
             {...register("email", { required: "El correo es obligatorio" })}
           />
-          <FormErrorMessage>
-            {errors.email && errors.email.message}
-          </FormErrorMessage>
+          <FormErrorMessage>{errors.email?.message}</FormErrorMessage>
         </FormControl>
         <FormControl mt={4} isInvalid={!!errors.password}>
           <FormLabel htmlFor="password">Contraseña</FormLabel>
@@ -50,18 +50,18 @@ const LoginPage: React.FC = () => {
             id="password"
             type="password"
             placeholder="contraseña"
-            {...register("password", { required: "La contraseña es obligatoria" })}
+            {...register("password", {
+              required: "La contraseña es obligatoria",
+            })}
           />
-          <FormErrorMessage>
-            {errors.password && errors.password.message}
-          </FormErrorMessage>
+          <FormErrorMessage>{errors.password?.message}</FormErrorMessage>
         </FormControl>
         <Button mt={4} colorScheme="teal" type="submit">
           Iniciar sesión
         </Button>
       </form>
     </Box>
-  );
-};
+  )
+}
 
-export default LoginPage;
+export default LoginPage

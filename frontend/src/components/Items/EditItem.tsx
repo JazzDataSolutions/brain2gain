@@ -13,11 +13,7 @@ import {
   ModalOverlay,
 } from "@chakra-ui/react"
 
-import {
-  type ItemPublic,
-  type ItemUpdate,
-  ItemsService,
-} from "../../client"
+import { type ItemPublic, type ItemUpdate, ItemsService } from "../../client"
 import useItemForm from "../../hooks/useItemForm"
 
 interface EditItemProps {

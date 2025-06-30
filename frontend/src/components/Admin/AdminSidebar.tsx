@@ -1,90 +1,90 @@
 import {
+  Badge,
   Box,
-  VStack,
-  Text,
-  Link,
-  Icon,
-  useColorModeValue,
   Divider,
   Flex,
-  Badge,
-} from '@chakra-ui/react'
+  Icon,
+  Link,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { Link as RouterLink, useLocation } from "@tanstack/react-router"
 import {
+  FiBarChart,
+  FiDollarSign,
   FiHome,
   FiPackage,
-  FiShoppingCart,
-  FiUsers,
-  FiBarChart,
   FiSettings,
-  FiDollarSign,
+  FiShoppingCart,
   FiTrendingUp,
-} from 'react-icons/fi'
-import { Link as RouterLink, useLocation } from '@tanstack/react-router'
+  FiUsers,
+} from "react-icons/fi"
 
 const AdminSidebar = () => {
   const location = useLocation()
-  const bg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
-  
+  const bg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.700")
+
   const menuItems = [
     {
-      name: 'Dashboard',
+      name: "Dashboard",
       icon: FiHome,
-      href: '/admin',
+      href: "/admin",
       badge: null,
     },
     {
-      name: 'Inventario',
+      name: "Inventario",
       icon: FiPackage,
-      href: '/admin/inventory',
-      badge: 'Low Stock',
-      badgeColor: 'red',
+      href: "/admin/inventory",
+      badge: "Low Stock",
+      badgeColor: "red",
     },
     {
-      name: 'Pedidos',
+      name: "Pedidos",
       icon: FiShoppingCart,
-      href: '/admin/orders',
-      badge: '5',
-      badgeColor: 'blue',
+      href: "/admin/orders",
+      badge: "5",
+      badgeColor: "blue",
     },
     {
-      name: 'Clientes',
+      name: "Clientes",
       icon: FiUsers,
-      href: '/admin/customers',
+      href: "/admin/customers",
       badge: null,
     },
     {
-      name: 'Reportes',
+      name: "Reportes",
       icon: FiBarChart,
-      href: '/admin/reports',
+      href: "/admin/reports",
       badge: null,
     },
     {
-      name: 'Ventas',
+      name: "Ventas",
       icon: FiDollarSign,
-      href: '/admin/sales',
+      href: "/admin/sales",
       badge: null,
     },
     {
-      name: 'Analytics',
+      name: "Analytics",
       icon: FiTrendingUp,
-      href: '/admin/analytics',
-      badge: 'New',
-      badgeColor: 'green',
+      href: "/admin/analytics",
+      badge: "New",
+      badgeColor: "green",
     },
   ]
 
   const secondaryItems = [
     {
-      name: 'Configuración',
+      name: "Configuración",
       icon: FiSettings,
-      href: '/admin/settings',
+      href: "/admin/settings",
     },
   ]
 
   const isActive = (href: string) => {
-    if (href === '/admin') {
-      return location.pathname === '/admin' || location.pathname === '/admin/'
+    if (href === "/admin") {
+      return location.pathname === "/admin" || location.pathname === "/admin/"
     }
     return location.pathname.startsWith(href)
   }
@@ -99,26 +99,26 @@ const AdminSidebar = () => {
         py={3}
         rounded="lg"
         transition="all 0.2s"
-        bg={isActive(item.href) ? 'blue.50' : 'transparent'}
-        color={isActive(item.href) ? 'blue.600' : 'gray.600'}
-        borderLeft={isActive(item.href) ? '3px solid' : '3px solid transparent'}
-        borderColor={isActive(item.href) ? 'blue.500' : 'transparent'}
+        bg={isActive(item.href) ? "blue.50" : "transparent"}
+        color={isActive(item.href) ? "blue.600" : "gray.600"}
+        borderLeft={isActive(item.href) ? "3px solid" : "3px solid transparent"}
+        borderColor={isActive(item.href) ? "blue.500" : "transparent"}
         _hover={{
-          bg: 'blue.50',
-          color: 'blue.600',
-          textDecoration: 'none',
+          bg: "blue.50",
+          color: "blue.600",
+          textDecoration: "none",
         }}
         w="full"
       >
         <Flex align="center">
           <Icon as={item.icon} mr={3} boxSize={5} />
-          <Text fontWeight={isActive(item.href) ? 'semibold' : 'medium'}>
+          <Text fontWeight={isActive(item.href) ? "semibold" : "medium"}>
             {item.name}
           </Text>
         </Flex>
         {item.badge && (
           <Badge
-            colorScheme={item.badgeColor || 'gray'}
+            colorScheme={item.badgeColor || "gray"}
             size="sm"
             borderRadius="full"
           >
@@ -185,11 +185,11 @@ const AdminSidebar = () => {
       {/* Quick Stats */}
       <Box p={4} mt="auto">
         <Box
-          bg={useColorModeValue('blue.50', 'blue.900')}
+          bg={useColorModeValue("blue.50", "blue.900")}
           p={4}
           rounded="lg"
           border="1px"
-          borderColor={useColorModeValue('blue.200', 'blue.700')}
+          borderColor={useColorModeValue("blue.200", "blue.700")}
         >
           <Text fontSize="sm" fontWeight="semibold" color="blue.600" mb={2}>
             Resumen Rápido

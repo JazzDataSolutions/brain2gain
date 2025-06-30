@@ -18,20 +18,20 @@ import { z } from "zod"
 import { ItemsService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import AdminNavbar from "../../components/Common/AdminNavbar"
-import AddItem from "../../components/Items/AddItem"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
+import AddItem from "../../components/Items/AddItem"
 
 const itemsSearchSchema = z.object({
   page: z.number().catch(1),
 })
 
-type ItemsSearchParams = z.output<typeof itemsSearchSchema>; // { page: number }
+type ItemsSearchParams = z.output<typeof itemsSearchSchema> // { page: number }
 
-export const Route = createFileRoute('/_layout/items')({
+export const Route = createFileRoute("/_layout/items")({
   component: Items,
-  validateSearch: (search): ItemsSearchParams => itemsSearchSchema.parse(search),
-});
-
+  validateSearch: (search): ItemsSearchParams =>
+    itemsSearchSchema.parse(search),
+})
 
 const PER_PAGE = 5
 
@@ -45,18 +45,19 @@ function getItemsQueryOptions({ page }: { page: number }) {
 
 function ItemsTable() {
   const queryClient = useQueryClient()
-  const { page } = Route.useSearch(); // <--- ¡RESTAURAR/ASEGURAR ESTO!
+  const { page } = Route.useSearch() // <--- ¡RESTAURAR/ASEGURAR ESTO!
 
-  const navigate = useNavigate({ from: Route.fullPath }); // <--- OK
+  const navigate = useNavigate({ from: Route.fullPath }) // <--- OK
 
   // Función setPage simplificada
   const setPage = (newPage: number) => {
-     // Cambia esto:
-     // navigate({ search: () => ({ page: newPage }) });
-     // Por esto (añadiendo 'prev'):
-  navigate({ search: ((_prev: ItemsSearchParams) => ({ page: newPage })) as any });
-
-  };
+    // Cambia esto:
+    // navigate({ search: () => ({ page: newPage }) });
+    // Por esto (añadiendo 'prev'):
+    navigate({
+      search: ((_prev: ItemsSearchParams) => ({ page: newPage })) as any,
+    })
+  }
 
   const {
     data: items,

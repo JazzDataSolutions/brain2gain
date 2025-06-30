@@ -1,17 +1,17 @@
-import { 
-  Box, 
+import {
+  Box,
+  Button,
   Container,
-  Heading, 
-  Text, 
-  Button, 
-  VStack,
   HStack,
-  useColorModeValue 
-} from '@chakra-ui/react'
-import { Link } from '@tanstack/react-router'
+  Heading,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { Link } from "@tanstack/react-router"
 
 const HeroSection = () => {
-  const overlayBg = useColorModeValue('blackAlpha.600', 'blackAlpha.700')
+  const overlayBg = useColorModeValue("blackAlpha.600", "blackAlpha.700")
 
   return (
     <Box
@@ -34,41 +34,42 @@ const HeroSection = () => {
         bottom={0}
         bg={overlayBg}
       />
-      
+
       {/* Content */}
       <Container maxW="7xl" position="relative" zIndex={1}>
-        <VStack 
-          spacing={8} 
-          textAlign="center" 
+        <VStack
+          spacing={8}
+          textAlign="center"
           color="white"
           maxW="4xl"
           mx="auto"
         >
           <VStack spacing={4}>
-            <Heading 
-              fontSize={{ base: "3xl", md: "5xl", lg: "6xl" }} 
+            <Heading
+              fontSize={{ base: "3xl", md: "5xl", lg: "6xl" }}
               fontWeight="bold"
               lineHeight="shorter"
             >
-              Potencia Tu{' '}
+              Potencia Tu{" "}
               <Text as="span" color="blue.400">
                 Rendimiento
               </Text>
             </Heading>
-            
-            <Text 
+
+            <Text
               fontSize={{ base: "lg", md: "xl", lg: "2xl" }}
               color="gray.200"
               maxW="3xl"
               lineHeight="tall"
             >
-              Descubre los suplementos deportivos de más alta calidad. 
-              Transforma tu entrenamiento y alcanza tus objetivos con Brain2Gain.
+              Descubre los suplementos deportivos de más alta calidad.
+              Transforma tu entrenamiento y alcanza tus objetivos con
+              Brain2Gain.
             </Text>
           </VStack>
 
-          <HStack 
-            spacing={4} 
+          <HStack
+            spacing={4}
             flexDirection={{ base: "column", sm: "row" }}
             w={{ base: "100%", sm: "auto" }}
           >
@@ -85,7 +86,7 @@ const HeroSection = () => {
             >
               Ver Productos
             </Button>
-            
+
             <Button
               as={Link}
               to="/#conocenos"
@@ -102,7 +103,7 @@ const HeroSection = () => {
               _hover={{
                 bg: "whiteAlpha.200",
                 borderColor: "blue.400",
-                color: "blue.400"
+                color: "blue.400",
               }}
             >
               Conoce Más
@@ -110,8 +111,8 @@ const HeroSection = () => {
           </HStack>
 
           {/* Trust Indicators */}
-          <HStack 
-            spacing={8} 
+          <HStack
+            spacing={8}
             mt={8}
             fontSize="sm"
             color="gray.300"
@@ -128,5 +129,4 @@ const HeroSection = () => {
   )
 }
 
-export default HeroSection;
-
+export default HeroSection

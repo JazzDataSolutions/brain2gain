@@ -1,23 +1,23 @@
 import {
   Box,
   Container,
-  Stack,
-  Text,
-  Link,
-  useColorModeValue,
-  SimpleGrid,
+  Divider,
   HStack,
   Icon,
-  Divider,
-} from '@chakra-ui/react'
-import { FaInstagram, FaTwitter, FaFacebook, FaWhatsapp } from 'react-icons/fa'
-import { Link as RouterLink } from '@tanstack/react-router'
+  Link,
+  SimpleGrid,
+  Stack,
+  Text,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { Link as RouterLink } from "@tanstack/react-router"
+import { FaFacebook, FaInstagram, FaTwitter, FaWhatsapp } from "react-icons/fa"
 
 const StoreFooter = () => {
   return (
     <Box
-      bg={useColorModeValue('gray.50', 'gray.900')}
-      color={useColorModeValue('gray.700', 'gray.200')}
+      bg={useColorModeValue("gray.50", "gray.900")}
+      color={useColorModeValue("gray.700", "gray.200")}
       mt="auto"
     >
       <Container as={Stack} maxW="7xl" py={10}>
@@ -28,21 +28,37 @@ const StoreFooter = () => {
               Brain2Gain
             </Text>
             <Text fontSize="sm">
-              Tu tienda de confianza para suplementos deportivos de alta calidad.
-              Potencia tu rendimiento y alcanza tus objetivos fitness.
+              Tu tienda de confianza para suplementos deportivos de alta
+              calidad. Potencia tu rendimiento y alcanza tus objetivos fitness.
             </Text>
             <HStack spacing={4}>
               <Link href="https://instagram.com/brain2gain" isExternal>
-                <Icon as={FaInstagram} boxSize={5} _hover={{ color: 'blue.500' }} />
+                <Icon
+                  as={FaInstagram}
+                  boxSize={5}
+                  _hover={{ color: "blue.500" }}
+                />
               </Link>
               <Link href="https://facebook.com/brain2gain" isExternal>
-                <Icon as={FaFacebook} boxSize={5} _hover={{ color: 'blue.500' }} />
+                <Icon
+                  as={FaFacebook}
+                  boxSize={5}
+                  _hover={{ color: "blue.500" }}
+                />
               </Link>
               <Link href="https://twitter.com/brain2gain" isExternal>
-                <Icon as={FaTwitter} boxSize={5} _hover={{ color: 'blue.500' }} />
+                <Icon
+                  as={FaTwitter}
+                  boxSize={5}
+                  _hover={{ color: "blue.500" }}
+                />
               </Link>
               <Link href="https://wa.me/1234567890" isExternal>
-                <Icon as={FaWhatsapp} boxSize={5} _hover={{ color: 'green.500' }} />
+                <Icon
+                  as={FaWhatsapp}
+                  boxSize={5}
+                  _hover={{ color: "green.500" }}
+                />
               </Link>
             </HStack>
           </Stack>
@@ -110,10 +126,10 @@ const StoreFooter = () => {
 
       <Container as={Stack} maxW="7xl" py={4}>
         <Stack
-          direction={{ base: 'column', md: 'row' }}
+          direction={{ base: "column", md: "row" }}
           spacing={4}
-          justify={{ base: 'center', md: 'space-between' }}
-          align={{ base: 'center', md: 'center' }}
+          justify={{ base: "center", md: "space-between" }}
+          align={{ base: "center", md: "center" }}
         >
           <Text fontSize="sm">
             © 2024 Brain2Gain. Todos los derechos reservados.

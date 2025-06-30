@@ -1,54 +1,75 @@
-import '@testing-library/jest-dom'
-import { vi } from 'vitest'
-import React from 'react'
+import "@testing-library/jest-dom"
+import React from "react"
+import { vi } from "vitest"
 
 // Mock framer-motion FIRST before other imports
-vi.mock('framer-motion', () => {
-
+vi.mock("framer-motion", () => {
   // Create a motion factory that works with any component
   const createMotionComponent = (Component: any) => {
     return React.forwardRef((props: any, ref: any) => {
       // Filter out motion-specific props
       const {
-        initial, animate, exit, transition, variants,
-        whileHover, whileTap, whileFocus, whileInView,
-        drag, dragConstraints, onDrag, onDragEnd,
-        layout, layoutId, style,
-        onHoverStart, onHoverEnd, onAnimationStart, onAnimationComplete,
-        onDragStart, onDragTransitionEnd, onTap, onTapStart, onTapCancel,
-        onPan, onPanStart, onPanEnd, onViewportEnter, onViewportLeave,
+        initial,
+        animate,
+        exit,
+        transition,
+        variants,
+        whileHover,
+        whileTap,
+        whileFocus,
+        whileInView,
+        drag,
+        dragConstraints,
+        onDrag,
+        onDragEnd,
+        layout,
+        layoutId,
+        style,
+        onHoverStart,
+        onHoverEnd,
+        onAnimationStart,
+        onAnimationComplete,
+        onDragStart,
+        onDragTransitionEnd,
+        onTap,
+        onTapStart,
+        onTapCancel,
+        onPan,
+        onPanStart,
+        onPanEnd,
+        onViewportEnter,
+        onViewportLeave,
         ...restProps
-      } = props;
+      } = props
 
       // If Component is a React component (object with $typeof), render it directly
       // If it's a string (like 'div'), create element with it
-      if (typeof Component === 'string') {
+      if (typeof Component === "string") {
         return React.createElement(Component, {
           ...restProps,
           ref,
-          style
-        });
-      } else {
-        // For React components like Chakra Box, render them normally
-        return React.createElement(Component, {
-          ...restProps,
-          ref,
-          style
-        });
+          style,
+        })
       }
-    });
-  };
+      // For React components like Chakra Box, render them normally
+      return React.createElement(Component, {
+        ...restProps,
+        ref,
+        style,
+      })
+    })
+  }
 
   // Simple motion function that returns wrapped component
-  const motion = (Component: any) => createMotionComponent(Component);
+  const motion = (Component: any) => createMotionComponent(Component)
 
   // Add properties for motion.div, motion.span, etc.
-  motion.div = createMotionComponent('div');
-  motion.span = createMotionComponent('span');
-  motion.img = createMotionComponent('img');
-  motion.button = createMotionComponent('button');
-  motion.a = createMotionComponent('a');
-  motion.section = createMotionComponent('section');
+  motion.div = createMotionComponent("div")
+  motion.span = createMotionComponent("span")
+  motion.img = createMotionComponent("img")
+  motion.button = createMotionComponent("button")
+  motion.a = createMotionComponent("a")
+  motion.section = createMotionComponent("section")
 
   return {
     motion,
@@ -58,30 +79,30 @@ vi.mock('framer-motion', () => {
       stop: vi.fn(),
       set: vi.fn(),
       mount: vi.fn(),
-      unmount: vi.fn()
+      unmount: vi.fn(),
     }),
     useReducedMotion: () => false,
     useMotionValue: (initial: any) => ({
       get: () => initial,
       set: vi.fn(),
-      stop: vi.fn()
+      stop: vi.fn(),
     }),
     useTransform: () => ({
       get: () => 0,
-      set: vi.fn()
+      set: vi.fn(),
     }),
     useSpring: (initial: any) => ({
       get: () => initial,
-      set: vi.fn()
-    })
-  };
-});
+      set: vi.fn(),
+    }),
+  }
+})
 
 // Import router mocks
-import './setup-router-mocks'
+import "./setup-router-mocks"
 
 // Mock AuthContext to prevent act() warnings
-vi.mock('../contexts/AuthContext', () => {
+vi.mock("../contexts/AuthContext", () => {
   return {
     useAuth: vi.fn(() => ({
       user: null,
@@ -98,8 +119,8 @@ vi.mock('../contexts/AuthContext', () => {
 })
 
 // Mock environment variables
-process.env.VITE_API_URL = 'http://localhost:8000'
-process.env.VITE_WS_URL = 'ws://localhost:8000'
+process.env.VITE_API_URL = "http://localhost:8000"
+process.env.VITE_WS_URL = "ws://localhost:8000"
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -119,12 +140,12 @@ const localStorageMock = (() => {
   }
 })()
 
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: localStorageMock,
 })
 
 // Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query) => ({
     matches: false,

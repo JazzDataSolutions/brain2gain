@@ -2,8 +2,8 @@
  * Unit tests for AnalyticsService
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import AnalyticsService from '../../../services/AnalyticsService'
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
+import AnalyticsService from "../../../services/AnalyticsService"
 
 // Mock fetch globally
 const mockFetch = vi.fn()
@@ -15,58 +15,58 @@ const mockLocalStorage = {
   setItem: vi.fn(),
   removeItem: vi.fn(),
 }
-Object.defineProperty(window, 'localStorage', {
+Object.defineProperty(window, "localStorage", {
   value: mockLocalStorage,
 })
 
-describe('AnalyticsService', () => {
+describe("AnalyticsService", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockLocalStorage.getItem.mockReturnValue('mock-token')
+    mockLocalStorage.getItem.mockReturnValue("mock-token")
   })
 
   afterEach(() => {
     vi.resetAllMocks()
   })
 
-  describe('getFinancialSummary', () => {
-    it('should return financial summary on successful API call', async () => {
+  describe("getFinancialSummary", () => {
+    it("should return financial summary on successful API call", async () => {
       // Arrange
       const mockData = {
         revenue: {
-          today: 1500.50,
-          month: 45000.00,
-          year: 540000.00,
+          today: 1500.5,
+          month: 45000.0,
+          year: 540000.0,
           growth_rate: 12.5,
-          mrr: 38000.00,
-          arr: 456000.00,
-          revenue_per_visitor: 15.25
+          mrr: 38000.0,
+          arr: 456000.0,
+          revenue_per_visitor: 15.25,
         },
         orders: {
           orders_today: 8,
           orders_month: 150,
           pending_orders: 5,
-          average_order_value: 95.50
+          average_order_value: 95.5,
         },
         customers: {
           total_customers: 1200,
           new_customers_month: 85,
           customers_with_orders: 720,
           active_customers_30d: 340,
-          customer_conversion_rate: 60.0
+          customer_conversion_rate: 60.0,
         },
         inventory: {
           total_products: 45,
           low_stock_products: 3,
           out_of_stock_products: 1,
-          total_inventory_value: 125000.00
+          total_inventory_value: 125000.0,
         },
         conversion: {
           cart_abandonment_rate: 28.5,
           conversion_rate: 3.2,
           repeat_customer_rate: 42.1,
-          churn_rate: 8.7
-        }
+          churn_rate: 8.7,
+        },
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -81,23 +81,23 @@ describe('AnalyticsService', () => {
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/analytics/financial-summary',
+        "/api/analytics/financial-summary",
         expect.objectContaining({
-          method: 'GET',
+          method: "GET",
           headers: expect.objectContaining({
-            'Authorization': 'Bearer mock-token',
-            'Content-Type': 'application/json',
+            Authorization: "Bearer mock-token",
+            "Content-Type": "application/json",
           }),
-        })
+        }),
       )
     })
 
-    it('should handle API error gracefully', async () => {
+    it("should handle API error gracefully", async () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
-        text: async () => 'Internal Server Error',
+        text: async () => "Internal Server Error",
       })
 
       // Act
@@ -105,24 +105,24 @@ describe('AnalyticsService', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      expect(result.error).toContain('HTTP 500')
+      expect(result.error).toContain("HTTP 500")
       expect(result.data).toBeNull()
     })
 
-    it('should handle network error', async () => {
+    it("should handle network error", async () => {
       // Arrange
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+      mockFetch.mockRejectedValueOnce(new Error("Network error"))
 
       // Act
       const result = await AnalyticsService.getFinancialSummary()
 
       // Assert
       expect(result.success).toBe(false)
-      expect(result.error).toBe('Network error')
+      expect(result.error).toBe("Network error")
       expect(result.data).toBeNull()
     })
 
-    it('should handle missing auth token', async () => {
+    it("should handle missing auth token", async () => {
       // Arrange
       mockLocalStorage.getItem.mockReturnValue(null)
 
@@ -131,21 +131,21 @@ describe('AnalyticsService', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      expect(result.error).toBe('No authentication token found')
+      expect(result.error).toBe("No authentication token found")
       expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 
-  describe('getRealtimeMetrics', () => {
-    it('should return realtime metrics successfully', async () => {
+  describe("getRealtimeMetrics", () => {
+    it("should return realtime metrics successfully", async () => {
       // Arrange
       const mockData = {
-        current_revenue_today: 2847.50,
+        current_revenue_today: 2847.5,
         orders_today: 14,
         pending_orders: 6,
         active_carts: 23,
         low_stock_alerts: 3,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -159,17 +159,20 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/realtime-metrics', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/realtime-metrics",
+        expect.any(Object),
+      )
     })
   })
 
-  describe('getMRR', () => {
-    it('should return MRR data successfully', async () => {
+  describe("getMRR", () => {
+    it("should return MRR data successfully", async () => {
       // Arrange
       const mockData = {
-        mrr: 38000.00,
-        currency: 'USD',
-        calculation_date: new Date().toISOString()
+        mrr: 38000.0,
+        currency: "USD",
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -183,17 +186,20 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/revenue/mrr', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/revenue/mrr",
+        expect.any(Object),
+      )
     })
   })
 
-  describe('getARR', () => {
-    it('should return ARR data successfully', async () => {
+  describe("getARR", () => {
+    it("should return ARR data successfully", async () => {
       // Arrange
       const mockData = {
-        arr: 456000.00,
-        currency: 'USD',
-        calculation_date: new Date().toISOString()
+        arr: 456000.0,
+        currency: "USD",
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -210,13 +216,13 @@ describe('AnalyticsService', () => {
     })
   })
 
-  describe('getConversionRate', () => {
-    it('should return conversion rate with default days parameter', async () => {
+  describe("getConversionRate", () => {
+    it("should return conversion rate with default days parameter", async () => {
       // Arrange
       const mockData = {
         conversion_rate_percentage: 3.2,
         analysis_period_days: 30,
-        calculation_date: new Date().toISOString()
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -230,15 +236,18 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/conversion/rate?days=30', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/conversion/rate?days=30",
+        expect.any(Object),
+      )
     })
 
-    it('should return conversion rate with custom days parameter', async () => {
+    it("should return conversion rate with custom days parameter", async () => {
       // Arrange
       const mockData = {
         conversion_rate_percentage: 2.8,
         analysis_period_days: 7,
-        calculation_date: new Date().toISOString()
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -252,18 +261,21 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/conversion/rate?days=7', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/conversion/rate?days=7",
+        expect.any(Object),
+      )
     })
   })
 
-  describe('getChurnRate', () => {
-    it('should return churn rate with default period', async () => {
+  describe("getChurnRate", () => {
+    it("should return churn rate with default period", async () => {
       // Arrange
       const mockData = {
         churn_rate_percentage: 8.7,
         retention_rate_percentage: 91.3,
         analysis_period_days: 90,
-        calculation_date: new Date().toISOString()
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -277,16 +289,19 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/customers/churn-rate?period_days=90', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/customers/churn-rate?period_days=90",
+        expect.any(Object),
+      )
     })
 
-    it('should return churn rate with custom period', async () => {
+    it("should return churn rate with custom period", async () => {
       // Arrange
       const mockData = {
         churn_rate_percentage: 12.5,
         retention_rate_percentage: 87.5,
         analysis_period_days: 60,
-        calculation_date: new Date().toISOString()
+        calculation_date: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -300,12 +315,15 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/customers/churn-rate?period_days=60', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/customers/churn-rate?period_days=60",
+        expect.any(Object),
+      )
     })
   })
 
-  describe('getAlertSummary', () => {
-    it('should return alert summary successfully', async () => {
+  describe("getAlertSummary", () => {
+    it("should return alert summary successfully", async () => {
       // Arrange
       const mockData = {
         total_alerts: 3,
@@ -315,16 +333,16 @@ describe('AnalyticsService', () => {
         last_checked: new Date().toISOString(),
         alerts: [
           {
-            id: 'test-alert-1',
-            type: 'inventory_out_of_stock',
-            severity: 'critical',
-            title: 'Out of Stock Alert',
-            description: 'Product XYZ is out of stock',
+            id: "test-alert-1",
+            type: "inventory_out_of_stock",
+            severity: "critical",
+            title: "Out of Stock Alert",
+            description: "Product XYZ is out of stock",
             data: { affected_products: 1 },
             timestamp: new Date().toISOString(),
-            created_at: new Date().toISOString()
-          }
-        ]
+            created_at: new Date().toISOString(),
+          },
+        ],
       }
 
       mockFetch.mockResolvedValueOnce({
@@ -338,20 +356,23 @@ describe('AnalyticsService', () => {
       // Assert
       expect(result.success).toBe(true)
       expect(result.data).toEqual(mockData)
-      expect(mockFetch).toHaveBeenCalledWith('/api/analytics/alerts/summary', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith(
+        "/api/analytics/alerts/summary",
+        expect.any(Object),
+      )
     })
   })
 
-  describe('Fallback methods', () => {
-    describe('getFinancialSummaryWithFallback', () => {
-      it('should return API data when successful', async () => {
+  describe("Fallback methods", () => {
+    describe("getFinancialSummaryWithFallback", () => {
+      it("should return API data when successful", async () => {
         // Arrange
         const mockData = {
           revenue: { today: 1000, mrr: 5000 },
           orders: { orders_today: 10 },
           customers: { total_customers: 100 },
           inventory: { total_products: 50 },
-          conversion: { churn_rate: 5.0 }
+          conversion: { churn_rate: 5.0 },
         }
 
         mockFetch.mockResolvedValueOnce({
@@ -366,12 +387,14 @@ describe('AnalyticsService', () => {
         expect(result).toEqual(mockData)
       })
 
-      it('should return mock data when API fails', async () => {
+      it("should return mock data when API fails", async () => {
         // Arrange
-        mockFetch.mockRejectedValueOnce(new Error('Network error'))
-        
+        mockFetch.mockRejectedValueOnce(new Error("Network error"))
+
         // Mock console.warn to verify it's called
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const consoleSpy = vi
+          .spyOn(console, "warn")
+          .mockImplementation(() => {})
 
         // Act
         const result = await AnalyticsService.getFinancialSummaryWithFallback()
@@ -379,31 +402,35 @@ describe('AnalyticsService', () => {
         // Assert
         expect(result).toEqual(AnalyticsService.getMockFinancialSummary())
         expect(consoleSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Failed to fetch financial summary'),
-          'Network error'
+          expect.stringContaining("Failed to fetch financial summary"),
+          "Network error",
         )
 
         consoleSpy.mockRestore()
       })
     })
 
-    describe('getRealtimeMetricsWithFallback', () => {
-      it('should return mock data when API fails', async () => {
+    describe("getRealtimeMetricsWithFallback", () => {
+      it("should return mock data when API fails", async () => {
         // Arrange
         mockFetch.mockResolvedValueOnce({
           ok: false,
           status: 500,
-          text: async () => 'Server Error',
+          text: async () => "Server Error",
         })
 
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const consoleSpy = vi
+          .spyOn(console, "warn")
+          .mockImplementation(() => {})
 
         // Act
         const result = await AnalyticsService.getRealtimeMetricsWithFallback()
 
         // Assert
         const expectedMockData = AnalyticsService.getMockRealtimeMetrics()
-        expect(result.current_revenue_today).toBe(expectedMockData.current_revenue_today)
+        expect(result.current_revenue_today).toBe(
+          expectedMockData.current_revenue_today,
+        )
         expect(result.orders_today).toBe(expectedMockData.orders_today)
         expect(result.pending_orders).toBe(expectedMockData.pending_orders)
         expect(result.active_carts).toBe(expectedMockData.active_carts)
@@ -415,12 +442,14 @@ describe('AnalyticsService', () => {
       })
     })
 
-    describe('getAlertSummaryWithFallback', () => {
-      it('should return mock data when API fails', async () => {
+    describe("getAlertSummaryWithFallback", () => {
+      it("should return mock data when API fails", async () => {
         // Arrange
         mockLocalStorage.getItem.mockReturnValue(null) // No token
 
-        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+        const consoleSpy = vi
+          .spyOn(console, "warn")
+          .mockImplementation(() => {})
 
         // Act
         const result = await AnalyticsService.getAlertSummaryWithFallback()
@@ -440,31 +469,31 @@ describe('AnalyticsService', () => {
     })
   })
 
-  describe('Mock data methods', () => {
-    it('should return consistent mock financial summary', () => {
+  describe("Mock data methods", () => {
+    it("should return consistent mock financial summary", () => {
       // Act
       const mockData1 = AnalyticsService.getMockFinancialSummary()
       const mockData2 = AnalyticsService.getMockFinancialSummary()
 
       // Assert
       expect(mockData1).toEqual(mockData2)
-      expect(mockData1.revenue.mrr).toBe(38000.00)
-      expect(mockData1.revenue.arr).toBe(456000.00)
+      expect(mockData1.revenue.mrr).toBe(38000.0)
+      expect(mockData1.revenue.arr).toBe(456000.0)
       expect(mockData1.conversion.churn_rate).toBe(8.7)
     })
 
-    it('should return dynamic mock realtime metrics', () => {
+    it("should return dynamic mock realtime metrics", () => {
       // Act
       const mockData = AnalyticsService.getMockRealtimeMetrics()
 
       // Assert
-      expect(mockData.current_revenue_today).toBe(2847.50)
+      expect(mockData.current_revenue_today).toBe(2847.5)
       expect(mockData.orders_today).toBe(14)
       expect(mockData.timestamp).toBeDefined()
       expect(new Date(mockData.timestamp)).toBeInstanceOf(Date)
     })
 
-    it('should return mock alert summary with structure', () => {
+    it("should return mock alert summary with structure", () => {
       // Act
       const mockData = AnalyticsService.getMockAlertSummary()
 
@@ -473,19 +502,19 @@ describe('AnalyticsService', () => {
       expect(mockData.critical_alerts).toBe(1)
       expect(mockData.warning_alerts).toBe(2)
       expect(mockData.alerts).toHaveLength(2)
-      expect(mockData.alerts[0]).toHaveProperty('id')
-      expect(mockData.alerts[0]).toHaveProperty('severity')
-      expect(mockData.alerts[0]).toHaveProperty('title')
+      expect(mockData.alerts[0]).toHaveProperty("id")
+      expect(mockData.alerts[0]).toHaveProperty("severity")
+      expect(mockData.alerts[0]).toHaveProperty("title")
     })
   })
 
-  describe('Error handling', () => {
-    it('should handle JSON parsing errors', async () => {
+  describe("Error handling", () => {
+    it("should handle JSON parsing errors", async () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => {
-          throw new Error('Invalid JSON')
+          throw new Error("Invalid JSON")
         },
       })
 
@@ -494,13 +523,13 @@ describe('AnalyticsService', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      expect(result.error).toBe('Invalid JSON')
+      expect(result.error).toBe("Invalid JSON")
     })
 
-    it('should handle timeout errors gracefully', async () => {
+    it("should handle timeout errors gracefully", async () => {
       // Arrange
-      const timeoutError = new Error('Request timeout')
-      timeoutError.name = 'AbortError'
+      const timeoutError = new Error("Request timeout")
+      timeoutError.name = "AbortError"
       mockFetch.mockRejectedValueOnce(timeoutError)
 
       // Act
@@ -508,10 +537,10 @@ describe('AnalyticsService', () => {
 
       // Assert
       expect(result.success).toBe(false)
-      expect(result.error).toBe('Request timeout')
+      expect(result.error).toBe("Request timeout")
     })
 
-    it('should handle malformed API responses', async () => {
+    it("should handle malformed API responses", async () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -527,10 +556,10 @@ describe('AnalyticsService', () => {
     })
   })
 
-  describe('Request headers', () => {
-    it('should include correct authorization header', async () => {
+  describe("Request headers", () => {
+    it("should include correct authorization header", async () => {
       // Arrange
-      mockLocalStorage.getItem.mockReturnValue('test-token-123')
+      mockLocalStorage.getItem.mockReturnValue("test-token-123")
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({}),
@@ -541,16 +570,16 @@ describe('AnalyticsService', () => {
 
       // Assert
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/analytics/financial-summary',
+        "/api/analytics/financial-summary",
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer test-token-123',
+            Authorization: "Bearer test-token-123",
           }),
-        })
+        }),
       )
     })
 
-    it('should include content-type header', async () => {
+    it("should include content-type header", async () => {
       // Arrange
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -565,9 +594,9 @@ describe('AnalyticsService', () => {
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           }),
-        })
+        }),
       )
     })
   })

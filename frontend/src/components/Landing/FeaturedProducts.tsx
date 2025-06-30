@@ -1,29 +1,30 @@
 import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  SimpleGrid,
-  Button,
-  VStack,
-  Spinner,
   Alert,
   AlertIcon,
-} from '@chakra-ui/react'
-import { Link } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+  Box,
+  Button,
+  Container,
+  Heading,
+  SimpleGrid,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
 
-import ProductCard from '../Products/ProductCard'
-import { ProductsService, Product } from '../../services/ProductsService'
+import { type Product, ProductsService } from "../../services/ProductsService"
+import ProductCard from "../Products/ProductCard"
 
 const FeaturedProducts = () => {
-  const { 
-    data: productsResponse, 
-    isLoading, 
-    error 
+  const {
+    data: productsResponse,
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ['featured-products'],
-    queryFn: () => ProductsService.getProductsWithFallback({ skip: 0, limit: 6 }), // Limit to 6 for homepage
+    queryKey: ["featured-products"],
+    queryFn: () =>
+      ProductsService.getProductsWithFallback({ skip: 0, limit: 6 }), // Limit to 6 for homepage
     staleTime: 5 * 60 * 1000, // 5 minutes
   })
 
@@ -52,8 +53,8 @@ const FeaturedProducts = () => {
               Productos Destacados
             </Heading>
             <Text fontSize="lg" color="gray.600" maxW="2xl">
-              Descubre nuestra selección de suplementos premium, 
-              cuidadosamente elegidos para potenciar tu rendimiento
+              Descubre nuestra selección de suplementos premium, cuidadosamente
+              elegidos para potenciar tu rendimiento
             </Text>
           </VStack>
 

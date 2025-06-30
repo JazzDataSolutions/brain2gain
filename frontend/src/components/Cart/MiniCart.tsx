@@ -1,36 +1,36 @@
+import { DeleteIcon } from "@chakra-ui/icons"
 import {
+  Badge,
   Box,
   Button,
-  HStack,
-  VStack,
-  Text,
-  Badge,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverFooter,
-  PopoverArrow,
-  PopoverCloseButton,
-  Image,
-  IconButton,
   Divider,
+  HStack,
+  IconButton,
+  Image,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverCloseButton,
+  PopoverContent,
+  PopoverFooter,
+  PopoverHeader,
+  PopoverTrigger,
+  Text,
+  VStack,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { DeleteIcon } from '@chakra-ui/icons'
-import { FiShoppingCart } from 'react-icons/fi'
-import { Link } from '@tanstack/react-router'
+} from "@chakra-ui/react"
+import { Link } from "@tanstack/react-router"
+import { FiShoppingCart } from "react-icons/fi"
 
-import { useCartStore } from '../../stores/cartStore'
+import { useCartStore } from "../../stores/cartStore"
 
 const MiniCart = () => {
   const { items, removeItem, getTotalPrice, getTotalItems } = useCartStore()
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
     }).format(price)
   }
 
@@ -58,7 +58,7 @@ const MiniCart = () => {
               alignItems="center"
               justifyContent="center"
             >
-              {getTotalItems() > 99 ? '99+' : getTotalItems()}
+              {getTotalItems() > 99 ? "99+" : getTotalItems()}
             </Badge>
           )}
         </Button>
@@ -79,12 +79,7 @@ const MiniCart = () => {
               <Text color="gray.500" mb={4}>
                 Tu carrito está vacío
               </Text>
-              <Button
-                as={Link}
-                to="/products"
-                colorScheme="blue"
-                size="sm"
-              >
+              <Button as={Link} to="/products" colorScheme="blue" size="sm">
                 Ver Productos
               </Button>
             </Box>
@@ -94,14 +89,14 @@ const MiniCart = () => {
                 <Box key={item.id}>
                   <HStack p={3} spacing={3} align="start">
                     <Image
-                      src={item.image || '/imagenes/proteina_catalogo.jpg'}
+                      src={item.image || "/imagenes/proteina_catalogo.jpg"}
                       alt={item.name}
                       boxSize="50px"
                       objectFit="cover"
                       borderRadius="md"
                       fallbackSrc="https://via.placeholder.com/50x50?text=Brain2Gain"
                     />
-                    
+
                     <VStack align="stretch" flex={1} spacing={1}>
                       <Text fontSize="sm" fontWeight="medium" noOfLines={2}>
                         {item.name}
@@ -110,7 +105,11 @@ const MiniCart = () => {
                         <Text fontSize="xs" color="gray.500">
                           {item.quantity} x {formatPrice(item.price)}
                         </Text>
-                        <Text fontSize="sm" fontWeight="semibold" color="blue.600">
+                        <Text
+                          fontSize="sm"
+                          fontWeight="semibold"
+                          color="blue.600"
+                        >
                           {formatPrice(item.price * item.quantity)}
                         </Text>
                       </HStack>
@@ -130,9 +129,10 @@ const MiniCart = () => {
               ))}
 
               {items.length > 3 && (
-                <Box p={3} bg={useColorModeValue('gray.50', 'gray.700')}>
+                <Box p={3} bg={useColorModeValue("gray.50", "gray.700")}>
                   <Text fontSize="sm" color="gray.600" textAlign="center">
-                    y {items.length - 3} producto{items.length - 3 !== 1 ? 's' : ''} más...
+                    y {items.length - 3} producto
+                    {items.length - 3 !== 1 ? "s" : ""} más...
                   </Text>
                 </Box>
               )}

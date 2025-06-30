@@ -1,32 +1,32 @@
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  Badge,
   Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
+  Button,
   Card,
   CardBody,
-  Button,
-  useColorModeValue,
-  Badge,
+  Container,
   Divider,
-  Icon,
-  Alert,
-  AlertIcon,
-  AlertDescription,
   Flex,
-} from '@chakra-ui/react'
-import { FiCheck, FiMail, FiTruck, FiHome } from 'react-icons/fi'
-import { FaWhatsapp, FaPhone, FaEnvelope } from 'react-icons/fa'
-import { useNavigate, useSearch } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import orderService, { type Order } from '../../services/orderService'
+  HStack,
+  Heading,
+  Icon,
+  Text,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import { FaEnvelope, FaPhone, FaWhatsapp } from "react-icons/fa"
+import { FiCheck, FiHome, FiMail, FiTruck } from "react-icons/fi"
+import orderService, { type Order } from "../../services/orderService"
 
 const OrderSuccessPage = () => {
   const navigate = useNavigate()
-  const { orderId } = useSearch({ from: '/store/order-success' })
-  const cardBg = useColorModeValue('white', 'gray.800')
+  const { orderId } = useSearch({ from: "/store/order-success" })
+  const cardBg = useColorModeValue("white", "gray.800")
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +34,7 @@ const OrderSuccessPage = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId) {
-        setError('ID de pedido no encontrado')
+        setError("ID de pedido no encontrado")
         setLoading(false)
         return
       }
@@ -43,8 +43,8 @@ const OrderSuccessPage = () => {
         const orderData = await orderService.getOrderById(orderId)
         setOrder(orderData)
       } catch (err) {
-        console.error('Error fetching order:', err)
-        setError('No se pudo cargar la información del pedido')
+        console.error("Error fetching order:", err)
+        setError("No se pudo cargar la información del pedido")
       } finally {
         setLoading(false)
       }
@@ -55,37 +55,37 @@ const OrderSuccessPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 'green'
-      case 'pending':
-        return 'yellow'
-      case 'processing':
-        return 'blue'
-      case 'shipped':
-        return 'purple'
-      case 'delivered':
-        return 'green'
-      case 'cancelled':
-        return 'red'
+      case "confirmed":
+        return "green"
+      case "pending":
+        return "yellow"
+      case "processing":
+        return "blue"
+      case "shipped":
+        return "purple"
+      case "delivered":
+        return "green"
+      case "cancelled":
+        return "red"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
   const getPaymentStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'captured':
-        return 'green'
-      case 'authorized':
-        return 'blue'
-      case 'pending':
-        return 'yellow'
-      case 'failed':
-        return 'red'
-      case 'refunded':
-        return 'orange'
+      case "captured":
+        return "green"
+      case "authorized":
+        return "blue"
+      case "pending":
+        return "yellow"
+      case "failed":
+        return "red"
+      case "refunded":
+        return "orange"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
@@ -107,12 +107,9 @@ const OrderSuccessPage = () => {
             Error al cargar el pedido
           </Heading>
           <Text color="gray.600">
-            {error || 'No se encontró información del pedido'}
+            {error || "No se encontró información del pedido"}
           </Text>
-          <Button
-            colorScheme="blue"
-            onClick={() => navigate({ to: '/store' })}
-          >
+          <Button colorScheme="blue" onClick={() => navigate({ to: "/store" })}>
             Volver a la tienda
           </Button>
         </VStack>
@@ -152,26 +149,38 @@ const OrderSuccessPage = () => {
           <CardBody>
             <VStack spacing={6} align="stretch">
               {/* Order Header */}
-              <Flex justify="space-between" align="center" flexWrap="wrap" gap={4}>
+              <Flex
+                justify="space-between"
+                align="center"
+                flexWrap="wrap"
+                gap={4}
+              >
                 <Box>
                   <Heading size="md" mb={1}>
                     Pedido #{order.order_id.slice(-8).toUpperCase()}
                   </Heading>
                   <Text fontSize="sm" color="gray.500">
-                    Realizado el {new Date(order.created_at).toLocaleDateString('es-MX', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
+                    Realizado el{" "}
+                    {new Date(order.created_at).toLocaleDateString("es-MX", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </Text>
                 </Box>
                 <VStack spacing={2} align="end">
-                  <Badge colorScheme={getStatusColor(order.status)} fontSize="sm">
+                  <Badge
+                    colorScheme={getStatusColor(order.status)}
+                    fontSize="sm"
+                  >
                     {order.status}
                   </Badge>
-                  <Badge colorScheme={getPaymentStatusColor(order.payment_status)} fontSize="sm">
+                  <Badge
+                    colorScheme={getPaymentStatusColor(order.payment_status)}
+                    fontSize="sm"
+                  >
                     Pago: {order.payment_status}
                   </Badge>
                 </VStack>
@@ -181,14 +190,17 @@ const OrderSuccessPage = () => {
 
               {/* Order Details */}
               <Box>
-                <Heading size="sm" mb={3}>Detalles del Pedido</Heading>
+                <Heading size="sm" mb={3}>
+                  Detalles del Pedido
+                </Heading>
                 <VStack spacing={3} align="stretch">
                   {order.items.map((item) => (
                     <HStack key={item.item_id} justify="space-between">
                       <Box>
                         <Text fontWeight="medium">{item.product_name}</Text>
                         <Text fontSize="sm" color="gray.500">
-                          Cantidad: {item.quantity} x ${item.unit_price.toFixed(2)}
+                          Cantidad: {item.quantity} x $
+                          {item.unit_price.toFixed(2)}
                         </Text>
                       </Box>
                       <Text fontWeight="semibold">
@@ -209,8 +221,12 @@ const OrderSuccessPage = () => {
                 </HStack>
                 <HStack justify="space-between">
                   <Text>Envío</Text>
-                  <Text color={order.shipping_cost === 0 ? "green.500" : "inherit"}>
-                    {order.shipping_cost === 0 ? 'GRATIS' : `$${order.shipping_cost.toFixed(2)}`}
+                  <Text
+                    color={order.shipping_cost === 0 ? "green.500" : "inherit"}
+                  >
+                    {order.shipping_cost === 0
+                      ? "GRATIS"
+                      : `$${order.shipping_cost.toFixed(2)}`}
                   </Text>
                 </HStack>
                 <HStack justify="space-between">
@@ -228,17 +244,22 @@ const OrderSuccessPage = () => {
 
               {/* Shipping Address */}
               <Box>
-                <Heading size="sm" mb={2}>Dirección de Envío</Heading>
+                <Heading size="sm" mb={2}>
+                  Dirección de Envío
+                </Heading>
                 <VStack spacing={1} align="start">
                   <Text fontWeight="medium">
-                    {order.shipping_address.first_name} {order.shipping_address.last_name}
+                    {order.shipping_address.first_name}{" "}
+                    {order.shipping_address.last_name}
                   </Text>
                   <Text>{order.shipping_address.address_line_1}</Text>
                   {order.shipping_address.address_line_2 && (
                     <Text>{order.shipping_address.address_line_2}</Text>
                   )}
                   <Text>
-                    {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
+                    {order.shipping_address.city},{" "}
+                    {order.shipping_address.state}{" "}
+                    {order.shipping_address.postal_code}
                   </Text>
                   <Text>{order.shipping_address.country}</Text>
                 </VStack>
@@ -252,7 +273,7 @@ const OrderSuccessPage = () => {
           <CardBody>
             <VStack spacing={4} align="stretch">
               <Heading size="md">¿Qué sigue?</Heading>
-              
+
               <Alert status="info">
                 <AlertIcon />
                 <AlertDescription>
@@ -260,7 +281,8 @@ const OrderSuccessPage = () => {
                     <HStack>
                       <Icon as={FiMail} />
                       <Text fontSize="sm">
-                        Recibirás un email de confirmación con todos los detalles
+                        Recibirás un email de confirmación con todos los
+                        detalles
                       </Text>
                     </HStack>
                     <HStack>
@@ -306,13 +328,13 @@ const OrderSuccessPage = () => {
           <Button
             leftIcon={<FiHome />}
             colorScheme="blue"
-            onClick={() => navigate({ to: '/store' })}
+            onClick={() => navigate({ to: "/store" })}
           >
             Volver a la Tienda
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate({ to: '/store/orders' })}
+            onClick={() => navigate({ to: "/store/orders" })}
           >
             Ver Mis Pedidos
           </Button>

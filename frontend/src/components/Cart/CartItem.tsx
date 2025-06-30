@@ -1,22 +1,25 @@
+import { DeleteIcon } from "@chakra-ui/icons"
 import {
   Box,
   HStack,
-  VStack,
+  IconButton,
   Image,
-  Text,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
   NumberInput,
   NumberInputField,
   NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  IconButton,
+  Text,
+  VStack,
   useColorModeValue,
   useToast,
-} from '@chakra-ui/react'
-import { DeleteIcon } from '@chakra-ui/icons'
-import { Link } from '@tanstack/react-router'
+} from "@chakra-ui/react"
+import { Link } from "@tanstack/react-router"
 
-import { CartItem as CartItemType, useCartStore } from '../../stores/cartStore'
+import {
+  type CartItem as CartItemType,
+  useCartStore,
+} from "../../stores/cartStore"
 
 interface CartItemProps {
   item: CartItemType
@@ -26,8 +29,8 @@ const CartItem = ({ item }: CartItemProps) => {
   const { updateQuantity, removeItem } = useCartStore()
   const toast = useToast()
 
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+  const cardBg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.600")
 
   const handleQuantityChange = (quantity: number) => {
     if (quantity < 1) return
@@ -37,18 +40,18 @@ const CartItem = ({ item }: CartItemProps) => {
   const handleRemove = () => {
     removeItem(item.id)
     toast({
-      title: 'Producto eliminado',
+      title: "Producto eliminado",
       description: `${item.name} fue eliminado del carrito`,
-      status: 'info',
+      status: "info",
       duration: 3000,
       isClosable: true,
     })
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
     }).format(price)
   }
 
@@ -82,7 +85,7 @@ const CartItem = ({ item }: CartItemProps) => {
               to={`/products/${item.id.toString()}`}
               fontWeight="semibold"
               fontSize="lg"
-              _hover={{ color: 'blue.600' }}
+              _hover={{ color: "blue.600" }}
               noOfLines={2}
             >
               {item.name}

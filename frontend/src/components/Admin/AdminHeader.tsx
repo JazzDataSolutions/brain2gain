@@ -1,40 +1,40 @@
 import {
-  Flex,
-  Box,
-  Text,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuDivider,
   Avatar,
-  HStack,
-  useColorModeValue,
+  Box,
   Button,
+  Flex,
+  HStack,
   Input,
   InputGroup,
   InputLeftElement,
-} from '@chakra-ui/react'
+  Menu,
+  MenuButton,
+  MenuDivider,
+  MenuItem,
+  MenuList,
+  Text,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { useNavigate } from "@tanstack/react-router"
 import {
+  FiExternalLink,
+  FiLogOut,
   FiSearch,
   FiSettings,
-  FiLogOut,
   FiUser,
-  FiExternalLink,
-} from 'react-icons/fi'
-import { useNavigate } from '@tanstack/react-router'
-import useAuth from '../../hooks/useAuth'
-import { NotificationBell } from '../Notifications/NotificationBell'
+} from "react-icons/fi"
+import useAuth from "../../hooks/useAuth"
+import { NotificationBell } from "../Notifications/NotificationBell"
 
 const AdminHeader = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const bg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.700')
+  const bg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.700")
 
   const handleLogout = () => {
     logout()
-    navigate({ to: '/login' })
+    navigate({ to: "/login" })
   }
 
   return (
@@ -59,12 +59,12 @@ const AdminHeader = () => {
           </InputLeftElement>
           <Input
             placeholder="Buscar productos, pedidos, clientes..."
-            bg={useColorModeValue('gray.50', 'gray.700')}
+            bg={useColorModeValue("gray.50", "gray.700")}
             border="1px"
-            borderColor={useColorModeValue('gray.200', 'gray.600')}
+            borderColor={useColorModeValue("gray.200", "gray.600")}
             _focus={{
-              borderColor: 'blue.500',
-              boxShadow: '0 0 0 1px blue.500',
+              borderColor: "blue.500",
+              boxShadow: "0 0 0 1px blue.500",
             }}
           />
         </InputGroup>
@@ -77,7 +77,7 @@ const AdminHeader = () => {
           variant="ghost"
           leftIcon={<FiExternalLink />}
           size="sm"
-          onClick={() => navigate({ to: '/store' })}
+          onClick={() => navigate({ to: "/store" })}
         >
           Ver Tienda
         </Button>
@@ -89,9 +89,9 @@ const AdminHeader = () => {
         <Menu>
           <MenuButton>
             <HStack spacing={3} cursor="pointer">
-              <Box textAlign="right" display={{ base: 'none', md: 'block' }}>
+              <Box textAlign="right" display={{ base: "none", md: "block" }}>
                 <Text fontSize="sm" fontWeight="medium">
-                  {user?.full_name || 'Administrador'}
+                  {user?.full_name || "Administrador"}
                 </Text>
                 <Text fontSize="xs" color="gray.500">
                   {user?.email}
@@ -105,18 +105,31 @@ const AdminHeader = () => {
             </HStack>
           </MenuButton>
           <MenuList>
-            <MenuItem icon={<FiUser />} onClick={() => navigate({ to: '/admin/profile' })}>
+            <MenuItem
+              icon={<FiUser />}
+              onClick={() => navigate({ to: "/admin/profile" })}
+            >
               Mi Perfil
             </MenuItem>
-            <MenuItem icon={<FiSettings />} onClick={() => navigate({ to: '/admin/settings' })}>
+            <MenuItem
+              icon={<FiSettings />}
+              onClick={() => navigate({ to: "/admin/settings" })}
+            >
               Configuración
             </MenuItem>
             <MenuDivider />
-            <MenuItem icon={<FiExternalLink />} onClick={() => navigate({ to: '/store' })}>
+            <MenuItem
+              icon={<FiExternalLink />}
+              onClick={() => navigate({ to: "/store" })}
+            >
               Ver Tienda
             </MenuItem>
             <MenuDivider />
-            <MenuItem icon={<FiLogOut />} onClick={handleLogout} color="red.500">
+            <MenuItem
+              icon={<FiLogOut />}
+              onClick={handleLogout}
+              color="red.500"
+            >
               Cerrar Sesión
             </MenuItem>
           </MenuList>

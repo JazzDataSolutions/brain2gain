@@ -1,84 +1,84 @@
+import { ChevronRightIcon } from "@chakra-ui/icons"
 import {
-  Box,
-  Container,
-  Image,
-  Text,
-  Button,
-  VStack,
-  HStack,
-  Heading,
-  Badge,
-  useToast,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Grid,
-  GridItem,
-  Spinner,
   Alert,
   AlertIcon,
+  Badge,
+  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
+  Button,
+  Container,
+  Grid,
+  GridItem,
+  HStack,
+  Heading,
+  Image,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Spinner,
+  Text,
+  VStack,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { ChevronRightIcon } from '@chakra-ui/icons'
-import { useState } from 'react'
-import { useParams, Link } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+  useToast,
+} from "@chakra-ui/react"
+import { useQuery } from "@tanstack/react-query"
+import { Link, useParams } from "@tanstack/react-router"
+import { useState } from "react"
 
-import { useCartStore } from '../../stores/cartStore'
-import { ProductsService } from '../../services/ProductsService'
+import { ProductsService } from "../../services/ProductsService"
+import { useCartStore } from "../../stores/cartStore"
 
 const ProductDetail = () => {
-  const { productId } = useParams({ from: '/products/$productId' })
+  const { productId } = useParams({ from: "/products/$productId" })
   const [quantity, setQuantity] = useState(1)
   const [isAdding, setIsAdding] = useState(false)
-  
+
   const addItem = useCartStore((state) => state.addItem)
   const toast = useToast()
 
-  const cardBg = useColorModeValue('white', 'gray.800')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
+  const cardBg = useColorModeValue("white", "gray.800")
+  const borderColor = useColorModeValue("gray.200", "gray.600")
 
-  const { 
-    data: product, 
-    isLoading, 
-    error 
+  const {
+    data: product,
+    isLoading,
+    error,
   } = useQuery({
-    queryKey: ['product', productId],
-    queryFn: () => ProductsService.readProduct(parseInt(productId)),
+    queryKey: ["product", productId],
+    queryFn: () => ProductsService.readProduct(Number.parseInt(productId)),
     enabled: !!productId,
   })
 
   const handleAddToCart = async () => {
     if (!product) return
-    
+
     setIsAdding(true)
-    
+
     try {
       addItem({
         id: product.id.toString(),
         name: product.name,
         price: product.price,
         quantity: quantity,
-        image: product.image
+        image: product.image,
       })
-      
+
       toast({
-        title: '¡Agregado al carrito!',
+        title: "¡Agregado al carrito!",
         description: `${quantity} x ${product.name}`,
-        status: 'success',
+        status: "success",
         duration: 3000,
         isClosable: true,
       })
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'No se pudo agregar el producto al carrito',
-        status: 'error',
+        title: "Error",
+        description: "No se pudo agregar el producto al carrito",
+        status: "error",
         duration: 3000,
         isClosable: true,
       })
@@ -88,9 +88,9 @@ const ProductDetail = () => {
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
     }).format(price)
   }
 
@@ -122,12 +122,19 @@ const ProductDetail = () => {
     <Container maxW="7xl" py={8}>
       <VStack spacing={8} align="stretch">
         {/* Breadcrumb */}
-        <Breadcrumb spacing="8px" separator={<ChevronRightIcon color="gray.500" />}>
+        <Breadcrumb
+          spacing="8px"
+          separator={<ChevronRightIcon color="gray.500" />}
+        >
           <BreadcrumbItem>
-            <BreadcrumbLink as={Link} to="/">Inicio</BreadcrumbLink>
+            <BreadcrumbLink as={Link} to="/">
+              Inicio
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbItem>
-            <BreadcrumbLink as={Link} to="/products">Productos</BreadcrumbLink>
+            <BreadcrumbLink as={Link} to="/products">
+              Productos
+            </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbItem isCurrentPage>
             <BreadcrumbLink>{product.name}</BreadcrumbLink>
@@ -135,7 +142,7 @@ const ProductDetail = () => {
         </Breadcrumb>
 
         {/* Product Details */}
-        <Grid templateColumns={{ base: '1fr', lg: '1fr 1fr' }} gap={8}>
+        <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={8}>
           {/* Product Image */}
           <GridItem>
             <Box
@@ -150,12 +157,12 @@ const ProductDetail = () => {
                 src={`/imagenes/${product.sku.toLowerCase()}.jpg`}
                 alt={product.name}
                 w="100%"
-                h={{ base: '300px', md: '400px' }}
+                h={{ base: "300px", md: "400px" }}
                 objectFit="cover"
                 fallbackSrc="https://via.placeholder.com/400x400?text=Brain2Gain"
               />
-              
-              {product.status === 'ACTIVE' ? (
+
+              {product.status === "ACTIVE" ? (
                 <Badge
                   position="absolute"
                   top={4}
@@ -190,7 +197,7 @@ const ProductDetail = () => {
             <VStack align="stretch" spacing={6}>
               <VStack align="stretch" spacing={3}>
                 <Heading size="xl">{product.name}</Heading>
-                
+
                 <Text color="gray.500" fontSize="lg">
                   SKU: {product.sku}
                 </Text>
@@ -202,29 +209,41 @@ const ProductDetail = () => {
 
               {/* Description Placeholder */}
               <Box>
-                <Heading size="md" mb={3}>Descripción</Heading>
+                <Heading size="md" mb={3}>
+                  Descripción
+                </Heading>
                 <Text color="gray.600" lineHeight="tall">
-                  {product.name} es un suplemento de alta calidad diseñado para apoyar tus objetivos de fitness y bienestar. 
-                  Formulado con ingredientes premium para garantizar la máxima efectividad y pureza.
+                  {product.name} es un suplemento de alta calidad diseñado para
+                  apoyar tus objetivos de fitness y bienestar. Formulado con
+                  ingredientes premium para garantizar la máxima efectividad y
+                  pureza.
                 </Text>
               </Box>
 
               {/* Benefits Placeholder */}
               <Box>
-                <Heading size="md" mb={3}>Beneficios</Heading>
+                <Heading size="md" mb={3}>
+                  Beneficios
+                </Heading>
                 <VStack align="stretch" spacing={2}>
-                  <Text color="gray.600">• Mejora el rendimiento deportivo</Text>
-                  <Text color="gray.600">• Acelera la recuperación muscular</Text>
+                  <Text color="gray.600">
+                    • Mejora el rendimiento deportivo
+                  </Text>
+                  <Text color="gray.600">
+                    • Acelera la recuperación muscular
+                  </Text>
                   <Text color="gray.600">• Ingredientes de alta calidad</Text>
                   <Text color="gray.600">• Sin aditivos artificiales</Text>
                 </VStack>
               </Box>
 
               {/* Purchase Section */}
-              {product.status === 'ACTIVE' && (
+              {product.status === "ACTIVE" && (
                 <Box>
-                  <Heading size="md" mb={4}>Cantidad</Heading>
-                  
+                  <Heading size="md" mb={4}>
+                    Cantidad
+                  </Heading>
+
                   <HStack spacing={4} mb={6}>
                     <NumberInput
                       size="lg"
@@ -240,7 +259,7 @@ const ProductDetail = () => {
                         <NumberDecrementStepper />
                       </NumberInputStepper>
                     </NumberInput>
-                    
+
                     <Text fontSize="lg" color="gray.600">
                       Total: {formatPrice(product.price * quantity)}
                     </Text>
@@ -259,7 +278,7 @@ const ProductDetail = () => {
                 </Box>
               )}
 
-              {product.status !== 'ACTIVE' && (
+              {product.status !== "ACTIVE" && (
                 <Alert status="warning">
                   <AlertIcon />
                   Este producto no está disponible actualmente.

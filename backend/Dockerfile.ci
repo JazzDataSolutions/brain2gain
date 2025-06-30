@@ -1,0 +1,57 @@
+# CI Dockerfile for Brain2Gain Backend
+# Optimized for fast CI/CD testing
+
+FROM python:3.11-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    ENVIRONMENT=testing
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for faster dependency resolution
+RUN pip install uv
+
+# Set work directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN uv sync --dev
+
+# Copy application code
+COPY . .
+
+# Create entrypoint script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "Waiting for database..."\n\
+while ! pg_isready -h $POSTGRES_SERVER -p $POSTGRES_PORT -U $POSTGRES_USER; do\n\
+  sleep 2\n\
+done\n\
+echo "Database is ready!"\n\
+echo "Running migrations..."\n\
+uv run alembic upgrade head\n\
+echo "Starting server..."\n\
+exec uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload\n\
+' > /app/entrypoint.sh
+
+RUN chmod +x /app/entrypoint.sh
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/api/v1/utils/health-check/ || exit 1
+
+# Run entrypoint
+CMD ["/app/entrypoint.sh"]

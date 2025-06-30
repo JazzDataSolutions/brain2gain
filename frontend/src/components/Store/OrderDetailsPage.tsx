@@ -1,44 +1,52 @@
 import {
-  Box,
-  Container,
-  VStack,
-  HStack,
-  Heading,
-  Text,
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  useColorModeValue,
-  Badge,
-  Divider,
-  Grid,
-  GridItem,
-  Image,
   Alert,
-  AlertIcon,
   AlertDescription,
-  Icon,
-  Flex,
-  Progress,
-  Timeline,
-  TimelineItem,
-  TimelineMarker,
-  TimelineContent,
-  TimelineTrack,
+  AlertIcon,
+  Badge,
+  Box,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
-} from '@chakra-ui/react'
-import { FiArrowLeft, FiPackage, FiTruck, FiMapPin, FiCreditCard, FiDownload, FiRefreshCcw } from 'react-icons/fi'
-import { useNavigate, useParams } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import orderService, { type Order } from '../../services/orderService'
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Container,
+  Divider,
+  Flex,
+  Grid,
+  GridItem,
+  HStack,
+  Heading,
+  Icon,
+  Image,
+  Progress,
+  Text,
+  Timeline,
+  TimelineContent,
+  TimelineItem,
+  TimelineMarker,
+  TimelineTrack,
+  VStack,
+  useColorModeValue,
+} from "@chakra-ui/react"
+import { useNavigate, useParams } from "@tanstack/react-router"
+import { useEffect, useState } from "react"
+import {
+  FiArrowLeft,
+  FiCreditCard,
+  FiDownload,
+  FiMapPin,
+  FiPackage,
+  FiRefreshCcw,
+  FiTruck,
+} from "react-icons/fi"
+import orderService, { type Order } from "../../services/orderService"
 
 const OrderDetailsPage = () => {
   const navigate = useNavigate()
   const { orderId } = useParams({ strict: false })
-  const cardBg = useColorModeValue('white', 'gray.800')
+  const cardBg = useColorModeValue("white", "gray.800")
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +54,7 @@ const OrderDetailsPage = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!orderId) {
-        setError('ID de pedido no válido')
+        setError("ID de pedido no válido")
         setLoading(false)
         return
       }
@@ -55,8 +63,8 @@ const OrderDetailsPage = () => {
         const orderData = await orderService.getOrderById(orderId)
         setOrder(orderData)
       } catch (err) {
-        console.error('Error fetching order:', err)
-        setError('No se pudo cargar la información del pedido')
+        console.error("Error fetching order:", err)
+        setError("No se pudo cargar la información del pedido")
       } finally {
         setLoading(false)
       }
@@ -67,37 +75,37 @@ const OrderDetailsPage = () => {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 'green'
-      case 'pending':
-        return 'yellow'
-      case 'processing':
-        return 'blue'
-      case 'shipped':
-        return 'purple'
-      case 'delivered':
-        return 'green'
-      case 'cancelled':
-        return 'red'
+      case "confirmed":
+        return "green"
+      case "pending":
+        return "yellow"
+      case "processing":
+        return "blue"
+      case "shipped":
+        return "purple"
+      case "delivered":
+        return "green"
+      case "cancelled":
+        return "red"
       default:
-        return 'gray'
+        return "gray"
     }
   }
 
   const getStatusText = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'confirmed':
-        return 'Confirmado'
-      case 'pending':
-        return 'Pendiente'
-      case 'processing':
-        return 'Procesando'
-      case 'shipped':
-        return 'Enviado'
-      case 'delivered':
-        return 'Entregado'
-      case 'cancelled':
-        return 'Cancelado'
+      case "confirmed":
+        return "Confirmado"
+      case "pending":
+        return "Pendiente"
+      case "processing":
+        return "Procesando"
+      case "shipped":
+        return "Enviado"
+      case "delivered":
+        return "Entregado"
+      case "cancelled":
+        return "Cancelado"
       default:
         return status
     }
@@ -105,17 +113,17 @@ const OrderDetailsPage = () => {
 
   const getOrderProgress = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'pending':
+      case "pending":
         return 20
-      case 'confirmed':
+      case "confirmed":
         return 40
-      case 'processing':
+      case "processing":
         return 60
-      case 'shipped':
+      case "shipped":
         return 80
-      case 'delivered':
+      case "delivered":
         return 100
-      case 'cancelled':
+      case "cancelled":
         return 0
       default:
         return 0
@@ -124,12 +132,12 @@ const OrderDetailsPage = () => {
 
   const getPaymentMethodText = (method: string) => {
     switch (method.toLowerCase()) {
-      case 'stripe':
-        return 'Tarjeta de Crédito/Débito'
-      case 'paypal':
-        return 'PayPal'
-      case 'bank_transfer':
-        return 'Transferencia Bancaria'
+      case "stripe":
+        return "Tarjeta de Crédito/Débito"
+      case "paypal":
+        return "PayPal"
+      case "bank_transfer":
+        return "Transferencia Bancaria"
       default:
         return method
     }
@@ -153,11 +161,11 @@ const OrderDetailsPage = () => {
             Error al cargar el pedido
           </Heading>
           <Text color="gray.600">
-            {error || 'No se encontró información del pedido'}
+            {error || "No se encontró información del pedido"}
           </Text>
           <Button
             leftIcon={<FiArrowLeft />}
-            onClick={() => navigate({ to: '/store/orders' })}
+            onClick={() => navigate({ to: "/store/orders" })}
           >
             Volver a Mis Pedidos
           </Button>
@@ -172,12 +180,12 @@ const OrderDetailsPage = () => {
         {/* Breadcrumb */}
         <Breadcrumb>
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => navigate({ to: '/store' })}>
+            <BreadcrumbLink onClick={() => navigate({ to: "/store" })}>
               Tienda
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => navigate({ to: '/store/orders' })}>
+            <BreadcrumbLink onClick={() => navigate({ to: "/store/orders" })}>
               Mis Pedidos
             </BreadcrumbLink>
           </BreadcrumbItem>
@@ -195,16 +203,21 @@ const OrderDetailsPage = () => {
               Pedido #{order.order_id.slice(-8).toUpperCase()}
             </Heading>
             <HStack spacing={4} flexWrap="wrap">
-              <Badge colorScheme={getStatusColor(order.status)} fontSize="md" p={2}>
+              <Badge
+                colorScheme={getStatusColor(order.status)}
+                fontSize="md"
+                p={2}
+              >
                 {getStatusText(order.status)}
               </Badge>
               <Text color="gray.600">
-                Realizado el {new Date(order.created_at).toLocaleDateString('es-MX', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
+                Realizado el{" "}
+                {new Date(order.created_at).toLocaleDateString("es-MX", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </Text>
             </HStack>
@@ -213,25 +226,28 @@ const OrderDetailsPage = () => {
             <Button
               leftIcon={<FiArrowLeft />}
               variant="outline"
-              onClick={() => navigate({ to: '/store/orders' })}
+              onClick={() => navigate({ to: "/store/orders" })}
             >
               Volver
             </Button>
             <Button leftIcon={<FiDownload />} variant="outline">
               Descargar Factura
             </Button>
-            {(order.status === 'PENDING' || order.status === 'CONFIRMED') && (
+            {(order.status === "PENDING" || order.status === "CONFIRMED") && (
               <Button
                 leftIcon={<FiRefreshCcw />}
                 colorScheme="red"
                 variant="outline"
                 onClick={async () => {
                   try {
-                    await orderService.cancelOrder(order.order_id, 'Cancelado por el usuario')
+                    await orderService.cancelOrder(
+                      order.order_id,
+                      "Cancelado por el usuario",
+                    )
                     // Refresh order data
                     window.location.reload()
                   } catch (error) {
-                    console.error('Error canceling order:', error)
+                    console.error("Error canceling order:", error)
                   }
                 }}
               >
@@ -242,7 +258,7 @@ const OrderDetailsPage = () => {
         </Flex>
 
         {/* Order Progress */}
-        {order.status !== 'CANCELLED' && (
+        {order.status !== "CANCELLED" && (
           <Card bg={cardBg}>
             <CardHeader>
               <Heading size="md">Estado del Pedido</Heading>
@@ -256,28 +272,32 @@ const OrderDetailsPage = () => {
                       {getOrderProgress(order.status)}%
                     </Text>
                   </Flex>
-                  <Progress 
-                    value={getOrderProgress(order.status)} 
+                  <Progress
+                    value={getOrderProgress(order.status)}
                     colorScheme={getStatusColor(order.status)}
                     size="lg"
                     rounded="md"
                   />
                 </Box>
-                
+
                 {order.tracking_number && (
                   <Alert status="info">
                     <AlertIcon />
                     <AlertDescription>
-                      <strong>Número de seguimiento:</strong> {order.tracking_number}
+                      <strong>Número de seguimiento:</strong>{" "}
+                      {order.tracking_number}
                     </AlertDescription>
                   </Alert>
                 )}
-                
+
                 {order.estimated_delivery && (
                   <Alert status="success">
                     <AlertIcon />
                     <AlertDescription>
-                      <strong>Entrega estimada:</strong> {new Date(order.estimated_delivery).toLocaleDateString('es-MX')}
+                      <strong>Entrega estimada:</strong>{" "}
+                      {new Date(order.estimated_delivery).toLocaleDateString(
+                        "es-MX",
+                      )}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -286,7 +306,7 @@ const OrderDetailsPage = () => {
           </Card>
         )}
 
-        <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap={8}>
+        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={8}>
           {/* Order Details */}
           <GridItem>
             <VStack spacing={6} align="stretch">
@@ -319,12 +339,17 @@ const OrderDetailsPage = () => {
                                 Cantidad: <strong>{item.quantity}</strong>
                               </Text>
                               <Text fontSize="sm">
-                                Precio unitario: <strong>${item.unit_price.toFixed(2)}</strong>
+                                Precio unitario:{" "}
+                                <strong>${item.unit_price.toFixed(2)}</strong>
                               </Text>
                             </HStack>
                           </Box>
                           <Box textAlign="right">
-                            <Text fontWeight="bold" fontSize="lg" color="blue.500">
+                            <Text
+                              fontWeight="bold"
+                              fontSize="lg"
+                              color="blue.500"
+                            >
                               ${item.line_total.toFixed(2)}
                             </Text>
                             {item.discount_amount > 0 && (
@@ -352,21 +377,28 @@ const OrderDetailsPage = () => {
                 <CardBody>
                   <VStack spacing={2} align="start">
                     <Text fontWeight="medium" fontSize="lg">
-                      {order.shipping_address.first_name} {order.shipping_address.last_name}
+                      {order.shipping_address.first_name}{" "}
+                      {order.shipping_address.last_name}
                     </Text>
                     {order.shipping_address.company && (
-                      <Text color="gray.600">{order.shipping_address.company}</Text>
+                      <Text color="gray.600">
+                        {order.shipping_address.company}
+                      </Text>
                     )}
                     <Text>{order.shipping_address.address_line_1}</Text>
                     {order.shipping_address.address_line_2 && (
                       <Text>{order.shipping_address.address_line_2}</Text>
                     )}
                     <Text>
-                      {order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.postal_code}
+                      {order.shipping_address.city},{" "}
+                      {order.shipping_address.state}{" "}
+                      {order.shipping_address.postal_code}
                     </Text>
                     <Text>{order.shipping_address.country}</Text>
                     {order.shipping_address.phone && (
-                      <Text color="gray.600">Tel: {order.shipping_address.phone}</Text>
+                      <Text color="gray.600">
+                        Tel: {order.shipping_address.phone}
+                      </Text>
                     )}
                   </VStack>
                 </CardBody>
@@ -391,11 +423,15 @@ const OrderDetailsPage = () => {
                         <Text fontWeight="medium">Método de Pago</Text>
                       </HStack>
                       <Text>{getPaymentMethodText(order.payment_method)}</Text>
-                      <Badge 
+                      <Badge
                         colorScheme={
-                          order.payment_status === 'CAPTURED' ? 'green' :
-                          order.payment_status === 'PENDING' ? 'yellow' :
-                          order.payment_status === 'FAILED' ? 'red' : 'gray'
+                          order.payment_status === "CAPTURED"
+                            ? "green"
+                            : order.payment_status === "PENDING"
+                              ? "yellow"
+                              : order.payment_status === "FAILED"
+                                ? "red"
+                                : "gray"
                         }
                         mt={1}
                       >
@@ -416,8 +452,14 @@ const OrderDetailsPage = () => {
                           <Icon as={FiTruck} size="sm" color="green.500" />
                           <Text>Envío</Text>
                         </HStack>
-                        <Text color={order.shipping_cost === 0 ? "green.500" : "inherit"}>
-                          {order.shipping_cost === 0 ? 'GRATIS' : `$${order.shipping_cost.toFixed(2)}`}
+                        <Text
+                          color={
+                            order.shipping_cost === 0 ? "green.500" : "inherit"
+                          }
+                        >
+                          {order.shipping_cost === 0
+                            ? "GRATIS"
+                            : `$${order.shipping_cost.toFixed(2)}`}
                         </Text>
                       </HStack>
                       <HStack justify="space-between">
@@ -425,9 +467,15 @@ const OrderDetailsPage = () => {
                         <Text>${order.tax_amount.toFixed(2)}</Text>
                       </HStack>
                       <Divider />
-                      <HStack justify="space-between" fontSize="lg" fontWeight="bold">
+                      <HStack
+                        justify="space-between"
+                        fontSize="lg"
+                        fontWeight="bold"
+                      >
                         <Text>Total</Text>
-                        <Text color="blue.500">${order.total_amount.toFixed(2)}</Text>
+                        <Text color="blue.500">
+                          ${order.total_amount.toFixed(2)}
+                        </Text>
                       </HStack>
                     </VStack>
                   </VStack>
@@ -442,7 +490,8 @@ const OrderDetailsPage = () => {
                 <CardBody>
                   <VStack spacing={4} align="stretch">
                     <Text fontSize="sm" color="gray.600">
-                      Si tienes preguntas sobre tu pedido, no dudes en contactarnos:
+                      Si tienes preguntas sobre tu pedido, no dudes en
+                      contactarnos:
                     </Text>
                     <VStack spacing={2} align="start" fontSize="sm">
                       <Text>📧 contacto@brain2gain.com</Text>

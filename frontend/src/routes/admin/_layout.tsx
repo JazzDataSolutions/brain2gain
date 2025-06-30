@@ -1,8 +1,8 @@
 import { Flex, Spinner } from "@chakra-ui/react"
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
 
-import AdminSidebar from "../../components/Admin/AdminSidebar"
 import AdminHeader from "../../components/Admin/AdminHeader"
+import AdminSidebar from "../../components/Admin/AdminSidebar"
 import useAuth, { isLoggedIn } from "../../hooks/useAuth"
 
 export const Route = createFileRoute("/admin/_layout")({
@@ -33,11 +33,11 @@ function AdminLayout() {
     <Flex maxW="full" h="100vh" bg="gray.50">
       {/* Sidebar del ERP */}
       <AdminSidebar />
-      
+
       <Flex direction="column" flex="1" overflow="hidden">
         {/* Header del admin */}
         <AdminHeader />
-        
+
         {/* Contenido principal */}
         <Flex flex="1" p={4} overflow="auto">
           {isLoading ? (

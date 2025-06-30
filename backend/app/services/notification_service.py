@@ -28,10 +28,14 @@ from app.core.websocket import manager
 
 logger = logging.getLogger(__name__)
 
-# Import email template service (late import to avoid circular dependency)
+# Import email services (late import to avoid circular dependency)
 def get_email_template_service():
     from app.services.email_template_service import email_template_service
     return email_template_service
+
+def get_email_delivery_service():
+    from app.services.email_delivery_service import email_delivery_service
+    return email_delivery_service
 
 
 class NotificationType(str, Enum):
@@ -466,6 +470,68 @@ class NotificationService:
 
         except Exception as e:
             logger.error(f"Failed to send system alert: {e}")
+            return {"success": False, "error": str(e)}
+
+    async def send_order_notification(
+        self, 
+        order_id: str,
+        customer_email: str,
+        notification_type: str,
+        order_data: dict[str, Any] = None
+    ) -> dict[str, Any]:
+        """
+        Send order notification emails using the EmailDeliveryService
+        
+        Args:
+            order_id: Order ID
+            customer_email: Customer email address
+            notification_type: Type of notification (created, shipped, delivered, cancelled)
+            order_data: Order data for email template
+        """
+        try:
+            email_delivery_service = get_email_delivery_service()
+            
+            # Default order data if not provided
+            if order_data is None:
+                order_data = {
+                    "order_id": order_id,
+                    "customer_name": "Valued Customer",
+                    "company_name": settings.PROJECT_NAME,
+                    "company_website": settings.FRONTEND_HOST,
+                }
+            
+            # Send appropriate email based on notification type
+            if notification_type == "created":
+                result = await email_delivery_service.send_order_confirmation(
+                    customer_email, order_data
+                )
+            elif notification_type == "shipped":
+                result = await email_delivery_service.send_order_shipped(
+                    customer_email, order_data
+                )
+            elif notification_type == "delivered":
+                result = await email_delivery_service.send_order_delivered(
+                    customer_email, order_data
+                )
+            elif notification_type == "status_updated":
+                # For generic status updates, use order confirmation template
+                result = await email_delivery_service.send_order_confirmation(
+                    customer_email, order_data
+                )
+            else:
+                logger.warning(f"Unknown notification type: {notification_type}")
+                return {"success": False, "error": f"Unknown notification type: {notification_type}"}
+            
+            # Log the result
+            if result.success:
+                logger.info(f"Order notification sent successfully: {order_id} -> {customer_email}")
+                return {"success": True, "message": "Order notification sent", "result": result}
+            else:
+                logger.error(f"Failed to send order notification: {result.error_message}")
+                return {"success": False, "error": result.error_message}
+                
+        except Exception as e:
+            logger.error(f"Failed to send order notification: {e}")
             return {"success": False, "error": str(e)}
 
     def _get_order_template(self, status: str) -> NotificationTemplate:

@@ -1,19 +1,19 @@
 import {
+  Badge,
   Box,
-  Heading,
-  Text,
   Card,
   CardBody,
   HStack,
+  Heading,
+  Text,
   VStack,
-  Badge,
   useColorModeValue,
-} from '@chakra-ui/react'
-import { FiUsers, FiUserPlus, FiStar } from 'react-icons/fi'
+} from "@chakra-ui/react"
+import { FiStar, FiUserPlus, FiUsers } from "react-icons/fi"
 
 const CustomerManagement = () => {
-  const cardBg = useColorModeValue('white', 'gray.800')
-  
+  const cardBg = useColorModeValue("white", "gray.800")
+
   return (
     <Box w="full">
       <VStack spacing={6} align="stretch">
@@ -22,9 +22,7 @@ const CustomerManagement = () => {
           <Heading size="lg" mb={2}>
             Gestión de Clientes
           </Heading>
-          <Text color="gray.600">
-            CRM y gestión de relaciones con clientes
-          </Text>
+          <Text color="gray.600">CRM y gestión de relaciones con clientes</Text>
         </Box>
 
         {/* Quick Stats */}
@@ -36,13 +34,17 @@ const CustomerManagement = () => {
                   <FiUsers color="purple.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold">892</Text>
-                  <Text fontSize="sm" color="gray.600">Total Clientes</Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    892
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Total Clientes
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
           </Card>
-          
+
           <Card bg={cardBg} flex={1}>
             <CardBody>
               <HStack>
@@ -50,8 +52,12 @@ const CustomerManagement = () => {
                   <FiUserPlus color="green.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold" color="green.500">47</Text>
-                  <Text fontSize="sm" color="gray.600">Nuevos Este Mes</Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="green.500">
+                    47
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Nuevos Este Mes
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
@@ -64,8 +70,12 @@ const CustomerManagement = () => {
                   <FiStar color="yellow.500" size={24} />
                 </Box>
                 <Box>
-                  <Text fontSize="2xl" fontWeight="bold" color="yellow.500">156</Text>
-                  <Text fontSize="sm" color="gray.600">Clientes VIP</Text>
+                  <Text fontSize="2xl" fontWeight="bold" color="yellow.500">
+                    156
+                  </Text>
+                  <Text fontSize="sm" color="gray.600">
+                    Clientes VIP
+                  </Text>
                 </Box>
               </HStack>
             </CardBody>
@@ -75,7 +85,12 @@ const CustomerManagement = () => {
         {/* Content Area */}
         <Card bg={cardBg}>
           <CardBody>
-            <Box h="400px" display="flex" alignItems="center" justifyContent="center">
+            <Box
+              h="400px"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
               <VStack spacing={4}>
                 <Text fontSize="lg" color="gray.500">
                   👥 CRM de Clientes en Desarrollo
