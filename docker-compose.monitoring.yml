@@ -245,7 +245,7 @@ services:
       - ./monitoring/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /opt/brain2gain/logs:/opt/brain2gain/logs:ro
+      - ./logs:/opt/brain2gain/logs:ro
     depends_on:
       elasticsearch:
         condition: service_healthy
@@ -268,32 +268,12 @@ secrets:
 volumes:
   prometheus_data:
     name: brain2gain_prometheus_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/monitoring/prometheus
   grafana_data:
     name: brain2gain_grafana_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/monitoring/grafana
   alertmanager_data:
     name: brain2gain_alertmanager_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/monitoring/alertmanager
   elasticsearch_data:
     name: brain2gain_elasticsearch_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/monitoring/elasticsearch
   
 # Monitoring network
 networks:

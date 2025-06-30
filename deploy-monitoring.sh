@@ -36,8 +36,8 @@ check_prerequisites() {
         exit 1
     fi
     
-    if ! command -v docker-compose &> /dev/null; then
-        error "Docker Compose is not installed"
+    if ! docker compose version &> /dev/null; then
+        error "Docker Compose is not available"
         exit 1
     fi
     
@@ -48,8 +48,8 @@ check_prerequisites() {
 create_directories() {
     log "Creating monitoring directories..."
     
-    sudo mkdir -p /opt/brain2gain/monitoring/{prometheus,grafana,alertmanager,elasticsearch,logstash,kibana}
-    sudo chown -R $(whoami):$(whoami) /opt/brain2gain/monitoring/
+    mkdir -p ./monitoring-data/{prometheus,grafana,alertmanager,elasticsearch,logstash,kibana}
+    chmod -R 755 ./monitoring-data/
     
     success "Monitoring directories created"
 }
@@ -77,10 +77,10 @@ deploy_monitoring() {
     log "Deploying monitoring stack..."
     
     # Deploy core monitoring services
-    docker-compose -f docker-compose.monitoring.yml up -d
+    docker compose -f docker-compose.monitoring.yml up -d
     
     # Deploy exporters
-    docker-compose -f docker-compose.exporters.yml up -d
+    docker compose -f docker-compose.exporters.yml up -d
     
     success "Monitoring stack deployed"
 }
@@ -203,8 +203,8 @@ display_info() {
 stop_monitoring() {
     log "Stopping monitoring stack..."
     
-    docker-compose -f docker-compose.monitoring.yml down
-    docker-compose -f docker-compose.exporters.yml down
+    docker compose -f docker-compose.monitoring.yml down
+    docker compose -f docker-compose.exporters.yml down
     
     success "Monitoring stack stopped"
 }
@@ -213,14 +213,14 @@ stop_monitoring() {
 remove_monitoring() {
     log "Removing monitoring stack..."
     
-    docker-compose -f docker-compose.monitoring.yml down -v
-    docker-compose -f docker-compose.exporters.yml down -v
+    docker compose -f docker-compose.monitoring.yml down -v
+    docker compose -f docker-compose.exporters.yml down -v
     
     # Remove data directories (optional)
     read -p "Remove monitoring data directories? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-        sudo rm -rf /opt/brain2gain/monitoring/
+        rm -rf ./monitoring-data/
         success "Monitoring data removed"
     fi
     
@@ -252,7 +252,7 @@ main() {
             ;;
         "logs")
             service_name="${2:-prometheus}"
-            docker-compose -f docker-compose.monitoring.yml logs -f $service_name
+            docker compose -f docker-compose.monitoring.yml logs -f $service_name
             ;;
         *)
             echo "Usage: $0 {deploy|stop|remove|status|logs [service]}"

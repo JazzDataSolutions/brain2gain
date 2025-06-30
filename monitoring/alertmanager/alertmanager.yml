@@ -67,7 +67,6 @@ receivers:
   - name: 'critical-alerts'
     email_configs:
       - to: 'alerts@brain2gain.com'
-        subject: '🚨 CRITICAL: {{ .GroupLabels.alertname }} - Brain2Gain Production'
         html: |
           <h2>🚨 CRITICAL ALERT</h2>
           <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
@@ -93,7 +92,6 @@ receivers:
   - name: 'database-team'
     email_configs:
       - to: 'database-team@brain2gain.com'
-        subject: '🗄️ Database Alert: {{ .GroupLabels.alertname }}'
         html: |
           <h2>🗄️ Database Alert</h2>
           <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
@@ -111,7 +109,6 @@ receivers:
   - name: 'infrastructure-team'
     email_configs:
       - to: 'infrastructure@brain2gain.com'
-        subject: '🖥️ Infrastructure Alert: {{ .GroupLabels.alertname }}'
         html: |
           <h2>🖥️ Infrastructure Alert</h2>
           <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
@@ -121,7 +118,7 @@ receivers:
     
     slack_configs:
       - channel: '#infrastructure-alerts'
-      - color: 'warning'
+        color: 'warning'
         title: '🖥️ Infrastructure: {{ .GroupLabels.alertname }}'
         text: '{{ .CommonAnnotations.summary }}'
 
@@ -129,7 +126,6 @@ receivers:
   - name: 'application-team'
     email_configs:
       - to: 'dev-team@brain2gain.com'
-        subject: '🚀 Application Alert: {{ .GroupLabels.alertname }}'
         html: |
           <h2>🚀 Application Alert</h2>
           <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
@@ -150,7 +146,6 @@ receivers:
   - name: 'business-team'
     email_configs:
       - to: 'business@brain2gain.com'
-        subject: '💼 Business Alert: {{ .GroupLabels.alertname }}'
         html: |
           <h2>💼 Business Metrics Alert</h2>
           <p><strong>Alert:</strong> {{ .GroupLabels.alertname }}</p>
@@ -160,6 +155,6 @@ receivers:
     
     slack_configs:
       - channel: '#business-alerts'
-      - color: 'warning'
+        color: 'warning'
         title: '💼 Business: {{ .GroupLabels.alertname }}'
         text: '{{ .CommonAnnotations.summary }}'
