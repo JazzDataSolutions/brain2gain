@@ -4,6 +4,7 @@ Test data factories using Factory Boy for creating test objects.
 
 from decimal import Decimal
 from uuid import uuid4
+import random
 
 import factory
 from faker import Faker
@@ -44,7 +45,7 @@ class UserFactory(factory.Factory):
     class Meta:
         model = User
 
-    user_id = factory.LazyFunction(uuid4)
+    id = factory.LazyFunction(uuid4)
     email = factory.LazyAttribute(lambda _: fake.email())
     hashed_password = factory.LazyFunction(lambda: get_password_hash("testpassword123"))
     full_name = factory.LazyAttribute(lambda _: fake.name())
@@ -112,7 +113,7 @@ class CustomerFactory(factory.Factory):
     class Meta:
         model = Customer
 
-    customer_id = factory.LazyFunction(uuid4)
+    customer_id = factory.LazyFunction(lambda: None)  # Let DB auto-generate
     first_name = factory.LazyAttribute(lambda _: fake.first_name())
     last_name = factory.LazyAttribute(lambda _: fake.last_name())
     email = factory.LazyAttribute(lambda _: fake.email())
@@ -129,28 +130,11 @@ class SalesOrderFactory(factory.Factory):
     class Meta:
         model = SalesOrder
 
-    order_id = factory.LazyFunction(uuid4)
+    so_id = factory.LazyFunction(lambda: None)  # Let DB auto-generate
     customer_id = factory.SubFactory(CustomerFactory)
     order_date = factory.LazyAttribute(lambda _: fake.date_time_this_year())
     status = factory.Iterator(
         ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"]
-    )
-    total_amount = factory.LazyAttribute(
-        lambda _: Decimal(
-            str(
-                fake.pydecimal(
-                    left_digits=3,
-                    right_digits=2,
-                    positive=True,
-                    min_value=20,
-                    max_value=500,
-                )
-            )
-        )
-    )
-    shipping_address = factory.LazyAttribute(lambda _: fake.address())
-    payment_method = factory.Iterator(
-        ["CREDIT_CARD", "DEBIT_CARD", "PAYPAL", "BANK_TRANSFER"]
     )
 
 
@@ -160,10 +144,9 @@ class SalesItemFactory(factory.Factory):
     class Meta:
         model = SalesItem
 
-    item_id = factory.LazyFunction(uuid4)
-    order_id = factory.SubFactory(SalesOrderFactory)
+    so_id = factory.SubFactory(SalesOrderFactory)
     product_id = factory.SubFactory(ProductFactory)
-    quantity = factory.LazyAttribute(lambda _: fake.random_int(min=1, max=5))
+    qty = factory.LazyAttribute(lambda _: fake.random_int(min=1, max=5))
     unit_price = factory.LazyAttribute(
         lambda _: Decimal(
             str(
@@ -211,9 +194,8 @@ class TransactionFactory(factory.Factory):
     class Meta:
         model = Transaction
 
-    transaction_id = factory.LazyFunction(uuid4)
-    order_id = factory.SubFactory(SalesOrderFactory)
-    transaction_type = factory.Iterator(["SALE", "REFUND", "PAYMENT"])
+    tx_id = factory.LazyFunction(lambda: None)  # Let DB auto-generate
+    tx_type = factory.Iterator(["SALE", "PURCHASE", "CREDIT", "PAYMENT"])
     amount = factory.LazyAttribute(
         lambda _: Decimal(
             str(
@@ -227,12 +209,9 @@ class TransactionFactory(factory.Factory):
             )
         )
     )
-    transaction_date = factory.LazyAttribute(lambda _: fake.date_time_this_year())
-    payment_method = factory.Iterator(
-        ["CREDIT_CARD", "DEBIT_CARD", "PAYPAL", "BANK_TRANSFER"]
-    )
-    status = factory.Iterator(["PENDING", "COMPLETED", "FAILED", "CANCELLED"])
-    external_reference = factory.LazyAttribute(lambda _: fake.uuid4())
+    paid = True
+    paid_date = factory.LazyAttribute(lambda _: fake.date_this_year())
+    customer_id = factory.SubFactory(CustomerFactory)
 
 
 # Factory helper functions for tests
@@ -248,7 +227,7 @@ def create_user_with_role(session: Session, role_name: str = "USER") -> User:
     session.add(user)
     session.commit()
 
-    user_role_link = UserRoleLink(user_id=user.user_id, role_id=role.role_id)
+    user_role_link = UserRoleLink(user_id=user.id, role_id=role.role_id)
     session.add(user_role_link)
     session.commit()
 
@@ -283,20 +262,16 @@ def create_order_with_items(
     session.commit()
 
     items = []
-    total_amount = Decimal("0")
 
     for _ in range(num_items):
         product = ProductFactory()
         session.add(product)
         session.commit()
 
-        item = SalesItemFactory(order_id=order.order_id, product_id=product.product_id)
+        item = SalesItemFactory(so_id=order.so_id, product_id=product.product_id)
         session.add(item)
         items.append(item)
 
-        total_amount += item.unit_price * item.quantity
-
-    order.total_amount = total_amount
     session.commit()
 
     return order, items
@@ -310,7 +285,7 @@ def create_cart_with_items(
         user = UserFactory()
         session.add(user)
         session.commit()
-        user_id = user.user_id
+        user_id = user.id
 
     cart = CartFactory(user_id=user_id)
     session.add(cart)
@@ -374,11 +349,11 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
         # Random date within the period
         order_date = fake.date_time_between(start_date=start_date, end_date=end_date)
 
-        customer = fake.choice(customers)
+        customer = fake.random.choice(customers)
         order = SalesOrderFactory(
             customer_id=customer.customer_id,
             order_date=order_date,
-            status=fake.choice(
+            status=fake.random.choice(
                 ["PENDING", "COMPLETED", "COMPLETED", "COMPLETED"]
             ),  # Bias toward completed
         )
@@ -387,35 +362,28 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
 
         # Add items to order
         num_items = fake.random_int(min=1, max=4)
-        total_amount = Decimal("0")
 
         for _ in range(num_items):
-            product, _ = fake.choice(products)
+            product, _ = fake.random.choice(products)
             quantity = fake.random_int(min=1, max=3)
             unit_price = product.unit_price
 
             item = SalesItemFactory(
-                order_id=order.order_id,
+                so_id=order.so_id,
                 product_id=product.product_id,
-                quantity=quantity,
+                qty=quantity,
                 unit_price=unit_price,
             )
             session.add(item)
-            total_amount += unit_price * quantity
-
-        order.total_amount = total_amount
         orders.append(order)
 
         # Create corresponding transaction if order is completed
         if order.status == "COMPLETED":
             transaction = TransactionFactory(
-                order_id=order.order_id,
                 customer_id=customer.customer_id,
-                transaction_type="SALE",
-                amount=total_amount,
-                transaction_date=order_date,
-                status="COMPLETED",
+                tx_type="SALE",
                 paid=True,
+                paid_date=order_date,
             )
             session.add(transaction)
             transactions.append(transaction)
@@ -429,13 +397,13 @@ def create_analytics_test_data(session: Session, time_period_days: int = 30) -> 
         session.add(user)
         session.commit()
 
-        cart = CartFactory(user_id=user.user_id)
+        cart = CartFactory(user_id=user.id)
         session.add(cart)
         session.commit()
 
         # Add items to some carts
         for _ in range(fake.random_int(min=1, max=3)):
-            product, _ = fake.choice(products)
+            product, _ = fake.random.choice(products)
             cart_item = CartItemFactory(
                 cart_id=cart.cart_id, product_id=product.product_id
             )
@@ -489,11 +457,10 @@ def create_churn_scenario_data(session: Session) -> dict:
         orders.append(order)
 
         transaction = TransactionFactory(
-            order_id=order.order_id,
             customer_id=customer.customer_id,
-            transaction_date=recent_date,
-            status="COMPLETED",
+            tx_type="SALE",
             paid=True,
+            paid_date=recent_date,
         )
         session.add(transaction)
         transactions.append(transaction)
@@ -514,11 +481,10 @@ def create_churn_scenario_data(session: Session) -> dict:
         orders.append(order)
 
         transaction = TransactionFactory(
-            order_id=order.order_id,
             customer_id=customer.customer_id,
-            transaction_date=old_date,
-            status="COMPLETED",
+            tx_type="SALE",
             paid=True,
+            paid_date=old_date,
         )
         session.add(transaction)
         transactions.append(transaction)
@@ -580,19 +546,17 @@ def create_mrr_scenario_data(session: Session) -> dict:
             order = SalesOrderFactory(
                 customer_id=customer.customer_id,
                 order_date=order_date,
-                total_amount=amount,
                 status="COMPLETED",
             )
             session.add(order)
             orders.append(order)
 
             transaction = TransactionFactory(
-                order_id=order.order_id,
                 customer_id=customer.customer_id,
-                transaction_date=order_date,
+                tx_type="SALE",
                 amount=amount,
-                status="COMPLETED",
                 paid=True,
+                paid_date=order_date,
             )
             session.add(transaction)
             transactions.append(transaction)
@@ -631,7 +595,7 @@ def create_conversion_scenario_data(session: Session) -> dict:
         session.commit()
         users.append(user)
 
-        cart = CartFactory(user_id=user.user_id)
+        cart = CartFactory(user_id=user.id)
         session.add(cart)
         carts.append(cart)
 
@@ -642,7 +606,7 @@ def create_conversion_scenario_data(session: Session) -> dict:
         session.commit()
         users.append(user)
 
-        cart = CartFactory(user_id=user.user_id)
+        cart = CartFactory(user_id=user.id)
         session.add(cart)
         carts.append(cart)
 

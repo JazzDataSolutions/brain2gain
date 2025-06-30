@@ -26,6 +26,8 @@ import { Route as IndexImport } from './routes/index'
 import { Route as StoreIndexImport } from './routes/store/index'
 import { Route as AdminIndexImport } from './routes/admin/index'
 import { Route as StoreProductsImport } from './routes/store/products'
+import { Route as StoreOrdersImport } from './routes/store/orders'
+import { Route as StoreOrderSuccessImport } from './routes/store/order-success'
 import { Route as StoreCheckoutImport } from './routes/store/checkout'
 import { Route as StoreCartImport } from './routes/store/cart'
 import { Route as StoreLayoutImport } from './routes/store/_layout'
@@ -38,6 +40,7 @@ import { Route as AdminAnalyticsImport } from './routes/admin/analytics'
 import { Route as AdminLayoutImport } from './routes/admin/_layout'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
+import { Route as StoreOrdersOrderIdImport } from './routes/store/orders/$orderId'
 
 // Create Virtual Routes
 
@@ -135,6 +138,18 @@ const StoreProductsRoute = StoreProductsImport.update({
   getParentRoute: () => StoreRoute,
 } as any)
 
+const StoreOrdersRoute = StoreOrdersImport.update({
+  id: '/orders',
+  path: '/orders',
+  getParentRoute: () => StoreRoute,
+} as any)
+
+const StoreOrderSuccessRoute = StoreOrderSuccessImport.update({
+  id: '/order-success',
+  path: '/order-success',
+  getParentRoute: () => StoreRoute,
+} as any)
+
 const StoreCheckoutRoute = StoreCheckoutImport.update({
   id: '/checkout',
   path: '/checkout',
@@ -203,6 +218,12 @@ const LayoutItemsRoute = LayoutItemsImport.update({
   id: '/items',
   path: '/items',
   getParentRoute: () => LayoutRoute,
+} as any)
+
+const StoreOrdersOrderIdRoute = StoreOrdersOrderIdImport.update({
+  id: '/$orderId',
+  path: '/$orderId',
+  getParentRoute: () => StoreOrdersRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -377,6 +398,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StoreCheckoutImport
       parentRoute: typeof StoreImport
     }
+    '/store/order-success': {
+      id: '/store/order-success'
+      path: '/order-success'
+      fullPath: '/store/order-success'
+      preLoaderRoute: typeof StoreOrderSuccessImport
+      parentRoute: typeof StoreImport
+    }
+    '/store/orders': {
+      id: '/store/orders'
+      path: '/orders'
+      fullPath: '/store/orders'
+      preLoaderRoute: typeof StoreOrdersImport
+      parentRoute: typeof StoreImport
+    }
     '/store/products': {
       id: '/store/products'
       path: '/products'
@@ -397,6 +432,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/store/'
       preLoaderRoute: typeof StoreIndexImport
       parentRoute: typeof StoreImport
+    }
+    '/store/orders/$orderId': {
+      id: '/store/orders/$orderId'
+      path: '/$orderId'
+      fullPath: '/store/orders/$orderId'
+      preLoaderRoute: typeof StoreOrdersOrderIdImport
+      parentRoute: typeof StoreOrdersImport
     }
   }
 }
@@ -450,10 +492,24 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface StoreOrdersRouteChildren {
+  StoreOrdersOrderIdRoute: typeof StoreOrdersOrderIdRoute
+}
+
+const StoreOrdersRouteChildren: StoreOrdersRouteChildren = {
+  StoreOrdersOrderIdRoute: StoreOrdersOrderIdRoute,
+}
+
+const StoreOrdersRouteWithChildren = StoreOrdersRoute._addFileChildren(
+  StoreOrdersRouteChildren,
+)
+
 interface StoreRouteChildren {
   StoreLayoutRoute: typeof StoreLayoutRoute
   StoreCartRoute: typeof StoreCartRoute
   StoreCheckoutRoute: typeof StoreCheckoutRoute
+  StoreOrderSuccessRoute: typeof StoreOrderSuccessRoute
+  StoreOrdersRoute: typeof StoreOrdersRouteWithChildren
   StoreProductsRoute: typeof StoreProductsRoute
   StoreIndexRoute: typeof StoreIndexRoute
 }
@@ -462,6 +518,8 @@ const StoreRouteChildren: StoreRouteChildren = {
   StoreLayoutRoute: StoreLayoutRoute,
   StoreCartRoute: StoreCartRoute,
   StoreCheckoutRoute: StoreCheckoutRoute,
+  StoreOrderSuccessRoute: StoreOrderSuccessRoute,
+  StoreOrdersRoute: StoreOrdersRouteWithChildren,
   StoreProductsRoute: StoreProductsRoute,
   StoreIndexRoute: StoreIndexRoute,
 }
@@ -491,9 +549,12 @@ export interface FileRoutesByFullPath {
   '/store': typeof StoreLayoutRoute
   '/store/cart': typeof StoreCartRoute
   '/store/checkout': typeof StoreCheckoutRoute
+  '/store/order-success': typeof StoreOrderSuccessRoute
+  '/store/orders': typeof StoreOrdersRouteWithChildren
   '/store/products': typeof StoreProductsRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/store/orders/$orderId': typeof StoreOrdersOrderIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -519,7 +580,10 @@ export interface FileRoutesByTo {
   '/store': typeof StoreIndexRoute
   '/store/cart': typeof StoreCartRoute
   '/store/checkout': typeof StoreCheckoutRoute
+  '/store/order-success': typeof StoreOrderSuccessRoute
+  '/store/orders': typeof StoreOrdersRouteWithChildren
   '/store/products': typeof StoreProductsRoute
+  '/store/orders/$orderId': typeof StoreOrdersOrderIdRoute
 }
 
 export interface FileRoutesById {
@@ -548,9 +612,12 @@ export interface FileRoutesById {
   '/store/_layout': typeof StoreLayoutRoute
   '/store/cart': typeof StoreCartRoute
   '/store/checkout': typeof StoreCheckoutRoute
+  '/store/order-success': typeof StoreOrderSuccessRoute
+  '/store/orders': typeof StoreOrdersRouteWithChildren
   '/store/products': typeof StoreProductsRoute
   '/admin/': typeof AdminIndexRoute
   '/store/': typeof StoreIndexRoute
+  '/store/orders/$orderId': typeof StoreOrdersOrderIdRoute
 }
 
 export interface FileRouteTypes {
@@ -578,9 +645,12 @@ export interface FileRouteTypes {
     | '/store'
     | '/store/cart'
     | '/store/checkout'
+    | '/store/order-success'
+    | '/store/orders'
     | '/store/products'
     | '/admin/'
     | '/store/'
+    | '/store/orders/$orderId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -605,7 +675,10 @@ export interface FileRouteTypes {
     | '/store'
     | '/store/cart'
     | '/store/checkout'
+    | '/store/order-success'
+    | '/store/orders'
     | '/store/products'
+    | '/store/orders/$orderId'
   id:
     | '__root__'
     | '/'
@@ -632,9 +705,12 @@ export interface FileRouteTypes {
     | '/store/_layout'
     | '/store/cart'
     | '/store/checkout'
+    | '/store/order-success'
+    | '/store/orders'
     | '/store/products'
     | '/admin/'
     | '/store/'
+    | '/store/orders/$orderId'
   fileRoutesById: FileRoutesById
 }
 
@@ -783,6 +859,8 @@ export const routeTree = rootRoute
         "/store/_layout",
         "/store/cart",
         "/store/checkout",
+        "/store/order-success",
+        "/store/orders",
         "/store/products",
         "/store/"
       ]
@@ -799,6 +877,17 @@ export const routeTree = rootRoute
       "filePath": "store/checkout.tsx",
       "parent": "/store"
     },
+    "/store/order-success": {
+      "filePath": "store/order-success.tsx",
+      "parent": "/store"
+    },
+    "/store/orders": {
+      "filePath": "store/orders.tsx",
+      "parent": "/store",
+      "children": [
+        "/store/orders/$orderId"
+      ]
+    },
     "/store/products": {
       "filePath": "store/products.tsx",
       "parent": "/store"
@@ -810,6 +899,10 @@ export const routeTree = rootRoute
     "/store/": {
       "filePath": "store/index.tsx",
       "parent": "/store"
+    },
+    "/store/orders/$orderId": {
+      "filePath": "store/orders/$orderId.tsx",
+      "parent": "/store/orders"
     }
   }
 }

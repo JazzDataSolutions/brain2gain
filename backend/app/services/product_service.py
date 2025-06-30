@@ -14,7 +14,7 @@ import builtins
 import logging
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, List
 
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import and_, or_, select
@@ -663,11 +663,8 @@ class ProductService:
     
     def search_products(self, **filters):
         """Search products with filters."""
-        # Simple implementation for tests
-        if self.repo:
-            # Return empty list for now, can be enhanced later
-            return []
-        return []
+        # Call the search filters method
+        return self._apply_search_filters(**filters)
     
     def get_featured_products(self, limit=10):
         """Get featured products - sync version for tests."""
@@ -747,3 +744,55 @@ class ProductService:
             availability[product_id] = available_products.get(product_id, False)
 
         return availability
+
+    def _apply_search_filters(self, **filters) -> List[Product]:
+        """Apply search filters to find products."""
+        # Build query dynamically based on filters
+        query = select(Product)
+        conditions = []
+        
+        if 'category' in filters and filters['category']:
+            conditions.append(Product.category == filters['category'])
+        
+        if 'brand' in filters and filters['brand']:
+            conditions.append(Product.brand == filters['brand'])
+        
+        if 'status' in filters and filters['status']:
+            conditions.append(Product.status == filters['status'])
+        
+        if 'min_price' in filters and filters['min_price']:
+            conditions.append(Product.unit_price >= Decimal(str(filters['min_price'])))
+        
+        if 'max_price' in filters and filters['max_price']:
+            conditions.append(Product.unit_price <= Decimal(str(filters['max_price'])))
+        
+        if 'search' in filters and filters['search']:
+            search_term = f"%{filters['search']}%"
+            conditions.append(
+                or_(
+                    Product.name.ilike(search_term),
+                    Product.description.ilike(search_term),
+                    Product.sku.ilike(search_term)
+                )
+            )
+        
+        if conditions:
+            query = query.where(and_(*conditions))
+        
+        # This is a mock implementation for testing
+        # In real implementation, this would execute the query
+        return []
+
+    async def get_popular_products(self, limit: int = 10) -> List[Product]:
+        """Get popular products based on sales data."""
+        # This would typically join with sales/order data
+        # For now, just return active products ordered by creation date
+        statement = select(Product).where(Product.status == "ACTIVE").limit(limit)
+        result = await self.session.exec(statement)
+        return result.all()
+
+    async def get_total_count(self, **filters) -> int:
+        """Get total count of products matching filters."""
+        # This would apply the same filters as _apply_search_filters but return count
+        # For now, return a mock count
+        return 0

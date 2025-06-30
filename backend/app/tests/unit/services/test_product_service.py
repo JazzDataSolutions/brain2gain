@@ -402,7 +402,7 @@ class TestProductService:
             "category": "proteins",
         }
 
-        with pytest.raises(ValueError, match="Unit price must be positive"):
+        with pytest.raises(ValueError, match="Product price must be positive"):
             service._validate_product_data(product_data)
 
     def test_validate_product_data_invalid_sku(self, service: ProductService):

@@ -115,7 +115,7 @@ class Settings(BaseSettings):
     # Email template configuration
     EMAIL_TEMPLATE_CACHE_TTL: int = 3600  # 1 hour
     EMAIL_TEMPLATE_FALLBACK_ENABLED: bool = True
-    MJML_CLI_ENABLED: bool = False  # Set to True if MJML CLI is installed
+    MJML_CLI_ENABLED: bool = True  # MJML CLI installed and available
 
     @computed_field  # type: ignore[prop-decorator]
     @property
