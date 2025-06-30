@@ -20,11 +20,11 @@ concurrency:
 
 env:
   # Python version
-  PYTHON_VERSION: "3.10"
+  PYTHON_VERSION: "3.11"
   # Node version
   NODE_VERSION: "20"
   # PostgreSQL version for testing
-  POSTGRES_VERSION: "15"
+  POSTGRES_VERSION: "17"
 
 jobs:
   # ============================================================================
@@ -132,7 +132,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:${{ env.POSTGRES_VERSION }}
+        image: postgres:${{ env.POSTGRES_VERSION }}-alpine
         env:
           POSTGRES_USER: brain2gain_test
           POSTGRES_PASSWORD: test_password
@@ -144,6 +144,16 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
+      
+      redis:
+        image: redis:7.2-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
 
     env:
       # Database configuration
@@ -152,6 +162,10 @@ jobs:
       POSTGRES_USER: brain2gain_test
       POSTGRES_PASSWORD: test_password
       POSTGRES_DB: brain2gain_test
+      
+      # Redis configuration
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
       
       # Application configuration
       SECRET_KEY: test-secret-key-for-github-actions

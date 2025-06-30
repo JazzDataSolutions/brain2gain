@@ -95,10 +95,11 @@ quick_start:
     - "🚀 ACTIVADO - CI/CD pipeline commit deployed successfully"
     
   proximos_pasos_inmediatos:
-    - "🚀 LISTO - CI/CD pipeline now active and monitoring commits"
-    - "📧 PRÓXIMO - Implement email notification system"
-    - "🔧 OPCIONAL - Enhance Chakra UI ref mocking for complex integration tests"
-    - "📊 PRÓXIMO - Analytics dashboard enhancements"
+    - "🚀 URGENTE - Activate CI/CD pipeline GitHub Actions (infrastructure validated)"
+    - "📧 ALTA PRIORIDAD - Implement email notification delivery service (templates ready)"
+    - "🏗️ ALTA PRIORIDAD - Setup production container orchestration"
+    - "📊 MEDIA PRIORIDAD - Implement monitoring stack (Prometheus + Grafana)"
+    - "🔧 BAJA PRIORIDAD - Fix minor E2E Playwright auth setup issues"
     
   problemas_resueltos_docker:
     - "✅ RESUELTO - Docker containers running and healthy (postgres:5434, redis:6380)"
