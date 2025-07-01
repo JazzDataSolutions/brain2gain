@@ -1,6 +1,10 @@
-# Production Environment - Full Stack Deployment
-# For production deployment with load balancing and scaling
-version: '3.8'
+# =====================================================================
+# Brain2Gain Production Environment
+# =====================================================================
+# Secure production setup with Docker Secrets
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# Requires: secrets/ directory with secure credential files
+# =====================================================================
 
 services:
   # PostgreSQL Database
@@ -11,30 +15,23 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: brain2gain_prod
-      POSTGRES_USER: brain2gain_prod
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_DB: ${POSTGRES_DB:-brain2gain_prod}
+      POSTGRES_USER: ${POSTGRES_USER:-brain2gain_prod}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./database/init-databases.sql:/docker-entrypoint-initdb.d/init-databases.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U brain2gain_prod -d brain2gain_prod"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brain2gain_prod} -d ${POSTGRES_DB:-brain2gain_prod}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
     secrets:
       - postgres_password
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 512M
-          cpus: '0.25'
+    networks:
+      - brain2gain-prod-network
 
   # Redis Cache
   redis:
@@ -43,26 +40,19 @@ services:
     restart: always
     ports:
       - "6379:6379"
-    command: redis-server --appendonly yes --requirepass-file /run/secrets/redis_password
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
     volumes:
       - redis_prod_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "$(cat /run/secrets/redis_password)", "ping"]
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
       start_period: 10s
     secrets:
       - redis_password
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.25'
-        reservations:
-          memory: 256M
-          cpus: '0.1'
+    networks:
+      - brain2gain-prod-network
 
   # Backend API
   backend:
@@ -75,16 +65,27 @@ services:
       - "8000:8000"
     environment:
       - ENVIRONMENT=production
+      - PROJECT_NAME=${PROJECT_NAME:-Brain2Gain Production}
       - POSTGRES_SERVER=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=brain2gain_prod
-      - POSTGRES_USER=brain2gain_prod
+      - POSTGRES_DB=${POSTGRES_DB:-brain2gain_prod}
+      - POSTGRES_USER=${POSTGRES_USER:-brain2gain_prod}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - FRONTEND_HOST=https://brain2gain.com
-      - BACKEND_CORS_ORIGINS=["https://brain2gain.com","https://www.brain2gain.com"]
+      - FRONTEND_HOST=${FRONTEND_HOST:-https://brain2gain.mx}
+      - BACKEND_CORS_ORIGINS=${BACKEND_CORS_ORIGINS:-["https://brain2gain.mx","https://www.brain2gain.mx","https://api.brain2gain.mx"]}
+      - SMTP_HOST=${SMTP_HOST:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_TLS=${SMTP_TLS:-true}
+      - FIRST_SUPERUSER=${FIRST_SUPERUSER:-admin@brain2gain.mx}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - FIRST_SUPERUSER_PASSWORD=${FIRST_SUPERUSER_PASSWORD}
     volumes:
-      - ./backend/app:/app/app:ro
       - backend_logs:/app/logs
     depends_on:
       postgres:
@@ -101,41 +102,29 @@ services:
       - postgres_password
       - redis_password
       - jwt_secret
+      - secret_key
       - smtp_password
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
-      update_config:
-        parallelism: 1
-        delay: 30s
-        failure_action: rollback
-      restart_policy:
-        condition: on-failure
-        delay: 10s
-        max_attempts: 3
+      - superuser_password
+    networks:
+      - brain2gain-prod-network
 
   # Frontend (React)
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
+      args:
+        - NODE_ENV=production
+        - VITE_API_URL=${VITE_API_URL:-https://api.brain2gain.mx}
+        - VITE_FRONTEND_URL=${VITE_FRONTEND_URL:-https://brain2gain.mx}
     container_name: brain2gain-frontend-prod
     restart: always
-    ports:
-      - "80:80"
-      - "443:443"
+    ports: []
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=https://api.brain2gain.com
-      - VITE_FRONTEND_URL=https://brain2gain.com
+      - VITE_API_URL=${VITE_API_URL:-https://api.brain2gain.mx}
+      - VITE_FRONTEND_URL=${VITE_FRONTEND_URL:-https://brain2gain.mx}
     volumes:
-      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - frontend_logs:/var/log/nginx
     depends_on:
@@ -146,52 +135,27 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          memory: 512M
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.25'
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
+    networks:
+      - brain2gain-prod-network
 
-  # Load Balancer (HAProxy)
-  loadbalancer:
-    image: haproxy:2.8-alpine
-    container_name: brain2gain-loadbalancer
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8404:8404"  # HAProxy stats
-    volumes:
-      - ./haproxy/haproxy.prod.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
-      - ./nginx/ssl:/etc/ssl/certs:ro
-    depends_on:
-      - backend
-      - frontend
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8404/stats"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    deploy:
-      replicas: 1
-      resources:
-        limits:
-          memory: 256M
-          cpus: '0.25'
-      placement:
-        constraints:
-          - node.role == manager
+# Docker volumes for persistent data
+volumes:
+  postgres_prod_data:
+    name: brain2gain_postgres_prod_data
+  redis_prod_data:
+    name: brain2gain_redis_prod_data
+  frontend_logs:
+    name: brain2gain_frontend_logs
+  backend_logs:
+    name: brain2gain_backend_logs
 
-# Docker Secrets for production security
+# Docker networks
+networks:
+  brain2gain-prod-network:
+    name: brain2gain-prod-network
+    driver: bridge
+
+# Docker secrets for secure credential management
 secrets:
   postgres_password:
     file: ./secrets/postgres_password.txt
@@ -199,45 +163,9 @@ secrets:
     file: ./secrets/redis_password.txt
   jwt_secret:
     file: ./secrets/jwt_secret.txt
+  secret_key:
+    file: ./secrets/secret_key.txt
   smtp_password:
     file: ./secrets/smtp_password.txt
-
-# Persistent volumes
-volumes:
-  postgres_prod_data:
-    name: brain2gain_postgres_prod_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/data/postgres
-  redis_prod_data:
-    name: brain2gain_redis_prod_data
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/data/redis
-  backend_logs:
-    name: brain2gain_backend_logs
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/logs/backend
-  frontend_logs:
-    name: brain2gain_frontend_logs
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /opt/brain2gain/logs/frontend
-
-# Production network configuration
-networks:
-  default:
-    name: brain2gain_prod_network
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
+  superuser_password:
+    file: ./secrets/superuser_password.txt

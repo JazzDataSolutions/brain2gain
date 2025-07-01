@@ -1,0 +1,37 @@
+# Simple Frontend Dockerfile for Brain2Gain
+FROM node:20-alpine
+
+# Install dependencies
+RUN apk add --no-cache git python3 make g++
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including dev dependencies for TypeScript)
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Build application
+RUN npm run build
+
+# Use nginx to serve the built app
+FROM nginx:alpine
+COPY --from=0 /app/dist /usr/share/nginx/html
+
+# Create health endpoint
+RUN echo 'OK' > /usr/share/nginx/html/health
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]

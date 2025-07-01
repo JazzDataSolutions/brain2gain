@@ -1,0 +1,97 @@
+# =====================================================================
+# Brain2Gain SSL & Reverse Proxy Configuration
+# =====================================================================
+# Nginx reverse proxy with Let's Encrypt SSL automation
+# Usage: docker compose -f docker-compose.prod.yml -f docker-compose.ssl.yml up -d
+# =====================================================================
+
+services:
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: brain2gain-nginx-proxy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - certbot_www:/var/www/certbot:ro
+      - frontend_static:/usr/share/nginx/html:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - backend
+      - frontend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - brain2gain-prod-network
+    environment:
+      - TZ=America/Mexico_City
+
+  # Let's Encrypt Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot:latest
+    container_name: brain2gain-certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt:rw
+      - certbot_www:/var/www/certbot:rw
+      - certbot_logs:/var/log/letsencrypt
+    networks:
+      - brain2gain-prod-network
+    environment:
+      - TZ=America/Mexico_City
+    # Run certbot in standalone mode for initial setup
+    command: >
+      sh -c "
+        echo 'Setting up SSL certificates for brain2gain.mx...' &&
+        if [ ! -f /etc/letsencrypt/live/brain2gain.mx/fullchain.pem ]; then
+          echo 'Obtaining initial SSL certificate...' &&
+          certbot certonly --webroot 
+            --webroot-path=/var/www/certbot 
+            --email admin@brain2gain.mx 
+            --agree-tos 
+            --no-eff-email 
+            --domains brain2gain.mx,www.brain2gain.mx,api.brain2gain.mx &&
+          echo 'SSL certificate obtained successfully!'
+        else
+          echo 'SSL certificate already exists, checking for renewal...' &&
+          certbot renew --quiet
+        fi &&
+        echo 'Setting up automatic renewal...' &&
+        while :; do
+          sleep 12h & wait $!;
+          certbot renew --quiet;
+        done
+      "
+    profiles:
+      - ssl
+
+  # Override frontend to serve static files through volume
+  frontend:
+    volumes:
+      - frontend_static:/app/dist:ro
+    ports: []  # Remove direct port mapping, use nginx proxy
+    networks:
+      - brain2gain-prod-network
+
+# Additional volumes for SSL and static files
+volumes:
+  certbot_www:
+    name: brain2gain_certbot_www
+  certbot_logs:
+    name: brain2gain_certbot_logs
+  frontend_static:
+    name: brain2gain_frontend_static
+  nginx_logs:
+    name: brain2gain_nginx_logs
+
+# Use existing network
+networks:
+  brain2gain-prod-network:
+    external: true
