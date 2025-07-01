@@ -1,7 +1,7 @@
 """add payment and refund tables
 
 Revision ID: 2024121203
-Revises: 2024121202_migrate_data_sales_to_orders
+Revises: 2024121202
 Create Date: 2024-12-12 11:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import uuid
 
 # revision identifiers
 revision = "2024121203"
-down_revision = "2024121202_migrate_data_sales_to_orders"
+down_revision = "2024121202"
 branch_labels = None
 depends_on = None
 

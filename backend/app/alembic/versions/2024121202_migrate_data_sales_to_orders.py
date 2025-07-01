@@ -1,7 +1,7 @@
 """migrate data from sales_orders to orders
 
 Revision ID: 2024121202
-Revises: 2024121201_migrate_sales_order_to_order
+Revises: 2024121201
 Create Date: 2024-12-12 10:30:00.000000
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.sql import text
 
 # revision identifiers
 revision = "2024121202"
-down_revision = "2024121201_migrate_sales_order_to_order"
+down_revision = "2024121201"
 branch_labels = None
 depends_on = None
 

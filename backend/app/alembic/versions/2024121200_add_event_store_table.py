@@ -1,7 +1,7 @@
 """add_event_store_table
 
 Revision ID: 2024121200
-Revises: 2024061001_add_top_products_view
+Revises: 2024061001
 Create Date: 2024-12-12 10:00:00.000000
 
 """

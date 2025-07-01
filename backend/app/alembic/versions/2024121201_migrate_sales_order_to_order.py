@@ -1,7 +1,7 @@
 """migrate sales order to order models
 
 Revision ID: 2024121201
-Revises: 2024121200_add_event_store_table
+Revises: 2024121200
 Create Date: 2024-12-12 10:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import uuid
 
 # revision identifiers
 revision = "2024121201"
-down_revision = "2024121200_add_event_store_table"
+down_revision = "2024121200"
 branch_labels = None
 depends_on = None
 
