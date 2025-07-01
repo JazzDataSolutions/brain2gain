@@ -148,14 +148,14 @@ class ItemUpdate(ItemBase):
 class Item(ItemBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    owner_id: int = Field(foreign_key="users.id", nullable=False)
     owner: User | None = Relationship(back_populates="items")
 
 
 # Properties to return via API, id is always required
 class ItemPublic(ItemBase):
     id: uuid.UUID
-    owner_id: uuid.UUID
+    owner_id: int
 
 
 class ItemsPublic(SQLModel):
@@ -242,7 +242,7 @@ class Order(SQLModel, table=True):
     __tablename__ = "orders"
 
     order_id: uuid.UUID | None = Field(default_factory=uuid.uuid4, primary_key=True)
-    user_id: uuid.UUID = Field(foreign_key="user.id", nullable=False)
+    user_id: int = Field(foreign_key="users.id", nullable=False)
     status: OrderStatus = Field(default=OrderStatus.PENDING, nullable=False)
 
     # Financial details
@@ -400,7 +400,7 @@ class SalesItem(SQLModel, table=True):
 
 class Cart(SQLModel, table=True):
     cart_id: int | None = Field(default=None, primary_key=True)
-    user_id: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    user_id: int | None = Field(default=None, foreign_key="users.id")
     session_id: str | None = Field(default=None, index=True)  # For guest carts
     created_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)
     updated_at: datetime = Field(default_factory=datetime.utcnow, nullable=False)

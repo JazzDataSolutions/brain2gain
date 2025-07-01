@@ -78,7 +78,6 @@ print(workers)
         --host 0.0.0.0 \
         --port 8000 \
         --workers ${WORKERS} \
-        --worker-class uvicorn.workers.UvicornWorker \
         --access-log \
         --log-level info \
         --timeout-keep-alive 65 \
