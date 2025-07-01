@@ -1,0 +1,393 @@
+---
+title: "Reporte Financiero Mejorado"
+author: "Brain2Gain"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  html_document:
+    theme: cerulean      # Puedes probar otros: journal, flatly, united...
+    toc: true
+    toc_float: true
+    code_folding: "hide" # Oculta el código por defecto para un look más limpio
+---
+
+```{r setup, include=FALSE}
+# Librerías necesarias
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(kableExtra)
+library(lubridate)
+library(RColorBrewer)  # Para paletas de color
+# library(viridis)      # Alternativa
+library(highcharter)   # Para los Sankey y otros gráficos interactivos
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+```
+
+## 1. Introducción
+Este reporte presenta un análisis financiero basado en la información de ventas, gastos y deudas (ventas a crédito). Se busca:
+
+  - Identificar qué productos generan mayores ingresos.
+  - Analizar la tendencia de las ventas a lo largo del tiempo.
+  - Examinar el impacto de los gastos en el capital actual.
+  - Incorporar la parte de deudas (columnas Debe) para visualizar los montos pendientes y/o en crédito.
+
+## 2. Carga y Exploración de Datos
+
+```{r cars}
+# Ajusta la ruta a tu archivo real
+archivo_excel <- "Brain2Gain-DataBase.xlsx"
+
+productos <- read_excel(archivo_excel, sheet = "Suplementos")
+gastos    <- read_excel(archivo_excel, sheet = "Gastos")
+clientes  <- read_excel(archivo_excel, sheet = "Clientes")
+ventas    <- read_excel(archivo_excel, sheet = "Transacciones")
+```
+
+##  Resúmenes Estadísticos
+
+
+```{r pressure, echo=FALSE}
+cat("### Resumen de Ventas:\n")
+summary(ventas)
+
+cat("\n### Resumen de Productos:\n")
+summary(productos)
+
+cat("\n### Resumen de Gastos:\n")
+summary(gastos)
+
+cat("\n### Resumen de Clientes:\n")
+summary(clientes)
+
+```
+
+## Análisis de Ventas
+
+En esta sección se integran los datos de ventas con la información de productos para obtener una visión global.
+
+
+```{r ventas1}
+ventas_detalles <- ventas %>%
+  left_join(productos, by = c("ProductoID" = "SuplmementoID")) %>% 
+  mutate(
+    NombreProducto = if_else(
+      is.na(NombreProducto), 
+      "ProductoDesconocido", 
+      NombreProducto
+    )
+  ) %>% 
+  mutate(
+    EstadoPago = if_else(Debe > 0, "Pendiente", "Pagado")
+  )
+
+ingresos_totales <- sum(ventas_detalles$Monto, na.rm = TRUE)
+
+ingresos_por_producto <- ventas_detalles %>%
+  group_by(NombreProducto) %>%
+  summarise(
+    Cantidad_Vendida = n(),
+    Ingresos         = sum(Monto, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Ingresos))
+
+kable(ingresos_por_producto, caption = "Ingresos por Producto") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+```
+
+
+### TipoProducto -> NombreProducto (por Ingresos)
+
+El objetivo es ilustrar cómo los ingresos (Monto) se reparten de acuerdo con el Tipo de Producto y luego cada Nombre en particular.
+
+
+```{r ventas2}
+sankey_data2 <- ventas_detalles %>%
+  group_by(NombreProducto, EstadoPago) %>%
+  summarise(Count = n(), .groups = "drop")
+
+# sankey_data2
+
+df_sankey2 <- sankey_data2 %>%
+  mutate(
+    source = as.character(NombreProducto),
+    target = as.character(EstadoPago),
+    weight = Count
+  ) %>%
+  select(source, target, weight)
+
+# Convertimos a data.frame (por si está como tibble)
+df_sankey2 <- as.data.frame(df_sankey2)
+
+hchart(
+  df_sankey2,
+  "sankey",
+  hcaes(from = source, to = target, weight = weight)
+) %>%
+  hc_title(text = "Sankey: Producto -> Estado de Pago") %>%
+  hc_subtitle(text = "Ventas Pagadas vs. Pendientes por Producto") %>%
+  hc_add_theme(hc_theme_google())
+  
+```
+
+## Top 5 Productos por Ingresos
+
+```{r ventas5}
+top_productos <- ingresos_por_producto %>%
+  slice_max(order_by = Ingresos, n = 5)
+
+ggplot(top_productos, aes(
+  x = reorder(NombreProducto, Ingresos),
+  y = Ingresos,
+  fill = NombreProducto
+)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Set2") +  # Paleta de color atractiva
+  labs(
+    title = "Top 5 Productos por Ingresos",
+    x = "Producto",
+    y = "Ingresos Totales",
+    fill = "Producto"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",         # Ocultamos leyenda (opcional)
+    plot.title = element_text(face = "bold", size = 16)
+  )
+
+```
+
+## Tendencia de Ventas en el Tiempo
+
+```{r brain1}
+ventas_fecha <- ventas_detalles %>%
+  mutate(Fecha = as.Date(Fecha)) %>%
+  group_by(Fecha) %>%
+  summarise(Ingresos_Diarios = sum(Monto, na.rm = TRUE), .groups = "drop")
+
+highchart(type = "stock") %>%
+  hc_title(text = "Tendencia de Ingresos Diarios (Interactivo)") %>%
+  hc_add_series(
+    data = ventas_fecha,
+    type = "line",
+    hcaes(x = Fecha, y = Ingresos_Diarios),
+    name = "Ingresos"
+  ) %>%
+  hc_rangeSelector(enabled = TRUE) %>%
+  hc_add_theme(hc_theme_sandsignika())
+
+
+
+```
+
+### Ventas Mensuales por TipoProducto
+```{r vmtp}
+ventas_mes_tipo <- ventas_detalles %>%
+  mutate(
+    Mes = floor_date(as.Date(Fecha), "month")
+  ) %>%
+  group_by(Mes, TipoProducto) %>%
+  summarise(IngresosMes = sum(Monto, na.rm = TRUE), .groups = "drop")
+
+ggplot(ventas_mes_tipo, aes(x = Mes, y = IngresosMes, fill = TipoProducto)) +
+  geom_bar(stat = "identity", position = "stack") +
+  labs(
+    title = "Ventas Mensuales por Tipo de Producto (Stacked Bar)",
+    x = "Mes",
+    y = "Ingresos"
+  ) +
+  theme_minimal(base_size = 14)
+
+```
+
+### Análisis de Gastos
+
+```{r b2g2}
+total_gastos <- sum(gastos$Costo, na.rm = TRUE)
+
+gastos_por_tipo <- gastos %>%
+  group_by(TipoGasto) %>%
+  summarise(Gasto_Total = sum(Costo, na.rm = TRUE)) %>%
+  arrange(desc(Gasto_Total))
+
+kable(gastos_por_tipo, caption = "Gastos Totales por Tipo") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+
+
+```
+
+
+
+### Distribución de Gastos
+
+```{r ventas6}
+# Gráfico de pastel
+ggplot(gastos_por_tipo, aes(x = "", y = Gasto_Total, fill = TipoGasto)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar("y", start = 0) +
+  scale_fill_brewer(palette = "Set3") +
+  labs(title = "Distribución de Gastos por Tipo", fill = "Tipo de Gasto") +
+  theme_void(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 16)
+  )
+
+```
+### Análisis de Inventario
+
+```{r ventas7}
+inventario_resumen <- productos %>%
+  group_by(NombreProducto) %>%
+  summarise(
+    Unidades_Iniciales = sum(NoUnidadesInicial, na.rm = TRUE),
+    Unidades_Actuales  = sum(NoUnidadesActual, na.rm = TRUE),
+    Valor_Inventario   = sum(NoUnidadesActual * VentaEstandar, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Valor_Inventario))
+
+kable(inventario_resumen, caption = "Resumen de Inventario por Producto") %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "responsive"))
+```
+
+```{r inventario}
+unidades_totales_actuales <- sum(inventario_resumen$Unidades_Actuales, na.rm = TRUE)
+valor_inventario_total    <- sum(inventario_resumen$Valor_Inventario, na.rm = TRUE)
+
+cat("**Total de Unidades Actuales:**", unidades_totales_actuales, "\n")
+cat("**Valor Estimado del Inventario (precio de venta):**", valor_inventario_total, "\n")
+
+```
+
+
+```{r bubble}
+library(dplyr)
+
+inventario_tipo <- productos %>%
+  group_by(TipoProducto) %>%
+  summarise(TotalUnidades = sum(NoUnidadesActual, na.rm = TRUE)) %>%
+  filter(TotalUnidades > 0) # Asumiendo filtras los que tienen 0
+
+ggplot(inventario_tipo, aes(x = "", y = TotalUnidades, fill = TipoProducto)) +
+  geom_bar(stat = "identity", width = 1, color = "white") +
+  coord_polar("y", start = 0) +
+  labs(
+    title = "Dona de Inventario: Unidades Totales por Tipo",
+    fill = "Tipo Producto"
+  ) +
+  theme_void(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    legend.position = "right"
+  )
+
+
+```
+
+
+### Top 5 Productos con Mayor Valor de Inventario
+
+
+```{r ventas 8}
+top_inventario <- inventario_resumen %>%
+  slice_max(order_by = Valor_Inventario, n = 5)
+
+ggplot(top_inventario, aes(
+  x = reorder(NombreProducto, Valor_Inventario),
+  y = Valor_Inventario,
+  fill = NombreProducto
+)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_brewer(palette = "Blues") +
+  labs(
+    title = "Top 5 Productos con Mayor Valor de Inventario",
+    x = "Producto",
+    y = "Valor Inventario (Precio de Venta)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    legend.position = "none",
+    plot.title = element_text(face = "bold", size = 16)
+  )
+
+
+```
+
+
+## Evaluación del Capital Actual
+
+Por último, el capital actual se estima como la diferencia entre ingresos totales y gastos totales (sin descontar aún la deuda pendiente).
+
+### Ingresos Totales y Deudas
+
+```{r capital}
+ingresos_totales <- sum(ventas_detalles$Monto, na.rm = TRUE)
+deuda_total <- sum(ventas_detalles$Debe, na.rm = TRUE)
+
+cat("**Ingresos Totales:**", ingresos_totales, "\n")
+cat("**Deuda Total (Monto aún no cobrado):**", deuda_total, "\n")
+
+ingresos_cobrados <- ingresos_totales - deuda_total
+cat("**Ingresos Efectivamente Cobrados:**", ingresos_cobrados, "\n")
+
+```
+
+### Gastos Totales
+
+```{r capital2}
+total_gastos <- sum(gastos$Costo, na.rm = TRUE)
+cat("**Total de Gastos:**", total_gastos, "\n")
+
+```
+### Valor de Inventario (No Líquido)
+
+Por defecto, lo calculamos al precio de venta:
+
+```{r capital3}
+valor_inventario <- sum(productos$NoUnidadesActual * productos$VentaEstandar, na.rm = TRUE)
+cat("**Valor Estimado del Inventario (precio de venta):**", valor_inventario, "\n")
+library(ggplot2)
+
+bubble_data <- productos %>%
+  mutate(NoUnidadesActual = if_else(is.na(NoUnidadesActual), 0, NoUnidadesActual))
+
+ggplot(bubble_data,
+       aes(x = Costo,
+           y = VentaEstandar,
+           size = NoUnidadesActual,
+           color = TipoProducto)) +
+  geom_point(alpha = 0.7) +
+  scale_size(range = c(2, 15)) +
+  labs(title = "Distribución de Productos: Costo vs. Precio de Venta",
+       x = "Costo",
+       y = "Precio de Venta Estandar",
+       size = "Unidades en Inventario",
+       color = "Tipo de Producto") +
+  theme_minimal()
+  
+```
+
+
+### Capital Líquido y Capital Total
+
+  - Capital Líquido: Lo que tenemos disponible ahora mismo en la cuenta/caja.
+  - Capital Total Potencial: Si vendemos todo el stock al precio estándar.
+
+```{r capitla4}
+capital_liquido <- ingresos_cobrados - total_gastos
+cat("**Capital Líquido (efectivo en caja):**", capital_liquido, "\n")
+
+capital_total_potencial <- capital_liquido + valor_inventario
+cat("**Capital Total Potencial (Líquido + No Líquido):**", capital_total_potencial, "\n")
+
+```
+
+
+Si capital_liquido es muy bajo o negativo, significa que gran parte de tus ingresos está aún pendiente de pago (alta deuda) o se consumió en gastos. 
+
+El valor del inventario sirve para saber que, aunque no tengas liquidez, posees mercancía que podría convertir en efectivo en un futuro cerca.
+
+
