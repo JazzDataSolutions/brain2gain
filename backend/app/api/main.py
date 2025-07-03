@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     analytics,
+    auth,
     cart,
     email_templates,
     events,
@@ -27,8 +28,9 @@ ENABLE_STORE_ROUTES = os.getenv("ENABLE_STORE_ROUTES", "true").lower() == "true"
 
 api_router = APIRouter()
 
-# Always include basic utils
+# Always include basic utils and auth
 api_router.include_router(utils.router)
+api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 
 # Store/Public routes
 if API_MODE in ["public", "store", "full"] and ENABLE_STORE_ROUTES:
