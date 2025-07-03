@@ -94,8 +94,8 @@ plugins:
       origins:
         - "http://localhost:5173"
         - "http://localhost:3000"
-        - "https://brain2gain.com"
-        - "https://www.brain2gain.com"
+        - "https://brain2gain.mx"
+        - "https://www.brain2gain.mx"
       methods:
         - GET
         - POST
