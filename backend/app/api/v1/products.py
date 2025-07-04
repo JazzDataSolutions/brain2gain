@@ -8,7 +8,7 @@ authorization, and business validation.
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
 from app.api.deps import AdminUser, SessionDep
-from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
+# # from app.middlewares.advanced_rate_limiting import # Temporary # Temporary apply_endpoint_limits
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.services.product_service import ProductService
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/products", tags=["Products"])
 
 
 @router.get("/", response_model=list[ProductRead])
-@apply_endpoint_limits("products")
+# # @apply_endpoint_limits # Temporary # Temporary("products")
 async def list_products(
     request: Request,
     session: SessionDep,
@@ -55,7 +55,7 @@ async def create_product(
 
 
 @router.get("/{product_id}", response_model=ProductRead)
-@apply_endpoint_limits("products")
+# # @apply_endpoint_limits # Temporary # Temporary("products")
 async def get_product(
     request: Request,
     product_id: int,

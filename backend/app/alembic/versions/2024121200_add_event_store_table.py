@@ -1,7 +1,7 @@
 """add_event_store_table
 
 Revision ID: 2024121200
-Revises: 2024061001
+Revises: 1a31ce608336
 Create Date: 2024-12-12 10:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "2024121200"
-down_revision = "2024061001"
+down_revision = "1a31ce608336"
 branch_labels = None
 depends_on = None
 

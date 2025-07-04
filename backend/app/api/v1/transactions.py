@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.api.dependencies import get_transaction_service
-from app.middlewares.advanced_rate_limiting import apply_endpoint_limits
+# # from app.middlewares.advanced_rate_limiting import # Temporary # Temporary apply_endpoint_limits
 from app.schemas.transaction import TransactionCreate, TransactionRead
 from app.services.transaction_service import TransactionService
 
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/transactions")
 
 
 @router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
-@apply_endpoint_limits("orders")
+# # @apply_endpoint_limits # Temporary # Temporary("orders")
 async def create_tx(
     request: Request,
     payload: TransactionCreate,

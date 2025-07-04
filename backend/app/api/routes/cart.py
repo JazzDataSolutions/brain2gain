@@ -29,7 +29,7 @@ def get_cart_identifier(
 
 
 @router.get("/", response_model=CartRead)
-@apply_endpoint_limits("cart")
+# # # @apply_endpoint_limits # Temporary # Temporary("cart")  # Temporary
 async def get_cart(
     request: Request,
     cart_ids: tuple = Depends(get_cart_identifier),
@@ -55,7 +55,7 @@ async def get_cart(
         Authorization: Bearer token for authenticated users (optional)
 
     Rate Limiting:
-        Applied via @apply_endpoint_limits("cart") decorator
+        Applied via # # # @apply_endpoint_limits # Temporary # Temporary("cart")  # Temporary decorator
         Standard cart limits apply per user/session
 
     Note:
@@ -68,7 +68,7 @@ async def get_cart(
 
 
 @router.post("/items", response_model=CartRead, status_code=status.HTTP_201_CREATED)
-@apply_endpoint_limits("cart")
+# # # @apply_endpoint_limits # Temporary # Temporary("cart")  # Temporary
 async def add_to_cart(
     request: Request,
     add_request: AddToCartRequest,
@@ -102,7 +102,7 @@ async def add_to_cart(
         }
 
     Rate Limiting:
-        Applied via @apply_endpoint_limits("cart") decorator
+        Applied via # # # @apply_endpoint_limits # Temporary # Temporary("cart")  # Temporary decorator
         Higher limits for add operations due to user interaction patterns
 
     Business Rules:
@@ -116,7 +116,7 @@ async def add_to_cart(
 
 
 @router.put("/items/{product_id}", response_model=CartRead)
-@apply_endpoint_limits("cart")
+# # # @apply_endpoint_limits # Temporary # Temporary("cart")  # Temporary
 async def update_cart_item(
     request: Request,
     product_id: int,

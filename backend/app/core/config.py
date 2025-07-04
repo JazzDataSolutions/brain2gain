@@ -81,9 +81,14 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def REDIS_URL(self) -> str:
-        """Build Redis URL from components."""
+        """Build Redis URL from components with proper URL encoding."""
+        from urllib.parse import quote_plus
+        
         if self.REDIS_PASSWORD:
-            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            # URL encode the password to handle special characters properly
+            encoded_password = quote_plus(self.REDIS_PASSWORD)
+            # Use proper Redis URL format: redis://username:password@host:port/db
+            return f"redis://default:{encoded_password}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     SMTP_TLS: bool = True

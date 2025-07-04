@@ -30,9 +30,9 @@ class TokenBlacklist:
         """Connect to Redis for token blacklist storage."""
         try:
             import redis
-            self.redis_client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
+            # Use Redis URL for proper authentication
+            self.redis_client = redis.from_url(
+                settings.REDIS_URL,
                 db=1,  # Use DB 1 for blacklist (separate from main cache)
                 decode_responses=True
             )

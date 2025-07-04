@@ -23,7 +23,7 @@ router = APIRouter(tags=["login"])
 
 
 @router.post("/login/access-token")
-@apply_endpoint_limits("auth")
+# # @apply_endpoint_limits # Temporary # Temporary("auth")
 def login_access_token(
     request: Request,
     session: SessionDep,

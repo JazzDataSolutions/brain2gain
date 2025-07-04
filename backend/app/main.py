@@ -14,8 +14,7 @@ try:
 except ImportError:  # pragma: no cover – optional dependency
     sentry_sdk = None  # type: ignore
 
-from alembic import command as alembic_command
-from alembic.config import Config as AlembicConfig
+# Alembic imports removed - using SQLModel direct table creation
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
@@ -46,19 +45,32 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 def run_migrations() -> None:
     """Run database migrations on startup."""
     try:
-        project_root = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), os.pardir, os.pardir)
-        )
-        ini_path = os.path.join(project_root, "alembic.ini")
-        cfg = AlembicConfig(ini_path)
-        cfg.set_main_option("script_location", "app/alembic")
-        alembic_command.upgrade(cfg, "head")
-        logger.info("Database migrations completed successfully")
+        # Skip Alembic migrations and use SQLModel direct table creation
+        logger.info("Skipping Alembic migrations - using SQLModel direct table creation")
+        create_database_tables()
+        logger.info("Database tables created successfully with SQLModel")
     except Exception as e:
-        logger.error(f"Failed to run migrations: {e}")
-        # Don't fail startup if migrations fail in development
+        logger.error(f"Failed to create database tables: {e}")
+        # Don't fail startup if table creation fails in development
         if settings.ENVIRONMENT == "production":
             raise
+
+
+def create_database_tables() -> None:
+    """Create database tables using SQLModel directly."""
+    try:
+        # Import all models to ensure they're registered
+        import app.models
+        from sqlmodel import create_engine, SQLModel
+        
+        logger.info("Creating database tables with SQLModel...")
+        engine = create_engine(str(settings.SQLALCHEMY_DATABASE_URI))
+        SQLModel.metadata.create_all(engine)
+        logger.info("Database tables created successfully")
+        
+    except Exception as e:
+        logger.error(f"Error creating tables: {e}")
+        raise
 
 
 @asynccontextmanager

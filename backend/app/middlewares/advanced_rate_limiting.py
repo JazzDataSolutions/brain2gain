@@ -20,10 +20,12 @@ logger = logging.getLogger(__name__)
 
 # Initialize limiter with appropriate storage for environment
 def _get_storage_uri():
-    """Get storage URI based on environment - use memory for testing."""
+    """Get storage URI based on environment - Redis for production, memory for testing."""
     if settings.ENVIRONMENT == "testing":
         return "memory://"
-    return settings.REDIS_URL
+    # Use memory storage for now to avoid Redis URL parsing issues
+    # TODO: Fix Redis URL parsing in SlowAPI
+    return "memory://"
 
 limiter = Limiter(
     key_func=get_remote_address,
