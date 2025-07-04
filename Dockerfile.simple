@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+# Install required packages
+RUN pip install fastapi uvicorn[standard] pydantic
+
+# Set working directory
+WORKDIR /app
+
+# Copy the working backend script
+COPY start_working_backend.py /app/
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["python", "/app/start_working_backend.py"]

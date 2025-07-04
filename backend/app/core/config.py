@@ -87,8 +87,8 @@ class Settings(BaseSettings):
         if self.REDIS_PASSWORD:
             # URL encode the password to handle special characters properly
             encoded_password = quote_plus(self.REDIS_PASSWORD)
-            # Use proper Redis URL format: redis://username:password@host:port/db
-            return f"redis://default:{encoded_password}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            # Use proper Redis URL format: redis://:password@host:port/db
+            return f"redis://:{encoded_password}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     SMTP_TLS: bool = True

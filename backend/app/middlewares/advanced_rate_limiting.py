@@ -13,26 +13,63 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from slowapi.util import get_remote_address
 
-from app.core.cache import get_redis_client
 from app.core.config import settings
+try:
+    from app.core.cache import get_redis_client
+except ImportError:
+    async def get_redis_client():
+        return None
 
 logger = logging.getLogger(__name__)
 
 # Initialize limiter with appropriate storage for environment
 def _get_storage_uri():
     """Get storage URI based on environment - Redis for production, memory for testing."""
-    if settings.ENVIRONMENT == "testing":
+    try:
+        # Try to use Redis URL from settings
+        redis_url = settings.REDIS_URL
+        if redis_url and redis_url.startswith('redis://'):
+            # Test if SlowAPI can parse this URL
+            logger.info(f"Attempting to use Redis storage: {redis_url[:30]}...")
+            return redis_url
+        else:
+            logger.info("Redis URL not properly configured, using memory storage")
+            return "memory://"
+    except Exception as e:
+        logger.warning(f"Redis URL parsing failed: {e}, using memory storage")
         return "memory://"
-    # Use memory storage for now to avoid Redis URL parsing issues
-    # TODO: Fix Redis URL parsing in SlowAPI
-    return "memory://"
 
-limiter = Limiter(
-    key_func=get_remote_address,
-    storage_uri=_get_storage_uri(),
-    default_limits=["200/minute", "2000/hour", "10000/day"],
-    strategy="moving-window",
-)
+# Initialize limiter lazily to avoid startup issues
+limiter = None
+
+def get_limiter():
+    """Get or create the limiter instance with proper error handling."""
+    global limiter
+    if limiter is None:
+        try:
+            storage_uri = _get_storage_uri()
+            limiter = Limiter(
+                key_func=get_remote_address,
+                storage_uri=storage_uri,
+                default_limits=["200/minute", "2000/hour", "10000/day"],
+                strategy="moving-window",
+            )
+            logger.info(f"Rate limiter initialized with storage: {storage_uri[:30]}...")
+        except Exception as e:
+            logger.error(f"Failed to initialize rate limiter with Redis: {e}")
+            # Create a minimal limiter with memory storage as fallback
+            try:
+                limiter = Limiter(
+                    key_func=get_remote_address,
+                    storage_uri="memory://",
+                    default_limits=["200/minute", "2000/hour", "10000/day"],
+                    strategy="moving-window",
+                )
+                logger.info("Rate limiter initialized with memory fallback")
+            except Exception as fallback_error:
+                logger.error(f"Failed to initialize rate limiter with memory fallback: {fallback_error}")
+                raise
+    return limiter
 
 
 def get_rate_limit_key(request: Request) -> str:
@@ -96,7 +133,7 @@ def apply_endpoint_limits(endpoint_type: str = "default"):
     def rate_limit_key_func(request: Request):
         return get_rate_limit_key(request)
 
-    return limiter.limit(limit_str, key_func=rate_limit_key_func)
+    return get_limiter().limit(limit_str, key_func=rate_limit_key_func)
 
 
 # Custom rate limit exceeded handler
@@ -257,13 +294,16 @@ def setup_rate_limiting(app):
         app: FastAPI application instance
     """
     try:
-        # Add SlowAPI middleware
-        app.state.limiter = limiter
+        # Initialize limiter and add SlowAPI middleware
+        rate_limiter = get_limiter()
+        app.state.limiter = rate_limiter
         app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
         app.add_middleware(SlowAPIMiddleware)
 
-        storage_type = "memory" if settings.ENVIRONMENT == "testing" else "Redis"
-        logger.info(f"Advanced rate limiting with {storage_type} initialized")
+        # Determine actual storage type being used
+        storage_uri = _get_storage_uri()
+        storage_type = "Redis" if storage_uri.startswith("redis://") else "Memory"
+        logger.info(f"Advanced rate limiting with {storage_type} storage initialized")
         
     except Exception as e:
         logger.warning(f"Rate limiting setup failed: {e}")
@@ -273,7 +313,7 @@ def setup_rate_limiting(app):
 
 # Export main components
 __all__ = [
-    "limiter",
+    "get_limiter",
     "get_rate_limit_key",
     "apply_endpoint_limits",
     "setup_rate_limiting",

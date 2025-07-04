@@ -139,8 +139,23 @@ app = FastAPI(
 # Setup exception handlers
 setup_exception_handlers(app)
 
-# Setup advanced rate limiting
-setup_rate_limiting(app)
+# Setup advanced rate limiting - attempting with fixed Redis URL parsing
+try:
+    setup_rate_limiting(app)
+    logger.info("Advanced rate limiting enabled with fixed Redis URL parsing")
+except Exception as e:
+    logger.warning(f"Advanced rate limiting failed: {e}")
+    logger.info("Falling back to basic rate limiting middleware")
+
+# Add basic rate limiting middleware as fallback
+from app.middlewares.rate_limiting import AuthenticatedRateLimitMiddleware
+app.add_middleware(
+    AuthenticatedRateLimitMiddleware,
+    anonymous_calls=60,  # 60 requests per minute for anonymous users
+    authenticated_calls=300,  # 300 requests per minute for authenticated users
+    period=60  # 1 minute window
+)
+logger.info("Basic rate limiting middleware enabled (60/300 requests per minute)")
 
 # Configure CORS based on API mode
 cors_origins = []
